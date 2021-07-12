@@ -2,8 +2,7 @@ let _entities = 0;
 
 class Entity {
 	constructor() {
-		this.id = (+new Date()).toString(16) + _entities;
-		_entities++;
+		this.id = (+new Date()).toString(16) + _entities++;
 		this.components = {};
 	}
 
