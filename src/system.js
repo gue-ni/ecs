@@ -1,6 +1,9 @@
 class System {
 	constructor(requiredComponents) {
 		this.requiredComponents = requiredComponents;
+		if (this.constructor == System) {
+			throw new Error("Abstract classes can't be instantiated.");
+		}
 	}
 
 	get name() {
@@ -9,13 +12,17 @@ class System {
 
 	destroy() {}
 
+	// check if components math required components
 	componentMatch(entity) {
-		// TODO check if components math required components
+		for (let component of this.requiredComponents) {
+			if (!entity.components[component.name]) return false;
+		}
 		return true;
 	}
 
 	updateEntity(entity, dt, params) {
-		console.log("default logic");
+		console.log("default logic", this.name, entity);
+		throw new Error("updateEntity() must be implemented");
 	}
 
 	updateSystem(ecs, dt, params) {

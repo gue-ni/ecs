@@ -2,7 +2,6 @@ class ECS {
 	constructor() {
 		this.entities = [];
 		this.systems = [];
-
 		this.entitiesToAdd = [];
 		this.entitiesToRemove = new Set();
 	}
@@ -23,14 +22,17 @@ class ECS {
 
 	addEntity(entity) {
 		this.entitiesToAdd.push(entity);
+		return entity;
 	}
 
 	removeEntity(entity) {
+		entity.destroy();
 		this.entitiesToRemove.add(entity);
 	}
 
 	addSystem(system) {
 		this.systems.push(system);
+		return system;
 	}
 
 	removeSystem(system) {
