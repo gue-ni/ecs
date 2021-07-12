@@ -7,3 +7,5 @@ class Component {
 
     destroy() {}
 }
+
+export { Component };

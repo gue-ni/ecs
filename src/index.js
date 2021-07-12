@@ -1,4 +1,4 @@
-import { Entity } from "entity.js";
-
-let e = new Entity();
-console.log(e);
+export { System } from "./system.js";
+export { SystemManager } from "./system.js";
+export { Entity } from "./entity.js";
+export { Component } from "./component.js";

@@ -25,3 +25,5 @@ class SystemManager {
         }
     }
 }
+
+export { System, SystemManager };

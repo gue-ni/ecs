@@ -1,9 +1,9 @@
-_entity = 0;
+let _entities = 0;
 
 class Entity {
     constructor() {
-        this.id = (+new Date()).toString(16) + _count;
-        _entity++;
+        this.id = (+new Date()).toString(16) + _entities;
+        _entities++;
         this.components = {};
     }
 
@@ -24,3 +24,5 @@ class Entity {
         return this.components[component.name];
     }
 }
+
+export { Entity };
