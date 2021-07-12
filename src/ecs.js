@@ -44,8 +44,10 @@ class ECS {
         this._removeQueuedEntities();
 
         for (const system of this.systems) {
-            system.update(this.entities, dt, params);
+            system.update(this, dt, params);
         }
+
+        this._removeQueuedEntities();
     }
 }
 
