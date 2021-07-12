@@ -1,6 +1,6 @@
 {
   "name": "lofi-ecs",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "A minimal Entity-Component-System",
   "main": "lib/index.js",
    "scripts": {

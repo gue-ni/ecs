@@ -1,8 +1,13 @@
 class System {
 	constructor(requiredComponents) {
 		this.requiredComponents = requiredComponents;
+
+		if (!this.requiredComponents) {
+			throw new Error("A System must operate on some components!");
+		}
+
 		if (this.constructor == System) {
-			throw new Error("Abstract classes can't be instantiated.");
+			throw new Error("Abstract classes can't be instantiated!");
 		}
 	}
 
@@ -21,7 +26,6 @@ class System {
 	}
 
 	updateEntity(entity, dt, params) {
-		console.log("default logic", this.name, entity);
 		throw new Error("updateEntity() must be implemented");
 	}
 
