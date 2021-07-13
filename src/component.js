@@ -1,11 +1,13 @@
 class Component {
-    constructor() {}
+	constructor(entity) {
+		this.entity = entity;
+	}
 
-    get name() {
-        return this.constructor.name;
-    }
+	get name() {
+		return this.constructor.name;
+	}
 
-    destroy() {}
+	destroy() {}
 }
 
 export { Component };
