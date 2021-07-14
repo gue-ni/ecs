@@ -3,8 +3,8 @@ import { System } from "./system";
 
 class ECS {
 
-	entities: Entity[];
 	systems: System[];
+	entities: Entity[];
 	entitiesToAdd: Entity[];
 	entitiesToRemove: Set<Entity>;
 

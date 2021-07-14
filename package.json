@@ -1,12 +1,11 @@
 {
   "name": "lofi-ecs",
-  "version": "1.0.23",
+  "version": "1.0.25",
   "description": "A minimal Entity-Component-System for THREE.js.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "prepublish": "babel src --out-dir lib",
-    "prepare": "babel src --out-dir lib",
+    "prepare": "tsc",
     "build": "tsc"
   },
   "babel": {
