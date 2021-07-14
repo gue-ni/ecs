@@ -3,11 +3,12 @@ import * as THREE from "three";
 let _entities = 0;
 
 class Entity {
-	constructor() {
+	constructor(parent) {
 		this.active = true;
 		this.components = {};
 		this.id = (+new Date()).toString(16) + _entities++;
 		this.transform = new THREE.Object3D();
+		if (parent) parent.add(this.transform);
 	}
 
 	addComponent(component) {
