@@ -1,5 +1,10 @@
+import { Entity } from "./entity";
+
 class Component {
-	constructor(entity) {
+
+	entity: Entity;
+
+	constructor(entity: Entity) {
 		if (!entity) throw new Error("Entity is null");
 		this.entity = entity;
 	}

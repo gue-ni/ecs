@@ -3,9 +3,11 @@
   "version": "1.0.23",
   "description": "A minimal Entity-Component-System for THREE.js.",
   "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
   "scripts": {
     "prepublish": "babel src --out-dir lib",
-    "prepare": "babel src --out-dir lib"
+    "prepare": "babel src --out-dir lib",
+    "build": "tsc"
   },
   "babel": {
     "presets": [
@@ -18,9 +20,11 @@
     "@babel/cli": "^7.14.5",
     "@babel/core": "^7.14.6",
     "@babel/preset-env": "^7.14.7",
+    "@types/three": "^0.130.0",
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
-    "babel-preset-es2015": "^6.24.1"
+    "babel-preset-es2015": "^6.24.1",
+    "typescript": "^4.3.5"
   },
   "dependencies": {
     "three": "^0.130.1"

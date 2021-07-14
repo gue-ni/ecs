@@ -1,9 +1,16 @@
 import * as THREE from "three";
+import { Component } from "./component";
 
 let _entities = 0;
 
 class Entity {
-	constructor(parent) {
+
+	id: String;
+	active: boolean;
+	components: any;
+	transform: THREE.Object3D;
+
+	constructor(parent: THREE.Object3D) {
 		this.active = true;
 		this.components = {};
 		this.id = (+new Date()).toString(16) + _entities++;
@@ -11,12 +18,12 @@ class Entity {
 		if (parent) parent.add(this.transform);
 	}
 
-	addComponent(component) {
+	addComponent(component: Component) {
 		this.components[component.name] = component;
 		return component;
 	}
 
-	removeComponent(component) {
+	removeComponent(component: Component) {
 		const comp = this.components[component.name];
 		if (comp) {
 			comp.destroy();
@@ -24,7 +31,7 @@ class Entity {
 		}
 	}
 
-	getComponent(component) {
+	getComponent(component: Component) {
 		return this.components[component.name];
 	}
 

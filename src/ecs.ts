@@ -1,4 +1,13 @@
+import { Entity } from "./entity";
+import { System } from "./system";
+
 class ECS {
+
+	entities: Entity[];
+	systems: System[];
+	entitiesToAdd: Entity[];
+	entitiesToRemove: Set<Entity>;
+
 	constructor() {
 		this.entities = [];
 		this.systems = [];
@@ -20,27 +29,27 @@ class ECS {
 		}
 	}
 
-	addEntity(entity) {
+	addEntity(entity: Entity) {
 		this.entitiesToAdd.push(entity);
 		return entity;
 	}
 
-	removeEntity(entity) {
+	removeEntity(entity: Entity) {
 		entity.destroy();
 		this.entitiesToRemove.add(entity);
 	}
 
-	addSystem(system) {
+	addSystem(system: System) {
 		this.systems.push(system);
 		return system;
 	}
 
-	removeSystem(system) {
+	removeSystem(system: System) {
 		system.destroy();
 		this.systems = this.systems.filter((s) => s != system);
 	}
 
-	update(dt, params) {
+	update(dt: number, params: any) {
 		this._addQueuedEntities();
 		this._removeQueuedEntities();
 

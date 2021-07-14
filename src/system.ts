@@ -1,5 +1,12 @@
+import { Component } from "./component";
+import { ECS } from "./ecs";
+import { Entity } from "./entity";
+
 class System {
-	constructor(requiredComponents) {
+
+	requiredComponents: Component[];
+
+	constructor(requiredComponents: Component[]) {
 		this.requiredComponents = requiredComponents;
 
 		if (this.constructor == System) throw new Error("System is a abstract class!");
@@ -13,18 +20,18 @@ class System {
 	destroy() {}
 
 	// check if components math required components
-	componentMatch(entity) {
+	componentMatch(entity: Entity) {
 		for (let component of this.requiredComponents) {
 			if (!entity.components[component.name]) return false;
 		}
 		return true;
 	}
 
-	updateEntity(entity, dt, params) {
+	updateEntity(entity: Entity, dt: number, params: any) {
 		throw new Error("updateEntity(entity, dt, params) must be implemented");
 	}
 
-	updateSystem(ecs, dt, params) {
+	updateSystem(ecs: ECS, dt: number, params: any) {
 		const entities = ecs.entities.filter((entity) => this.componentMatch(entity));
 		for (let entity of entities) {
 			this.updateEntity(entity, dt, params);
