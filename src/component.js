@@ -1,5 +1,6 @@
 class Component {
 	constructor(entity) {
+		if (!entity) throw new Error("Entity is null");
 		this.entity = entity;
 	}
 

@@ -1,9 +1,13 @@
+import * as THREE from "three";
+
 let _entities = 0;
 
 class Entity {
 	constructor() {
-		this.id = (+new Date()).toString(16) + _entities++;
+		this.active = true;
 		this.components = {};
+		this.id = (+new Date()).toString(16) + _entities++;
+		this.transform = new THREE.Object3D();
 	}
 
 	addComponent(component) {

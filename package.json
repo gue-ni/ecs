@@ -1,14 +1,16 @@
 {
   "name": "lofi-ecs",
-  "version": "1.0.19",
+  "version": "1.0.21",
   "description": "A minimal Entity-Component-System",
   "main": "lib/index.js",
-   "scripts": {
+  "scripts": {
     "prepublish": "babel src --out-dir lib",
     "prepare": "babel src --out-dir lib"
   },
   "babel": {
-    "presets": ["es2015"]
+    "presets": [
+      "es2015"
+    ]
   },
   "author": "Jakob Maier",
   "license": "ISC",
@@ -19,5 +21,8 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
     "babel-preset-es2015": "^6.24.1"
+  },
+  "dependencies": {
+    "three": "^0.130.1"
   }
 }

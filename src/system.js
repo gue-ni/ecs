@@ -2,13 +2,8 @@ class System {
 	constructor(requiredComponents) {
 		this.requiredComponents = requiredComponents;
 
-		if (!this.requiredComponents) {
-			throw new Error("A System must operate on some components!");
-		}
-
-		if (this.constructor == System) {
-			throw new Error("Abstract classes can't be instantiated!");
-		}
+		if (this.constructor == System) throw new Error("System is a abstract class!");
+		if (!this.requiredComponents) throw new Error("A System must operate on some components!");
 	}
 
 	get name() {
@@ -26,14 +21,13 @@ class System {
 	}
 
 	updateEntity(entity, dt, params) {
-		throw new Error("updateEntity() must be implemented");
+		throw new Error("updateEntity(entity, dt, params) must be implemented");
 	}
 
 	updateSystem(ecs, dt, params) {
-		for (const entity of ecs.entities) {
-			if (!ecs.entitiesToRemove.has(entity) && this.componentMatch(entity)) {
-				this.updateEntity(entity, dt, params);
-			}
+		const entities = ecs.entities.filter((entity) => this.componentMatch(entity));
+		for (let entity of entities) {
+			this.updateEntity(entity, dt, params);
 		}
 	}
 }
