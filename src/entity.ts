@@ -18,6 +18,18 @@ class Entity {
 		if (parent) parent.add(this.transform);
 	}
 
+	get position(){
+		return this.transform.position;
+	}
+
+	set position(p){
+		this.transform.position.copy(p);
+	}
+
+	get worldPosition(){
+		return this.transform.getWorldPosition(new THREE.Vector3());
+	}
+
 	addComponent(component: Component) {
 		this.components[component.name] = component;
 		return component;
