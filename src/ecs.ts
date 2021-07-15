@@ -54,7 +54,13 @@ class ECS {
 		this._removeQueuedEntities();
 
 		for (const system of this.systems) {
-			system.updateSystem(this, dt, params);
+
+			function func(entity: Entity){
+				return system.componentMatch(entity) && entity.active;
+			}
+
+			let entities = this.entities.filter(func);
+			system.updateSystem(entities, dt, params);
 		}
 
 		this._removeQueuedEntities();

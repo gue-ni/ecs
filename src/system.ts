@@ -19,7 +19,6 @@ class System {
 
 	destroy() {}
 
-	// check if components math required components
 	componentMatch(entity: Entity) {
 		for (let component of this.requiredComponents) {
 			if (!entity.components[component.name]) return false;
@@ -31,8 +30,7 @@ class System {
 		throw new Error("updateEntity(entity, dt, params) must be implemented");
 	}
 
-	updateSystem(ecs: ECS, dt: number, params: any) {
-		const entities = ecs.entities.filter((entity) => this.componentMatch(entity));
+	updateSystem(entities: Entity[], dt: number, params: any) {
 		for (let entity of entities) {
 			this.updateEntity(entity, dt, params);
 		}

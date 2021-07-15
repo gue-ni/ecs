@@ -1,6 +1,6 @@
 {
   "name": "lofi-ecs",
-  "version": "1.0.26",
+  "version": "1.0.27",
   "description": "A minimal Entity-Component-System for THREE.js.",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
