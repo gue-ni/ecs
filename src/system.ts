@@ -1,6 +1,6 @@
-import { Component } from "./component";
 import { ECS } from "./ecs";
 import { Entity } from "./entity";
+import { Component } from "./component";
 
 class System {
 	requiredComponents: Component[];
@@ -28,9 +28,7 @@ class System {
 		return true;
 	}
 
-	updateEntity(entity: Entity, dt: number, params: any): void {
-		throw new Error("updateEntity(entity, dt, params) must be implemented");
-	}
+	updateEntity(entity: Entity, dt: number, params: any): void {}
 
 	updateSystem(entities: Entity[], dt: number, params: any): void {
 		for (let entity of entities) {

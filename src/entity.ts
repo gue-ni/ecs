@@ -33,7 +33,7 @@ class Entity {
 		this.transform.position.copy(p);
 	}
 
-	get rotation() {
+	get rotation(): THREE.Euler {
 		return this.transform.rotation;
 	}
 
@@ -45,7 +45,7 @@ class Entity {
 		return this.transform.getWorldQuaternion(new THREE.Quaternion());
 	}
 
-	get worldPosition() {
+	get worldPosition(): THREE.Vector3 {
 		return this.transform.getWorldPosition(new THREE.Vector3());
 	}
 
@@ -54,7 +54,7 @@ class Entity {
 		return component;
 	}
 
-	removeComponent(component: Component) {
+	removeComponent(component: Component): void {
 		const comp = this.components[component.name];
 		if (comp) {
 			comp.destroy();
@@ -66,7 +66,7 @@ class Entity {
 		return this.components[component.name];
 	}
 
-	destroy() {
+	destroy(): void {
 		for (let component of this.components) {
 			component.destroy();
 		}
