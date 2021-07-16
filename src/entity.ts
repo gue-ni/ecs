@@ -4,7 +4,6 @@ import { Component } from "./component";
 let _entities = 0;
 
 class Entity {
-
 	id: String;
 	active: boolean;
 	components: any;
@@ -18,19 +17,39 @@ class Entity {
 		if (parent) parent.add(this.transform);
 	}
 
-	get position(){
+	get root() {
+		let tmp = this.transform.parent;
+		while (tmp?.parent != null) {
+			tmp = tmp.parent;
+		}
+		return tmp;
+	}
+
+	get position(): THREE.Vector3 {
 		return this.transform.position;
 	}
 
-	set position(p){
+	set position(p: THREE.Vector3) {
 		this.transform.position.copy(p);
 	}
 
-	get worldPosition(){
+	get rotation() {
+		return this.transform.rotation;
+	}
+
+	set rotation(r: THREE.Euler) {
+		this.transform.rotation.copy(r);
+	}
+
+	get worldQuaternion(): THREE.Quaternion {
+		return this.transform.getWorldQuaternion(new THREE.Quaternion());
+	}
+
+	get worldPosition() {
 		return this.transform.getWorldPosition(new THREE.Vector3());
 	}
 
-	addComponent(component: Component) {
+	addComponent(component: Component): Component {
 		this.components[component.name] = component;
 		return component;
 	}
@@ -43,7 +62,7 @@ class Entity {
 		}
 	}
 
-	getComponent(component: Component) {
+	getComponent(component: Component): Component {
 		return this.components[component.name];
 	}
 
