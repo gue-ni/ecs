@@ -5,13 +5,32 @@ A minimal entity-component-system.
 ```JavaScript
 import * as ECS from "lofi-ecs";
 
-class Velocity extends ECS.Component { }
+// implement data components
+class Velocity extends ECS.Component {
+  constructor(x,y){
+    super();
+    this.x = x;
+    this.y = y;
+  }
+}
 
-class Coordinates extends ECS.Component { }
+class Coordinates extends ECS.Component {
+  constructor(x,y){
+    super();
+    this.x = x;
+    this.y = y;
+  }
+}
 
 class Physics extends ECS.System {
   constructor(){
-    super([Coordinates, Velocity]); // necessary Components
+    super([Coordinates, Velocity]); // required components
+  }
+
+  updateEntity(entity, params){
+    let vel = entity.getComponent(Velocity);
+    let coords = entity.getComponent(Coordinates);
+    // implement behaviour
   }
 }
 

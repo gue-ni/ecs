@@ -3,11 +3,11 @@ import { Entity } from "./entity";
 import { Component } from "./component";
 
 class System {
-	requiredComponents: Component[];
+	requiredComponents: any[];
 
 	ecs?: ECS;
 
-	constructor(requiredComponents: Component[]) {
+	constructor(requiredComponents: any[]) {
 		this.requiredComponents = requiredComponents;
 
 		if (this.constructor == System) throw new Error("System is a abstract class!");
@@ -19,18 +19,22 @@ class System {
 		return this.constructor.name;
 	}
 
-	destroy() {}
+	destroy() {
+		// TODO: can also be overidden
+	}
 
-	componentMatch(entity: Entity): boolean {
+	_componentMatch(entity: Entity): boolean {
 		for (let component of this.requiredComponents) {
 			if (!entity.components.has(component.name)) return false;
 		}
 		return true;
 	}
 
-	updateEntity(entity: Entity, params: any): void {}
+	updateEntity(entity: Entity, params: any): void {
+		// TODO: override this
+	}
 
-	updateSystem(entities: Entity[], params: any): void {
+	_updateSystem(entities: Entity[], params: any): void {
 		for (let entity of entities) {
 			this.updateEntity(entity, params);
 		}

@@ -25,13 +25,28 @@ class Entity {
 			removed.destroy();
 			this.components.delete(component.name);
 		}
+
 	}
 
-	getComponent(component: Component): Component | null {
-		return this.components.get(component.name) || null;
+	getComponent(component: any): Component {
+		// https://stackoverflow.com/questions/66159907/getting-error-type-typeof-b-is-not-assignable-to-type-typeof-a-for-class-b
+		return this.components.get(component.name)!;
 	}
 
-	destroy(): void {
+	getComponents(components: any): Component[] {
+		let arr: Component[] = [];
+		for (let component of components){
+			arr.push(this.getComponent(component))
+		}
+		return arr;
+	}
+
+	/*
+	getComponents(components: Component[]): Component[] | {
+	}
+	*/
+
+	_destroy(): void {
 		for (let [name, component] of this.components) {
 			component.destroy();
 		}

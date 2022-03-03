@@ -34,7 +34,7 @@ class ECS {
 	}
 
 	removeEntity(entity: Entity): void {
-		entity.destroy();
+		entity._destroy();
 		this._entitiesToRemove.add(entity);
 	}
 
@@ -50,7 +50,7 @@ class ECS {
 	}
 
 	_matching(entity: Entity, system: System) {
-		return system.componentMatch(entity) && entity.active;
+		return system._componentMatch(entity) && entity.active;
 	}
 
 	update(params: any): void {
@@ -65,7 +65,7 @@ class ECS {
 			*/
 
 			let entities = this.entities.filter((entity) => this._matching(entity, system));
-			system.updateSystem(entities, params);
+			system._updateSystem(entities, params);
 		}
 
 		this._removeQueuedEntities();
