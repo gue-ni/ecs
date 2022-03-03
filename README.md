@@ -5,33 +5,36 @@ A minimal entity-component-system.
 ```JavaScript
 import * as ECS from "lofi-ecs";
 
-// implement data components
 class Velocity extends ECS.Component {
-  constructor(x,y){
-    super();
-    this.x = x;
-    this.y = y;
-  }
+	x: number;
+	y: number;
+
+	constructor(x, y) {
+		super();
+		this.x = x;
+		this.y = y;
+	}
 }
 
 class Coordinates extends ECS.Component {
-  constructor(x,y){
-    super();
-    this.x = x;
-    this.y = y;
-  }
+	x: number;
+	y: number;
+
+	constructor(x, y) {
+		super();
+		this.x = x;
+		this.y = y;
+	}
 }
 
 class Physics extends ECS.System {
-  constructor(){
-    super([Coordinates, Velocity]); // required components
-  }
+	constructor() {
+		super([Coordinates, Velocity]); // necessary Components
+	}
 
-  updateEntity(entity, params){
-    let vel = entity.getComponent(Velocity);
-    let coords = entity.getComponent(Coordinates);
-    // implement behaviour
-  }
+	updateEntity(entity: ECS.Entity, params: any): void {
+		const [coords, velocity] = entity.getComponents([Coordinates, Velocity]);
+	}
 }
 
 const ecs = new ECS.ECS();
@@ -39,18 +42,18 @@ const ecs = new ECS.ECS();
 ecs.addSystem(new Physics());
 
 const entity = new ECS.Entity();
-entity.addComponent(new Velocity());
-entity.addComponent(new Coordinates());
+entity.addComponent(new Velocity(0, 1));
+entity.addComponent(new Coordinates(0, 0));
 ecs.addEntity(entity);
 
 let dt: number = 0;
 let then: number = 0;
 function animate(now: number) {
-  now *= 0.001;
-  dt = now - then;
-  then = now,
-  ecs.update({ dt })
-  requestAnimationFrame(animate);
+	now *= 0.001;
+	dt = now - then;
+	(then = now), ecs.update({ dt });
+	requestAnimationFrame(animate);
 }
+
 
 ```
