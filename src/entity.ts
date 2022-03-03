@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { Component } from "./component";
 
 let _entities = 0;
@@ -6,68 +5,34 @@ let _entities = 0;
 class Entity {
 	id: String;
 	active: boolean;
-	components: any;
-	transform: THREE.Object3D;
+	components: Map<String, Component>;
 
-	constructor(parent: THREE.Object3D) {
+	constructor() {
 		this.active = true;
-		this.components = {};
+		this.components = new Map<String, Component>();
 		this.id = (+new Date()).toString(16) + _entities++;
-		this.transform = new THREE.Object3D();
-		if (parent) parent.add(this.transform);
-	}
-
-	get root() {
-		let tmp = this.transform.parent;
-		while (tmp?.parent != null) {
-			tmp = tmp.parent;
-		}
-		return tmp;
-	}
-
-	get position(): THREE.Vector3 {
-		return this.transform.position;
-	}
-
-	set position(p: THREE.Vector3) {
-		this.transform.position.copy(p);
-	}
-
-	get rotation(): THREE.Euler {
-		return this.transform.rotation;
-	}
-
-	set rotation(r: THREE.Euler) {
-		this.transform.rotation.copy(r);
-	}
-
-	get worldQuaternion(): THREE.Quaternion {
-		return this.transform.getWorldQuaternion(new THREE.Quaternion());
-	}
-
-	get worldPosition(): THREE.Vector3 {
-		return this.transform.getWorldPosition(new THREE.Vector3());
 	}
 
 	addComponent(component: Component): Component {
-		this.components[component.name] = component;
+		component.entity = this;
+		this.components.set(component.name, component);
 		return component;
 	}
 
 	removeComponent(component: Component): void {
-		const comp = this.components[component.name];
-		if (comp) {
-			comp.destroy();
-			delete this.components[component.name];
+		const removed = this.components.get(component.name);
+		if (removed) {
+			removed.destroy();
+			this.components.delete(component.name);
 		}
 	}
 
-	getComponent(component: Component): Component {
-		return this.components[component.name];
+	getComponent(component: Component): Component | null {
+		return this.components.get(component.name) || null;
 	}
 
 	destroy(): void {
-		for (let component of this.components) {
+		for (let [name, component] of this.components) {
 			component.destroy();
 		}
 	}

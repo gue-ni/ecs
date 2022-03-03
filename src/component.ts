@@ -1,15 +1,9 @@
 import { Entity } from "./entity";
 
 class Component {
+	entity: Entity | undefined;
 
-	entity: Entity;
-
-	constructor(entity: Entity) {
-		if (!entity) throw new Error("Entity is null");
-		this.entity = entity;
-	}
-
-	get name() {
+	get name(): string {
 		return this.constructor.name;
 	}
 

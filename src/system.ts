@@ -23,16 +23,16 @@ class System {
 
 	componentMatch(entity: Entity): boolean {
 		for (let component of this.requiredComponents) {
-			if (!entity.components[component.name]) return false;
+			if (!entity.components.has(component.name)) return false;
 		}
 		return true;
 	}
 
-	updateEntity(entity: Entity, dt: number, params: any): void {}
+	updateEntity(entity: Entity, params: any): void {}
 
-	updateSystem(entities: Entity[], dt: number, params: any): void {
+	updateSystem(entities: Entity[], params: any): void {
 		for (let entity of entities) {
-			this.updateEntity(entity, dt, params);
+			this.updateEntity(entity, params);
 		}
 	}
 }
