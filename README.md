@@ -33,7 +33,8 @@ class Physics extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: any): void {
-		const [coords, velocity] = entity.getComponents([Coordinates, Velocity]);
+		const [coords] = entity.getComponent(Coordinates) as Coordinates;
+		const [velocity] = entity.getComponent(Velocity) as Velocity;
 	}
 }
 
