@@ -22,6 +22,7 @@ windowCenter = canvas.width / 2;
 /**
  * Components
  */
+
 class Vector extends ECS.Component {
 	x: number;
 	y: number;
@@ -33,7 +34,31 @@ class Vector extends ECS.Component {
 	}
 }
 
-class Ammo extends ECS.Component {}
+class BoundingBox extends ECS.Component {
+	active: boolean;
+
+	constructor(active: boolean = false) {
+		super();
+		this.active = active;
+	}
+
+	get minX() {
+		return 0;
+	}
+
+	get maxX() {
+		return 0;
+	}
+
+	get minY() {
+		return 0;
+	}
+	get maxY() {
+		return 0;
+	}
+}
+
+class Weapons extends ECS.Component {}
 
 class Primary extends ECS.Component {}
 
@@ -123,6 +148,7 @@ class Input extends ECS.Component {
 /**
  * Systems
  */
+
 class ScrollSystem extends ECS.System {
 	constructor() {
 		super([Primary, Position]);
@@ -208,7 +234,7 @@ class MovementSystem extends ECS.System {
 
 class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Ammo]);
+		super([Input, Position, Weapons]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -230,7 +256,6 @@ class WeaponSystem extends ECS.System {
 			projectile.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
 			params.ecs.addEntity(projectile);
 		}
-
 	}
 }
 
@@ -301,9 +326,97 @@ class SpriteSystem extends ECS.System {
 	}
 }
 
+class SpatialHashGrid {
+	_grid: Map<string, ECS.Entity[]>;
+	_gridsize: number;
+
+	constructor(gridsize: number) {
+		this._grid = new Map();
+		this._gridsize = gridsize;
+	}
+
+	hash(x: number, y: number): number[] {
+		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
+	}
+
+	insert(entity: ECS.Entity) {
+		let box = entity.getComponent(BoundingBox) as BoundingBox;
+		if (!box) new Error("Entity must have a bounding box");
+
+		let [minX, minY] = this.hash(box.minX, box.minY);
+		let [maxX, maxY] = this.hash(box.maxX, box.maxY);
+
+		for (let i = minX; i <= maxX; i++) {
+			for (let j = minY; j <= maxY; j++) {
+				const key = `${i}/${j}`;
+
+				if (this._grid.has(key)) {
+					let l = this._grid.get(key);
+					l.push(entity);
+					this._grid.set(key, l);
+				} else {
+					this._grid.set(key, [entity]);
+				}
+			}
+		}
+	}
+
+	possible_collisions(entity: ECS.Entity): ECS.Entity[] {
+		let box = entity.getComponent(BoundingBox) as BoundingBox;
+		if (!box) new Error("Entity must have a bounding box");
+
+		let [minX, minY] = this.hash(box.minX, box.minY);
+		let [maxX, maxY] = this.hash(box.maxX, box.maxY);
+
+		let possible = new Set<ECS.Entity>();
+
+		for (let i = minX; i <= maxX; i++) {
+			for (let j = minY; j <= maxY; j++) {
+				const key = `${i}/${j}`;
+
+				if (this._grid.has(key)) {
+					this._grid
+						.get(key)
+						.filter((item) => item != entity)
+						.map((item) => possible.add(item));
+				}
+			}
+		}
+
+		return [...possible];
+	}
+}
+
+class CollisionSystem extends ECS.System {
+	sph: SpatialHashGrid;
+
+	constructor() {
+		super([Position, BoundingBox]);
+		this.sph = new SpatialHashGrid(16);
+	}
+
+	_intersect(a: BoundingBox, b: BoundingBox): boolean {
+		return a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY;
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+
+		// update bounding box
+
+		for (let possible of this.sph.possible_collisions(entity)) {
+			let a = entity.getComponent(BoundingBox) as BoundingBox;
+			let b = possible.getComponent(BoundingBox) as BoundingBox;
+			if (this._intersect(a, b)) {
+				console.log("intersection", entity, possible);
+			}
+		}
+	}
+}
+
 /**
  * Setup
  */
+
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new InputSystem());
@@ -312,6 +425,16 @@ ecs.addSystem(new ScrollSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
+ecs.addSystem(new CollisionSystem());
+
+const player = new ECS.Entity();
+player.addComponent(new Velocity(0, 0));
+player.addComponent(new Input());
+player.addComponent(new Weapons());
+player.addComponent(new Primary());
+player.addComponent(new Position(windowCenter, canvas.height));
+player.addComponent(new Sprite(characterSprite, 16, 16, 0, 0, 1, 1));
+ecs.addEntity(player);
 
 for (let i = 0; i < 10; i++) {
 	const tree = new ECS.Entity();
@@ -319,17 +442,6 @@ for (let i = 0; i < 10; i++) {
 	tree.addComponent(new Sprite(treeSprite, 16, 16, 0, 0, 1, 1));
 	ecs.addEntity(tree);
 }
-
-const player = new ECS.Entity();
-player.addComponent(new Velocity(0, 0));
-player.addComponent(new Input());
-player.addComponent(new Ammo());
-player.addComponent(new Primary());
-player.addComponent(new Position(windowCenter, canvas.height));
-player.addComponent(new Sprite(characterSprite, 16, 16, 0, 0, 1, 1));
-ecs.addEntity(player);
-
-
 
 let dt: number = 0;
 let then: number = 0;
