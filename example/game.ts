@@ -118,7 +118,7 @@ class MovementSystem extends ECS.System {
 
 		if (input.pressed["KeyA"]) velocity.x = -100;
 
-		if (input.pressed["KeyD"]) velocity.x = 100;
+		if (input.pressed["KeyD"]) velocity.x = 200;
 
 		if (input.pressed["Space"])velocity.y = -100;
 		
