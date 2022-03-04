@@ -19,6 +19,9 @@ let windowOffset = 0;
 let windowCenter = 0;
 windowCenter = canvas.width / 2;
 
+/**
+ * Components
+ */
 class Vector extends ECS.Component {
 	x: number;
 	y: number;
@@ -117,6 +120,9 @@ class Input extends ECS.Component {
 	}
 }
 
+/**
+ * Systems
+ */
 class ScrollSystem extends ECS.System {
 	constructor() {
 		super([Primary, Position]);
@@ -295,6 +301,9 @@ class SpriteSystem extends ECS.System {
 	}
 }
 
+/**
+ * Setup
+ */
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new InputSystem());
@@ -325,6 +334,9 @@ ecs.addEntity(player);
 let dt: number = 0;
 let then: number = 0;
 
+/**
+ * Game Loop
+ */
 function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
