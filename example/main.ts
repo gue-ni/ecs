@@ -1,8 +1,3 @@
-# lofi-ecs
-
-A minimal entity-component-system.
-
-```JavaScript
 import * as ECS from "lofi-ecs";
 
 class Velocity extends ECS.Component {
@@ -52,9 +47,6 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
-  ecs.update({ dt });
+	ecs.update({ dt });
 	requestAnimationFrame(animate);
 }
-
-
-```
