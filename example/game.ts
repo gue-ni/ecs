@@ -1,14 +1,23 @@
 import * as ECS from "lofi-ecs";
 
-// debug
-const posEl = document.getElementById("position");
-const velEl = document.getElementById("velocity");
+const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+const context: CanvasRenderingContext2D = canvas.getContext("2d");
 
-const sprite = new Image();
-sprite.src = "assets/sprite.png";
+const characterSprite = new Image();
+characterSprite.src = "assets/sprite.png";
+
+const grenadeSprite = new Image();
+grenadeSprite.src = "assets/grenade.png";
 
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
+
+const treeSprite = new Image();
+treeSprite.src = "assets/tree.png";
+
+let windowOffset = 0;
+let windowCenter = 0;
+windowCenter = canvas.width / 2;
 
 class Vector extends ECS.Component {
 	x: number;
@@ -20,6 +29,10 @@ class Vector extends ECS.Component {
 		this.y = y;
 	}
 }
+
+class Ammo extends ECS.Component {}
+
+class Primary extends ECS.Component {}
 
 class Velocity extends Vector {}
 
@@ -104,6 +117,33 @@ class Input extends ECS.Component {
 	}
 }
 
+class ScrollSystem extends ECS.System {
+	constructor() {
+		super([Primary, Position]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(Position) as Position;
+
+		let maxDiff = 40;
+		let diff = position.x - windowCenter;
+
+		//console.log({ diff, x: position.x, windowOffset, windowCenter });
+
+		if (diff > maxDiff) {
+			let delta = diff - maxDiff;
+			windowOffset += delta;
+			windowCenter += delta;
+		}
+
+		if (diff < -maxDiff) {
+			let delta = maxDiff + diff;
+			windowCenter += delta;
+			windowOffset += delta;
+		}
+	}
+}
+
 class InputSystem extends ECS.System {
 	keys: any;
 
@@ -145,6 +185,7 @@ class MovementSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
+		const position = entity.getComponent(Position) as Position;
 
 		velocity.x = 0;
 		const speed = 150;
@@ -153,30 +194,37 @@ class MovementSystem extends ECS.System {
 
 		if (this.is_pressed(input, "KeyA")) velocity.x = -1 * speed;
 
-		if (this.is_pressed(input, "KeyW", 500)) {
+		if (this.is_pressed(input, "KeyW", 200) && position.y == params.canvas.height) {
 			velocity.y = -200;
 		}
 	}
 }
 
-class GunSystem extends ECS.System {
+class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position]);
+		super([Input, Position, Ammo]);
 	}
-
-	
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const position = entity.getComponent(Position) as Position;
 
 		if (input.is_pressed("Space", 200)) {
-			let bullet = new ECS.Entity(1);
-			bullet.addComponent(new Position(position.x, position.y - 8, false));
-			bullet.addComponent(new Velocity(300, -50));
-			bullet.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
-			params.ecs.addEntity(bullet);
+			const projectile = new ECS.Entity(1);
+			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
+			projectile.addComponent(new Velocity(300, -50));
+			projectile.addComponent(new Sprite(grenadeSprite, 9, 3, 0, 0, 1, 1));
+			params.ecs.addEntity(projectile);
 		}
+
+		if (input.is_pressed("KeyF", 50)) {
+			const projectile = new ECS.Entity(1);
+			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
+			projectile.addComponent(new Velocity(500, -10));
+			projectile.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
+			params.ecs.addEntity(projectile);
+		}
+
 	}
 }
 
@@ -190,8 +238,6 @@ class PhysicsSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 
 		// debug
-		velEl.innerText = `Velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}`;
-		posEl.innerText = `Position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}`;
 
 		position.x += params.dt * velocity.x;
 		position.y += params.dt * velocity.y;
@@ -211,10 +257,12 @@ class PhysicsSystem extends ECS.System {
 				velocity.y = 0;
 			}
 
+			/*a
 			if (position.x > params.canvas.width) {
 				position.x = params.canvas.width;
 				velocity.x = 0;
 			}
+			*/
 
 			if (position.x < 0) {
 				position.x = 0;
@@ -239,7 +287,7 @@ class SpriteSystem extends ECS.System {
 			sprite.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
-			coords.x - Math.round(sprite.width / 2),
+			coords.x - Math.round(sprite.width / 2) - windowOffset,
 			coords.y - Math.round(sprite.height),
 			sprite.width,
 			sprite.height
@@ -247,23 +295,32 @@ class SpriteSystem extends ECS.System {
 	}
 }
 
-const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-const context: CanvasRenderingContext2D = canvas.getContext("2d");
-
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new InputSystem());
 ecs.addSystem(new PhysicsSystem());
-ecs.addSystem(new SpriteSystem());
+ecs.addSystem(new ScrollSystem());
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new GunSystem());
+ecs.addSystem(new WeaponSystem());
+ecs.addSystem(new SpriteSystem());
 
-const entity = new ECS.Entity();
-entity.addComponent(new Velocity(0, 0));
-entity.addComponent(new Input());
-entity.addComponent(new Position(10, canvas.height));
-entity.addComponent(new Sprite(sprite, 16, 16, 0, 0, 1, 1));
-ecs.addEntity(entity);
+for (let i = 0; i < 10; i++) {
+	const tree = new ECS.Entity();
+	tree.addComponent(new Position(i * 50, canvas.height));
+	tree.addComponent(new Sprite(treeSprite, 16, 16, 0, 0, 1, 1));
+	ecs.addEntity(tree);
+}
+
+const player = new ECS.Entity();
+player.addComponent(new Velocity(0, 0));
+player.addComponent(new Input());
+player.addComponent(new Ammo());
+player.addComponent(new Primary());
+player.addComponent(new Position(windowCenter, canvas.height));
+player.addComponent(new Sprite(characterSprite, 16, 16, 0, 0, 1, 1));
+ecs.addEntity(player);
+
+
 
 let dt: number = 0;
 let then: number = 0;
