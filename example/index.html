@@ -1,30 +1,45 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Example</title>
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Example</title>
+		<style>
+			* {
+				box-sizing: border-box;
+			}
 
-    canvas {
-      border: 1px solid black;
-      width: 512px;
-      height: 512px;
-      image-rendering: -moz-crisp-edges;
-      image-rendering: -webkit-crisp-edges;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <canvas id="canvas" width="128" height="128"></canvas>
-  </main>
- <script src="game.js"></script> 
-</body>
+			main {
+				max-width: 700px;
+				margin: 0 auto;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			canvas {
+				border: 1px solid black;
+				width: 512px;
+				height: 512px;
+				image-rendering: -moz-crisp-edges;
+				image-rendering: -webkit-crisp-edges;
+				image-rendering: pixelated;
+				image-rendering: crisp-edges;
+			}
+		</style>
+	</head>
+	<body>
+		<main>
+			<div>
+        <h1>Example Game</h1>
+        <p>WASD to move, SPACE to jump.</p>
+				<canvas id="canvas" width="128" height="128"></canvas>
+				<p id="velocity"></p>
+				<p id="position"></p>
+			</div>
+		</main>
+
+		<script src="game.js"></script>
+	</body>
 </html>

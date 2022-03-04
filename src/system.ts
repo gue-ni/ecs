@@ -1,4 +1,4 @@
-import { ECS } from "./ecs";
+import { ECS, UpdateParams } from "./ecs";
 import { Entity } from "./entity";
 import { Component } from "./component";
 
@@ -30,11 +30,11 @@ class System {
 		return true;
 	}
 
-	updateEntity(entity: Entity, params: any): void {
+	updateEntity(entity: Entity, params: UpdateParams): void {
 		// TODO: override this
 	}
 
-	_updateSystem(entities: Entity[], params: any): void {
+	_updateSystem(entities: Entity[], params: UpdateParams): void {
 		for (let entity of entities) {
 			this.updateEntity(entity, params);
 		}

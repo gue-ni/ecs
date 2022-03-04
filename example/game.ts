@@ -1,5 +1,9 @@
 import * as ECS from "lofi-ecs";
 
+// debug
+const posEl = document.getElementById("position");
+const velEl = document.getElementById("velocity");
+
 class Vector extends ECS.Component {
 	x: number;
 	y: number;
@@ -10,8 +14,6 @@ class Vector extends ECS.Component {
 		this.y = y;
 	}
 }
-
-class Acceleration extends Vector {}
 
 class Velocity extends Vector {}
 
@@ -75,10 +77,12 @@ class Sprite extends ECS.Component {
 
 class Input extends ECS.Component {
 	pressed: any;
+	last_pressed: any;
 
 	constructor() {
 		super();
 		this.pressed = {};
+		this.last_pressed = {};
 	}
 }
 
@@ -91,6 +95,7 @@ class InputSystem extends ECS.System {
 		this.keys = {};
 
 		window.addEventListener("keydown", (e) => {
+			console.log(e.code);
 			this.keys[e.code] = true;
 		});
 
@@ -110,18 +115,30 @@ class MovementSystem extends ECS.System {
 		super([Input, Velocity]);
 	}
 
+	is_pressed(input: Input, key: string, delay?: number): boolean {
+		if (input.pressed[key]) {
+			if (!delay || !input.last_pressed[key] || Date.now() - input.last_pressed[key] > delay) {
+				input.last_pressed[key] = Date.now();
+				return true;
+			}
+		}
+		return false;
+	}
+
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 
 		velocity.x = 0;
+		const speed = 150;
 
-		if (input.pressed["KeyA"]) velocity.x = -100;
+		if (this.is_pressed(input, "KeyD")) velocity.x = 1 * speed;
 
-		if (input.pressed["KeyD"]) velocity.x = 200;
+		if (this.is_pressed(input, "KeyA")) velocity.x = -1 * speed;
 
-		if (input.pressed["Space"])velocity.y = -100;
-		
+		if (this.is_pressed(input, "Space", 500)) {
+			velocity.y = -200;
+		}
 	}
 }
 
@@ -134,7 +151,9 @@ class PhysicsSystem extends ECS.System {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
 
-		console.log(velocity.x.toFixed(2), velocity.y.toFixed(2))
+		// debug
+		velEl.innerText = `Velocity: ${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)}`;
+		posEl.innerText = `Position: ${position.x.toFixed(2)}, ${position.y.toFixed(2)}`;
 
 		position.x += params.dt * velocity.x;
 		position.y += params.dt * velocity.y;
@@ -144,23 +163,19 @@ class PhysicsSystem extends ECS.System {
 		}
 
 		if (position.y > params.canvas.height) {
-			console.log("clamp")
 			position.y = params.canvas.height;
 			velocity.y = 0;
-		} 
-		if (position.y < 0){
-			console.log("clamp")
-			position.y = 0
+		}
+		if (position.y < 0) {
+			position.y = 0;
 			velocity.y = 0;
-		} 
+		}
 
-		if (position.x > params.canvas.width){
-			console.log("clamp")
-			position.x = params.canvas.width
+		if (position.x > params.canvas.width) {
+			position.x = params.canvas.width;
 			velocity.x = 0;
-		} 
-		if(position.x < 0 ){
-			console.log("clamp")
+		}
+		if (position.x < 0) {
 			position.x = 0;
 			velocity.x = 0;
 		}
@@ -200,7 +215,7 @@ ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new MovementSystem());
 
-let sprite = new Image();
+const sprite = new Image();
 sprite.src = "assets/sprite.png";
 
 const entity = new ECS.Entity();

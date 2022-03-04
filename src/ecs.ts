@@ -1,6 +1,13 @@
 import { Entity } from "./entity";
 import { System } from "./system";
 
+interface UpdateParams {
+	dt?: number;
+	now?: number;
+	canvas?: HTMLCanvasElement;
+	context?: CanvasRenderingContext2D
+}
+
 class ECS {
 	systems: System[];
 	entities: Entity[];
@@ -53,7 +60,7 @@ class ECS {
 		return system._componentMatch(entity) && entity.active;
 	}
 
-	update(params: any): void {
+	update(params: UpdateParams): void {
 		this._addQueuedEntities();
 		this._removeQueuedEntities();
 
@@ -72,4 +79,4 @@ class ECS {
 	}
 }
 
-export { ECS };
+export { ECS, UpdateParams };
