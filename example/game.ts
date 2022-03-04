@@ -4,6 +4,12 @@ import * as ECS from "lofi-ecs";
 const posEl = document.getElementById("position");
 const velEl = document.getElementById("velocity");
 
+const sprite = new Image();
+sprite.src = "assets/sprite.png";
+
+const bulletSprite = new Image();
+bulletSprite.src = "assets/bullet.png";
+
 class Vector extends ECS.Component {
 	x: number;
 	y: number;
@@ -20,11 +26,13 @@ class Velocity extends Vector {}
 class Position extends ECS.Component {
 	_x: number;
 	_y: number;
+	clamp: boolean;
 
-	constructor(x: number, y: number) {
+	constructor(x: number, y: number, clamp: boolean = true) {
 		super();
 		this._x = x;
 		this._y = y;
+		this.clamp = clamp;
 	}
 
 	get x() {
@@ -84,6 +92,16 @@ class Input extends ECS.Component {
 		this.pressed = {};
 		this.last_pressed = {};
 	}
+
+	is_pressed(key: string, delay?: number): boolean {
+		if (this.pressed[key]) {
+			if (!delay || !this.last_pressed[key] || Date.now() - this.last_pressed[key] > delay) {
+				this.last_pressed[key] = Date.now();
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 class InputSystem extends ECS.System {
@@ -95,7 +113,6 @@ class InputSystem extends ECS.System {
 		this.keys = {};
 
 		window.addEventListener("keydown", (e) => {
-			console.log(e.code);
 			this.keys[e.code] = true;
 		});
 
@@ -136,8 +153,29 @@ class MovementSystem extends ECS.System {
 
 		if (this.is_pressed(input, "KeyA")) velocity.x = -1 * speed;
 
-		if (this.is_pressed(input, "Space", 500)) {
+		if (this.is_pressed(input, "KeyW", 500)) {
 			velocity.y = -200;
+		}
+	}
+}
+
+class GunSystem extends ECS.System {
+	constructor() {
+		super([Input, Position]);
+	}
+
+	
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(Input) as Input;
+		const position = entity.getComponent(Position) as Position;
+
+		if (input.is_pressed("Space", 200)) {
+			let bullet = new ECS.Entity(1);
+			bullet.addComponent(new Position(position.x, position.y - 8, false));
+			bullet.addComponent(new Velocity(300, -50));
+			bullet.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
+			params.ecs.addEntity(bullet);
 		}
 	}
 }
@@ -162,22 +200,26 @@ class PhysicsSystem extends ECS.System {
 			velocity.y += params.dt * 500;
 		}
 
-		if (position.y > params.canvas.height) {
-			position.y = params.canvas.height;
-			velocity.y = 0;
-		}
-		if (position.y < 0) {
-			position.y = 0;
-			velocity.y = 0;
-		}
+		if (position.clamp) {
+			if (position.y > params.canvas.height) {
+				position.y = params.canvas.height;
+				velocity.y = 0;
+			}
 
-		if (position.x > params.canvas.width) {
-			position.x = params.canvas.width;
-			velocity.x = 0;
-		}
-		if (position.x < 0) {
-			position.x = 0;
-			velocity.x = 0;
+			if (position.y < 0) {
+				position.y = 0;
+				velocity.y = 0;
+			}
+
+			if (position.x > params.canvas.width) {
+				position.x = params.canvas.width;
+				velocity.x = 0;
+			}
+
+			if (position.x < 0) {
+				position.x = 0;
+				velocity.x = 0;
+			}
 		}
 	}
 }
@@ -214,9 +256,7 @@ ecs.addSystem(new InputSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new MovementSystem());
-
-const sprite = new Image();
-sprite.src = "assets/sprite.png";
+ecs.addSystem(new GunSystem());
 
 const entity = new ECS.Entity();
 entity.addComponent(new Velocity(0, 0));
@@ -234,8 +274,10 @@ function animate(now: number) {
 	then = now;
 
 	context.clearRect(0, 0, canvas.width, canvas.height);
+	context.fillStyle = "rgb(0,0,0)";
+	context.fillRect(0, 0, canvas.width, canvas.height);
 
-	ecs.update({ dt, canvas, context });
+	ecs.update({ dt, canvas, context, ecs });
 	requestAnimationFrame(animate);
 }
 
