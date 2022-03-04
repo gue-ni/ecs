@@ -5,12 +5,14 @@ let _entities = 0;
 class Entity {
 	id: String;
 	active: boolean;
+	ttl?: number;
 	components: Map<String, Component>;
 
-	constructor() {
+	constructor(ttl?: number) {
 		this.active = true;
 		this.components = new Map<String, Component>();
 		this.id = (+new Date()).toString(16) + _entities++;
+		this.ttl = ttl;
 	}
 
 	addComponent(component: Component): Component {

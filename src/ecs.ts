@@ -2,10 +2,11 @@ import { Entity } from "./entity";
 import { System } from "./system";
 
 interface UpdateParams {
-	dt?: number;
+	dt: number;
 	now?: number;
 	canvas?: HTMLCanvasElement;
-	context?: CanvasRenderingContext2D
+	context?: CanvasRenderingContext2D;
+	ecs?: ECS;
 }
 
 class ECS {
@@ -64,13 +65,14 @@ class ECS {
 		this._addQueuedEntities();
 		this._removeQueuedEntities();
 
-		for (const system of this.systems) {
-			/*
-			function func(entity: Entity) {
-				return system.componentMatch(entity) && entity.active;
+		for (const entity of this.entities) {
+			if (entity.ttl) {
+				entity.ttl -= params.dt;
+				if (entity.ttl <= 0) this.removeEntity(entity);
 			}
-			*/
+		}
 
+		for (const system of this.systems) {
 			let entities = this.entities.filter((entity) => this._matching(entity, system));
 			system._updateSystem(entities, params);
 		}
