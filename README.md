@@ -53,7 +53,7 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
-  ecs.update({ dt });
+	ecs.update({ dt });
 	requestAnimationFrame(animate);
 }
 
