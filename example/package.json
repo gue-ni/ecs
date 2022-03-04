@@ -1,17 +1,16 @@
 {
-  "name": "test-lofi",
+  "name": "example-lofi",
   "version": "1.0.0",
   "description": "",
-  "main": "main.ts",
+  "main": "game.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "webpack"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "copy-webpack-plugin": "^10.2.4",
-    "lofi-ecs": "^1.2.6",
+    "lofi-ecs": "^1.2.7",
     "ts-loader": "^9.2.7",
     "webpack": "^5.69.1",
     "webpack-cli": "^4.9.2"
