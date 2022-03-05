@@ -55,14 +55,18 @@ class BoundingBox extends ECS.Component {
 	b: number;
 	c: number;
 	d: number;
+	base: number;
+	bottomCollision: boolean;
 
-	constructor(a: number, b: number, c: number, d: number, active: boolean = false) {
+	constructor(a: number, b: number, c: number, d: number, base: number = 0, active: boolean = false) {
 		super();
 		this.active = active;
 		this.a = a;
 		this.b = b;
 		this.c = c;
 		this.d = d;
+		this.base = base;
+		this.bottomCollision = false;
 	}
 
 	set_center(x: number, y: number): void {
@@ -82,7 +86,7 @@ class BoundingBox extends ECS.Component {
 		return this.centerY - this.a;
 	}
 	get maxY() {
-		return this.centerY + this.c;
+		return this.centerY + this.c + this.base;
 	}
 }
 
@@ -146,7 +150,8 @@ class Sprite extends ECS.Component {
 		frameX: number = 0,
 		frameY: number = 0,
 		maxFrameX: number = 1,
-		maxFrameY: number = 1
+		maxFrameY: number = 1,
+		zValue?: number
 	) {
 		super();
 		this.image = image;
@@ -241,7 +246,7 @@ class InputSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input, Velocity]);
+		super([Input, Velocity, BoundingBox, Position]);
 	}
 
 	is_pressed(input: Input, key: string, delay?: number): boolean {
@@ -257,17 +262,18 @@ class MovementSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
+		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
 		const position = entity.getComponent(Position) as Position;
 
 		velocity.x = 0;
-		const speed = 150;
+		const speed = 50;
 
-		if (this.is_pressed(input, "KeyD")) velocity.x = 1 * speed;
+		if (this.is_pressed(input, "KeyD")) velocity.x =  2 * speed;
 
-		if (this.is_pressed(input, "KeyA")) velocity.x = -1 * speed;
+		if (this.is_pressed(input, "KeyA")) velocity.x = -speed;
 
-		if (this.is_pressed(input, "KeyW", 200) && position.y == params.canvas.height) {
-			velocity.y = -200;
+		if (this.is_pressed(input, "KeyW") && (aabb.bottomCollision || position.y == params.canvas.height)) {
+			velocity.y = -240;
 		}
 	}
 }
@@ -286,7 +292,7 @@ class WeaponSystem extends ECS.System {
 			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
 			projectile.addComponent(new Velocity(300, -50));
 			projectile.addComponent(new Sprite(grenadeSprite, 9, 3, 0, 0, 1, 1));
-			projectile.addComponent(new BoundingBox(2, 2, 2, 2, true));
+			projectile.addComponent(new BoundingBox(2, 2, 2, 2, 0, true));
 			projectile.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -296,7 +302,7 @@ class WeaponSystem extends ECS.System {
 			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
 			projectile.addComponent(new Velocity(500, -10));
 			projectile.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
-			projectile.addComponent(new BoundingBox(2, 2, 2, 2, true));
+			projectile.addComponent(new BoundingBox(2, 2, 2, 2, 0, true));
 			projectile.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -316,19 +322,20 @@ class PositionChangeSystem extends ECS.System {
 
 class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([Position, Velocity]); // necessary Components
+		super([Position, Velocity, BoundingBox]); // necessary Components
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
+		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
 
 		// debug
 
 		position.x += params.dt * velocity.x;
 		position.y += params.dt * velocity.y;
 
-		if (position.y < params.canvas.height) {
+		if (position.y < params.canvas.height && !aabb.bottomCollision) {
 			velocity.y += params.dt * 500;
 		}
 
@@ -507,7 +514,7 @@ class CollisionSystem extends ECS.System {
 		// update bounding box
 		let aabb = entity.getComponent(BoundingBox) as BoundingBox;
 		let position = entity.getComponent(Position) as Position;
-		let velocity = entity.getComponent(Position) as Velocity;
+		let velocity = entity.getComponent(Velocity) as Velocity;
 
 		if (position.changed) {
 			this.sph.remove(entity);
@@ -515,33 +522,58 @@ class CollisionSystem extends ECS.System {
 			this.sph.insert(entity);
 		}
 
+		aabb.bottomCollision = false;
+
 		if (aabb.active) {
 			for (const possible of this.sph.possible_collisions(entity)) {
 				const possible_aabb = possible.getComponent(BoundingBox) as BoundingBox;
 
-				let intersection = this._intersection(aabb, possible_aabb);
-				if (intersection) {
-					//console.log("intersection", entity.id, possible.id, intersection);
-
+				let depth = this._intersection(aabb, possible_aabb);
+				if (depth) {
 					if (entity.getComponent(Explosive) && possible.getComponent(Destructible)) {
-						console.log("explosion");
 						params.ecs.removeEntity(entity);
 					}
 
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
-						console.log("static intersection", intersection)
-						let [x, y] = intersection;
+						const [x, y] = depth;
+
+						console.log("depth", depth)
 
 						if (Math.abs(x) < Math.abs(y)) {
 							position.x -= x;
-
+							//velocity.x = 0;
 						} else {
-							position.y -= y;
+							if (y > 0) {
+								if (Math.abs(y) > aabb.base) {
+									position.y -= y - aabb.base;
+									velocity.y = Math.min(0, velocity.y);
+								} else {
+									aabb.bottomCollision = true;
+								}
+							} else if (y < 0) {
+								position.y -= y;
+								velocity.y = Math.max(0, velocity.y);
+							}
+
 						}
 					}
 				}
 			}
+			//console.log(aabb.bottomCollision)
 		}
+	}
+}
+
+class PlayerLogginSystem extends ECS.System {
+	constructor() {
+		super([Primary]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(Position) as Position;
+		const velocity = entity.getComponent(Velocity) as Velocity;
+		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
+		console.log(position.x, position.y, velocity.x.toFixed(2), velocity.y.toFixed(2), aabb.bottomCollision);
 	}
 }
 
@@ -552,13 +584,14 @@ class CollisionSystem extends ECS.System {
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new InputSystem());
-ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new ScrollSystem());
+ecs.addSystem(new PhysicsSystem());
+ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
-ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new PositionChangeSystem());
+//ecs.addSystem(new PlayerLogginSystem());
 
 const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
@@ -568,14 +601,14 @@ player.addComponent(new Dynamic());
 player.addComponent(new Primary());
 player.addComponent(new Position(windowCenter, canvas.height));
 player.addComponent(new Sprite(characterSprite, 16, 16));
-player.addComponent(new BoundingBox(16, 8, 0, 8, true));
+player.addComponent(new BoundingBox(16, 8, 0, 8, 5, true));
 ecs.addEntity(player);
 
 for (let i = 0; i < 10; i++) {
 	const tree = new ECS.Entity();
 	tree.addComponent(new Position(i * 90, canvas.height));
 	tree.addComponent(new Sprite(treeSprite, 16, 16));
-	tree.addComponent(new BoundingBox(16, 8, 0, 8, false));
+	tree.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
 	ecs.addEntity(tree);
 }
 
@@ -583,7 +616,25 @@ for (let i = 0; i < 10; i++) {
 	const box = new ECS.Entity();
 	box.addComponent(new Position(100, canvas.height));
 	box.addComponent(new Sprite(boxSprite, 16, 16));
-	box.addComponent(new BoundingBox(16, 8, 0, 8, false));
+	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
+	box.addComponent(new Destructible());
+	box.addComponent(new Static());
+	ecs.addEntity(box);
+}
+{
+	const box = new ECS.Entity();
+	box.addComponent(new Position(200, canvas.height - 16));
+	box.addComponent(new Sprite(boxSprite, 16, 16));
+	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
+	box.addComponent(new Destructible());
+	box.addComponent(new Static());
+	ecs.addEntity(box);
+}
+{
+	const box = new ECS.Entity();
+	box.addComponent(new Position(150, canvas.height - 32));
+	box.addComponent(new Sprite(boxSprite, 16, 16));
+	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
 	box.addComponent(new Destructible());
 	box.addComponent(new Static());
 	ecs.addEntity(box);
