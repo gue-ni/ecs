@@ -266,9 +266,9 @@ class MovementSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 
 		velocity.x = 0;
-		const speed = 50;
+		const speed = 150;
 
-		if (this.is_pressed(input, "KeyD")) velocity.x =  2 * speed;
+		if (this.is_pressed(input, "KeyD")) velocity.x =  speed;
 
 		if (this.is_pressed(input, "KeyA")) velocity.x = -speed;
 
@@ -539,7 +539,8 @@ class CollisionSystem extends ECS.System {
 
 						console.log("depth", depth)
 
-						if (Math.abs(x) < Math.abs(y)) {
+						//if (Math.abs(x) < Math.abs(y)) {
+						if (Math.abs(x) < Math.abs(y) - aabb.base) {
 							position.x -= x;
 							//velocity.x = 0;
 						} else {
@@ -601,7 +602,7 @@ player.addComponent(new Dynamic());
 player.addComponent(new Primary());
 player.addComponent(new Position(windowCenter, canvas.height));
 player.addComponent(new Sprite(characterSprite, 16, 16));
-player.addComponent(new BoundingBox(16, 8, 0, 8, 5, true));
+player.addComponent(new BoundingBox(16, 8, 0, 8, 3, true));
 ecs.addEntity(player);
 
 for (let i = 0; i < 10; i++) {
