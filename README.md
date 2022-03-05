@@ -9,38 +9,40 @@ class Velocity extends ECS.Component {
 	x: number;
 	y: number;
 
-	constructor(x, y) {
+	constructor(x: number, y: number) {
 		super();
 		this.x = x;
 		this.y = y;
 	}
 }
 
-class Coordinates extends ECS.Component {
+class Position extends ECS.Component {
 	x: number;
 	y: number;
 
-	constructor(x, y) {
+	constructor(x: number, y: number) {
 		super();
 		this.x = x;
 		this.y = y;
 	}
 }
 
-class Physics extends ECS.System {
+class PhysicsSystem extends ECS.System {
 	constructor() {
 		super([Coordinates, Velocity]); // necessary Components
 	}
 
 	updateEntity(entity: ECS.Entity, params: UpdateParams): void {
-		const [coords] = entity.getComponent(Coordinates) as Coordinates;
-		const [velocity] = entity.getComponent(Velocity) as Velocity;
+		const position = entity.getComponent(Position) as Position;
+		const velocity = entity.getComponent(Velocity) as Velocity;
+
+		// implement logic here
 	}
 }
 
 const ecs = new ECS.ECS();
 
-ecs.addSystem(new Physics());
+ecs.addSystem(new PhysicsSystem());
 
 const entity = new ECS.Entity();
 entity.addComponent(new Velocity(0, 1));
