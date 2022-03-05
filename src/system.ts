@@ -3,7 +3,7 @@ import { Entity } from "./entity";
 import { Component } from "./component";
 
 class System {
-	requiredComponents: any[];
+	private requiredComponents: any[];
 
 	ecs?: ECS;
 
@@ -31,10 +31,10 @@ class System {
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
-		// TODO: override this
+		// TODO: implement your logic here
 	}
 
-	_updateSystem(entities: Entity[], params: UpdateParams): void {
+	updateSystem(entities: Entity[], params: UpdateParams): void {
 		for (let entity of entities) {
 			this.updateEntity(entity, params);
 		}

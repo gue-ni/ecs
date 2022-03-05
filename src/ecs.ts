@@ -12,8 +12,8 @@ interface UpdateParams {
 class ECS {
 	systems: System[];
 	entities: Entity[];
-	_entitiesToAdd: Entity[];
-	_entitiesToRemove: Set<Entity>;
+	private _entitiesToAdd: Entity[];
+	private _entitiesToRemove: Set<Entity>;
 
 	constructor() {
 		this.entities = [];
@@ -22,14 +22,14 @@ class ECS {
 		this._entitiesToRemove = new Set();
 	}
 
-	_addQueuedEntities(): void {
+	private _addQueuedEntities(): void {
 		if (this._entitiesToAdd.length) {
 			this.entities.splice(this.entities.length, 0, ...this._entitiesToAdd);
 			this._entitiesToAdd = [];
 		}
 	}
 
-	_removeQueuedEntities(): void {
+	private _removeQueuedEntities(): void {
 		if (this._entitiesToRemove.size) {
 			this.entities = this.entities.filter((entity) => !this._entitiesToRemove.has(entity));
 			this._entitiesToRemove.clear();
@@ -57,7 +57,7 @@ class ECS {
 		this.systems = this.systems.filter((s) => s != system);
 	}
 
-	_matching(entity: Entity, system: System) {
+	private _matching(entity: Entity, system: System) {
 		return system._componentMatch(entity) && entity.active;
 	}
 
@@ -74,7 +74,7 @@ class ECS {
 
 		for (const system of this.systems) {
 			let entities = this.entities.filter((entity) => this._matching(entity, system));
-			system._updateSystem(entities, params);
+			system.updateSystem(entities, params);
 		}
 
 		this._removeQueuedEntities();

@@ -3,14 +3,14 @@ import { Component } from "./component";
 let _entities = 0;
 
 class Entity {
-	id: String;
+	id: string;
 	active: boolean;
 	ttl?: number;
-	components: Map<String, Component>;
+	components: Map<string, Component>;
 
 	constructor(ttl?: number) {
 		this.active = true;
-		this.components = new Map<String, Component>();
+		this.components = new Map<string, Component>();
 		this.id = (+new Date()).toString(16) + _entities++;
 		this.ttl = ttl;
 	}
@@ -27,7 +27,6 @@ class Entity {
 			removed.destroy();
 			this.components.delete(component.name);
 		}
-
 	}
 
 	getComponent(component: any): Component {
@@ -35,21 +34,8 @@ class Entity {
 		return this.components.get(component.name)!;
 	}
 
-	getComponents(components: any): Component[] {
-		let arr: Component[] = [];
-		for (let component of components){
-			arr.push(this.getComponent(component))
-		}
-		return arr;
-	}
-
-	/*
-	getComponents(components: Component[]): Component[] | {
-	}
-	*/
-
 	_destroy(): void {
-		for (let [name, component] of this.components) {
+		for (let [_, component] of this.components) {
 			component.destroy();
 		}
 	}
