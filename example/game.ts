@@ -18,9 +18,10 @@ treeSprite.src = "assets/tree.png";
 const boxSprite = new Image();
 boxSprite.src = "assets/box.png";
 
-let windowOffset = 0;
-let windowCenter = 0;
-windowCenter = canvas.width / 2;
+let windowOffsetX = 0;
+let windowCenterX = canvas.width / 2;
+let windowCenterY = 0;
+let windowOffsetY = 0;
 
 /**
  * Components
@@ -55,8 +56,12 @@ class BoundingBox extends ECS.Component {
 	b: number;
 	c: number;
 	d: number;
-	base: number;
+	padding: number;
+
 	bottomCollision: boolean;
+	leftCollision: boolean;
+	rightCollision: boolean;
+	topCollision: boolean;
 
 	constructor(a: number, b: number, c: number, d: number, base: number = 0, active: boolean = false) {
 		super();
@@ -65,8 +70,11 @@ class BoundingBox extends ECS.Component {
 		this.b = b;
 		this.c = c;
 		this.d = d;
-		this.base = base;
+		this.padding = base;
 		this.bottomCollision = false;
+		this.topCollision = false;
+		this.rightCollision = false;
+		this.leftCollision = false;
 	}
 
 	set_center(x: number, y: number): void {
@@ -83,10 +91,10 @@ class BoundingBox extends ECS.Component {
 	}
 
 	get minY() {
-		return this.centerY - this.a;
+		return this.centerY - this.a - this.padding;
 	}
 	get maxY() {
-		return this.centerY + this.c + this.base;
+		return this.centerY + this.c + this.padding;
 	}
 }
 
@@ -171,7 +179,6 @@ class Sprite extends ECS.Component {
 	state: SpriteState;
 	time: number;
 
-
 	/**
 	 *
 	 * @param image
@@ -246,20 +253,24 @@ class ScrollSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 
 		let maxDiff = 40;
-		let diff = position.x - windowCenter;
+		let diffX = position.x - windowCenterX;
+		let diffY = position.y - windowCenterY;
 
-		//console.log({ diff, x: position.x, windowOffset, windowCenter });
+		//console.log({ diffY, y: position.y, windowOffsetY });
 
-		if (diff > maxDiff) {
-			let delta = diff - maxDiff;
-			windowOffset += delta;
-			windowCenter += delta;
+
+		
+
+		if (diffX > maxDiff) {
+			let delta = diffX - maxDiff;
+			windowOffsetX += delta;
+			windowCenterX += delta;
 		}
 
-		if (diff < -maxDiff) {
-			let delta = maxDiff + diff;
-			windowCenter += delta;
-			windowOffset += delta;
+		if (diffX < -maxDiff) {
+			let delta = maxDiff + diffX;
+			windowCenterX += delta;
+			windowOffsetX += delta;
 		}
 	}
 }
@@ -278,6 +289,13 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
+		});
+
+		canvas.addEventListener("mousemove", function(e) { 
+    	var cRect = canvas.getBoundingClientRect();        // Gets CSS pos, and width/height
+    	var canvasX = Math.round(e.clientX - cRect.left) / 2;  // Subtract the 'left' of the canvas 
+    	var canvasY = Math.round(e.clientY - cRect.top) / 2;   // from the X/Y positions to make  
+			console.log({canvasX, canvasY})
 		});
 	}
 
@@ -308,12 +326,12 @@ class MovementSystem extends ECS.System {
 		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
 		const position = entity.getComponent(Position) as Position;
 		const sprite = entity.getComponent(Sprite) as Sprite;
-		const direction = entity.getComponent(MovementDirection) as MovementDirection
+		const direction = entity.getComponent(MovementDirection) as MovementDirection;
 
 		velocity.x = 0;
-		const speed = 150;
+		const speed = 100;
 
-		sprite.setState(direction.right ? "idle-right" : "idle-left")
+		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
 		if (this.is_pressed(input, "KeyD")) {
 			sprite.setState("run-right");
@@ -327,13 +345,13 @@ class MovementSystem extends ECS.System {
 			velocity.x = -speed;
 		}
 
-		if (this.is_pressed(input, "KeyW") && (aabb.bottomCollision || position.y == params.canvas.height)) {
+		if (this.is_pressed(input, "KeyW") && (aabb.bottomCollision || position.y == params.canvas.height) && !aabb.topCollision) {
 			//sprite.setState("jump")
-			velocity.y = -240;
+			velocity.y = -150;
 		}
 
 		if (!(aabb.bottomCollision || position.y == params.canvas.height)) {
-			sprite.setState(direction.right ? "jump-right" : "jump-left")
+			sprite.setState(direction.right ? "jump-right" : "jump-left");
 		}
 	}
 }
@@ -351,22 +369,22 @@ class WeaponSystem extends ECS.System {
 		const dir = direction.right ? 1 : -1;
 
 		if (input.is_pressed("Space", 200)) {
-			const projectile = new ECS.Entity(1);
-			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
-			projectile.addComponent(new Velocity(300 * dir, -50));
-			projectile.addComponent(new Sprite(grenadeSprite, 9, 3));
-			projectile.addComponent(new BoundingBox(5, 5, 5, 5, 0, true));
-			projectile.addComponent(new Explosive());
+			const projectile = new ECS.Entity(1)
+				.addComponent(new Position(position.x + 6, position.y - 5, false))
+				.addComponent(new Velocity(300 * dir, -50))
+				.addComponent(new Sprite(grenadeSprite, 9, 3))
+				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
+				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
 
 		if (input.is_pressed("KeyF", 50)) {
-			const projectile = new ECS.Entity(1);
-			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
-			projectile.addComponent(new Velocity(500 * dir, -10));
-			projectile.addComponent(new Sprite(bulletSprite, 3, 3));
-			projectile.addComponent(new BoundingBox(5, 5, 5, 5, 0, true));
-			projectile.addComponent(new Explosive());
+			const projectile = new ECS.Entity(1)
+				.addComponent(new Position(position.x + 6, position.y - 5, false))
+				.addComponent(new Velocity(500 * dir, -10))
+				.addComponent(new Sprite(bulletSprite, 3, 3))
+				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
+				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
 	}
@@ -451,17 +469,15 @@ class SpriteSystem extends ECS.System {
 			if (sprite.state.timeLeft > sprite.state.duration) {
 				sprite.state.timeLeft = 0;
 
-				if (direction){
-
-				sprite.setState(direction.right ? "idle-right" : "idle-left")
+				if (direction) {
+					sprite.setState(direction.right ? "idle-right" : "idle-left");
 				} else {
-
-				sprite.setState("idle")
+					sprite.setState("idle");
 				}
 			}
 		}
 
-		console.log(sprite.state.name, sprite.state.frameX, sprite.state.frameY);
+		//console.log(sprite.state.name, sprite.state.frameX, sprite.state.frameY);
 
 		params.context.drawImage(
 			sprite.image,
@@ -469,7 +485,7 @@ class SpriteSystem extends ECS.System {
 			sprite.state.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
-			coords.x - Math.round(sprite.width / 2) - windowOffset,
+			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
 			coords.y - Math.round(sprite.height),
 			sprite.width,
 			sprite.height
@@ -490,6 +506,10 @@ class SpatialHashGrid {
 
 	hash(x: number, y: number): number[] {
 		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
+	}
+
+	update(entity: ECS.Entity){
+
 	}
 
 	remove(entity: ECS.Entity): void {
@@ -613,6 +633,7 @@ class CollisionSystem extends ECS.System {
 			this.sph.insert(entity);
 		}
 
+		aabb.topCollision = false;
 		aabb.bottomCollision = false;
 
 		if (aabb.active) {
@@ -628,23 +649,24 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
 						const [x, y] = depth;
 
-						//console.log("depth", depth);
 
-						//if (Math.abs(x) < Math.abs(y)) {
-						if (Math.abs(x) < Math.abs(y) - aabb.base) {
+						if (Math.abs(x) < Math.abs(y) - aabb.padding * 2) {
 							position.x -= x;
-							//velocity.x = 0;
 						} else {
 							if (y > 0) {
-								if (Math.abs(y) > aabb.base) {
-									position.y -= y - aabb.base;
+								if (Math.abs(y) > aabb.padding) {
+									position.y -= y - aabb.padding;
 									velocity.y = Math.min(0, velocity.y);
 								} else {
 									aabb.bottomCollision = true;
 								}
 							} else if (y < 0) {
-								position.y -= y;
-								velocity.y = Math.max(0, velocity.y);
+								if (Math.abs(y) > aabb.padding){
+									position.y -= y + aabb.padding;
+									velocity.y = Math.max(0, velocity.y);
+								} else {
+									aabb.topCollision = true;
+								}
 							}
 						}
 					}
@@ -688,10 +710,10 @@ const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
 player.addComponent(new Input());
 player.addComponent(new Weapons());
-player.addComponent(new MovementDirection())
+player.addComponent(new MovementDirection());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-player.addComponent(new Position(windowCenter, canvas.height));
+player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
@@ -702,42 +724,56 @@ player.addComponent(
 		new SpriteState("jump-left", 5, 1),
 	])
 );
-player.addComponent(new BoundingBox(16, 8, 0, 8, 3, true));
+player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
+/*
 for (let i = 0; i < 10; i++) {
 	ecs.addEntity(
 		new ECS.Entity().addComponent(new Position(i * 90, canvas.height)).addComponent(new Sprite(treeSprite, 16, 16))
 	);
 }
+*/
 
 {
-	const box = new ECS.Entity();
-	box.addComponent(new Position(100, canvas.height));
-	box.addComponent(new Sprite(boxSprite, 16, 16));
-	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
-	box.addComponent(new Destructible());
-	box.addComponent(new Static());
+	const box = new ECS.Entity()
+		.addComponent(new Position(100, canvas.height))
+		.addComponent(new Sprite(boxSprite, 16, 16))
+		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
+		.addComponent(new Destructible())
+		.addComponent(new Static());
 	ecs.addEntity(box);
 }
 {
-	const box = new ECS.Entity();
-	box.addComponent(new Position(200, canvas.height - 16));
-	box.addComponent(new Sprite(boxSprite, 16, 16));
-	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
-	box.addComponent(new Destructible());
-	box.addComponent(new Static());
+	const box = new ECS.Entity()
+		.addComponent(new Position(146, canvas.height - 32))
+		.addComponent(new Sprite(boxSprite, 16, 16))
+		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
+		.addComponent(new Destructible())
+		.addComponent(new Static());
 	ecs.addEntity(box);
 }
 {
-	const box = new ECS.Entity();
-	box.addComponent(new Position(150, canvas.height - 32));
-	box.addComponent(new Sprite(boxSprite, 16, 16));
-	box.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
-	box.addComponent(new Destructible());
-	box.addComponent(new Static());
+	const box = new ECS.Entity()
+		.addComponent(new Position(130, canvas.height - 32))
+		.addComponent(new Sprite(boxSprite, 16, 16))
+		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
+		.addComponent(new Destructible())
+		.addComponent(new Static());
 	ecs.addEntity(box);
 }
+{
+	const box = new ECS.Entity()
+		.addComponent(new Position(150, canvas.height - 64))
+		.addComponent(new Sprite(boxSprite, 16, 16))
+		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
+		.addComponent(new Destructible())
+		.addComponent(new Static());
+	ecs.addEntity(box);
+}
+
+
+
 
 let dt: number = 0;
 let then: number = 0;
