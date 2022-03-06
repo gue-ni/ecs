@@ -10,7 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "copy-webpack-plugin": "^10.2.4",
-    "lofi-ecs": "^1.3.4",
+    "lofi-ecs": "^1.3.5",
     "ts-loader": "^9.2.7",
     "webpack": "^5.69.1",
     "webpack-cli": "^4.9.2"

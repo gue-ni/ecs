@@ -1,10 +1,10 @@
 import * as ECS from "lofi-ecs";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-const context: CanvasRenderingContext2D = canvas.getContext("2d");
+const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const characterSprite = new Image();
-characterSprite.src = "assets/sprite.png";
+characterSprite.src = "assets/sprites.png";
 
 const grenadeSprite = new Image();
 grenadeSprite.src = "assets/grenade.png";
@@ -98,6 +98,10 @@ class Static extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
+class MovementDirection extends ECS.Component {
+	right: boolean = true;
+}
+
 class Velocity extends Vector {}
 
 class Position extends ECS.Component {
@@ -133,35 +137,74 @@ class Position extends ECS.Component {
 	}
 }
 
+class SpriteState {
+	name: string;
+	frameX: number;
+	frameY: number;
+	frames: number;
+	duration: number;
+	timeLeft: number;
+
+	/**
+	 *
+	 * @param name name of state
+	 * @param row
+	 * @param frames
+	 * @param duration play for this time, then go back to idle
+	 */
+	constructor(name: string, row: number, frames: number, duration: number = -1) {
+		this.name = name;
+		this.frameX = 0;
+		this.frameY = row;
+		this.frames = frames;
+		this.duration = duration;
+		this.timeLeft = 0;
+	}
+}
+
 class Sprite extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
 	height: number;
-	frameX: number;
-	frameY: number;
-	maxFrameY: number;
-	maxFrameX: number;
-	animate: boolean;
 
-	constructor(
-		image: HTMLImageElement,
-		width: number,
-		height: number,
-		frameX: number = 0,
-		frameY: number = 0,
-		maxFrameX: number = 1,
-		maxFrameY: number = 1,
-		zValue?: number
-	) {
+	states: SpriteState[];
+	state: SpriteState;
+	time: number;
+
+
+	/**
+	 *
+	 * @param image
+	 * @param width
+	 * @param height
+	 * @param states
+	 */
+	constructor(image: HTMLImageElement, width: number, height: number, states: SpriteState[] = []) {
 		super();
 		this.image = image;
 		this.width = width;
 		this.height = height;
-		this.frameX = frameX;
-		this.frameY = frameY;
-		this.maxFrameX = maxFrameX;
-		this.maxFrameY = maxFrameY;
-		this.animate = false;
+		this.time = 0;
+
+		this.states = [];
+
+		if (states.length == 0) {
+			this.state = new SpriteState("idle", 0, 1);
+		} else {
+			this.state = states[0];
+			for (let s of states) {
+				this.addState(s);
+			}
+		}
+	}
+
+	addState(state: SpriteState) {
+		this.states[state.name] = state;
+	}
+
+	setState(name: string) {
+		this.state = this.states[name];
+		this.state.timeLeft = 0;
 	}
 }
 
@@ -246,7 +289,7 @@ class InputSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input, Velocity, BoundingBox, Position]);
+		super([Input, Velocity, BoundingBox, Position, MovementDirection]);
 	}
 
 	is_pressed(input: Input, key: string, delay?: number): boolean {
@@ -264,35 +307,55 @@ class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
 		const position = entity.getComponent(Position) as Position;
+		const sprite = entity.getComponent(Sprite) as Sprite;
+		const direction = entity.getComponent(MovementDirection) as MovementDirection
 
 		velocity.x = 0;
 		const speed = 150;
 
-		if (this.is_pressed(input, "KeyD")) velocity.x = speed;
+		sprite.setState(direction.right ? "idle-right" : "idle-left")
 
-		if (this.is_pressed(input, "KeyA")) velocity.x = -speed;
+		if (this.is_pressed(input, "KeyD")) {
+			sprite.setState("run-right");
+			direction.right = true;
+			velocity.x = speed;
+		}
+
+		if (this.is_pressed(input, "KeyA")) {
+			sprite.setState("run-left");
+			direction.right = false;
+			velocity.x = -speed;
+		}
 
 		if (this.is_pressed(input, "KeyW") && (aabb.bottomCollision || position.y == params.canvas.height)) {
+			//sprite.setState("jump")
 			velocity.y = -240;
+		}
+
+		if (!(aabb.bottomCollision || position.y == params.canvas.height)) {
+			sprite.setState(direction.right ? "jump-right" : "jump-left")
 		}
 	}
 }
 
 class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Weapons]);
+		super([Input, Position, Weapons, MovementDirection]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const position = entity.getComponent(Position) as Position;
+		const direction = entity.getComponent(MovementDirection) as MovementDirection;
+
+		const dir = direction.right ? 1 : -1;
 
 		if (input.is_pressed("Space", 200)) {
 			const projectile = new ECS.Entity(1);
 			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
-			projectile.addComponent(new Velocity(300, -50));
-			projectile.addComponent(new Sprite(grenadeSprite, 9, 3, 0, 0, 1, 1));
-			projectile.addComponent(new BoundingBox(2, 2, 2, 2, 0, true));
+			projectile.addComponent(new Velocity(300 * dir, -50));
+			projectile.addComponent(new Sprite(grenadeSprite, 9, 3));
+			projectile.addComponent(new BoundingBox(5, 5, 5, 5, 0, true));
 			projectile.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -300,9 +363,9 @@ class WeaponSystem extends ECS.System {
 		if (input.is_pressed("KeyF", 50)) {
 			const projectile = new ECS.Entity(1);
 			projectile.addComponent(new Position(position.x + 6, position.y - 5, false));
-			projectile.addComponent(new Velocity(500, -10));
-			projectile.addComponent(new Sprite(bulletSprite, 9, 3, 0, 0, 1, 1));
-			projectile.addComponent(new BoundingBox(2, 2, 2, 2, 0, true));
+			projectile.addComponent(new Velocity(500 * dir, -10));
+			projectile.addComponent(new Sprite(bulletSprite, 3, 3));
+			projectile.addComponent(new BoundingBox(5, 5, 5, 5, 0, true));
 			projectile.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -373,11 +436,37 @@ class SpriteSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: any): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const coords = entity.getComponent(Position) as Position;
+		const direction = entity.getComponent(MovementDirection) as MovementDirection;
+
+		if (sprite.state.frames > 1) {
+			sprite.time += params.dt;
+			if (sprite.time > 0.08) {
+				sprite.time = 0;
+				sprite.state.frameX = (sprite.state.frameX + 1) % sprite.state.frames;
+			}
+		}
+
+		if (sprite.state.duration != -1) {
+			sprite.state.timeLeft += params.dt;
+			if (sprite.state.timeLeft > sprite.state.duration) {
+				sprite.state.timeLeft = 0;
+
+				if (direction){
+
+				sprite.setState(direction.right ? "idle-right" : "idle-left")
+				} else {
+
+				sprite.setState("idle")
+				}
+			}
+		}
+
+		console.log(sprite.state.name, sprite.state.frameX, sprite.state.frameY);
 
 		params.context.drawImage(
 			sprite.image,
-			sprite.frameX * sprite.width,
-			sprite.frameY * sprite.height,
+			sprite.state.frameX * sprite.width,
+			sprite.state.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
 			coords.x - Math.round(sprite.width / 2) - windowOffset,
@@ -431,12 +520,14 @@ class SpatialHashGrid {
 		let [minX, minY] = this.hash(box.minX, box.minY);
 		let [maxX, maxY] = this.hash(box.maxX, box.maxY);
 
+		/*
 		if (this._lastPos.has(entity.id)) {
 			let [lastMinX, lastMinY, lastMaxX, lastMaxY] = this._lastPos.get(entity.id);
 			if (minX == lastMinX && minY == lastMinY && maxX == lastMaxX && maxY == lastMaxY) {
 				return;
 			}
 		}
+		*/
 
 		this._lastPos.set(entity.id, [minX, minY, maxX, maxY]);
 
@@ -537,7 +628,7 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
 						const [x, y] = depth;
 
-						console.log("depth", depth);
+						//console.log("depth", depth);
 
 						//if (Math.abs(x) < Math.abs(y)) {
 						if (Math.abs(x) < Math.abs(y) - aabb.base) {
@@ -597,19 +688,27 @@ const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
 player.addComponent(new Input());
 player.addComponent(new Weapons());
+player.addComponent(new MovementDirection())
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
 player.addComponent(new Position(windowCenter, canvas.height));
-player.addComponent(new Sprite(characterSprite, 16, 16));
+player.addComponent(
+	new Sprite(characterSprite, 16, 16, [
+		new SpriteState("idle-right", 0, 1),
+		new SpriteState("jump-right", 1, 1),
+		new SpriteState("run-right", 2, 4),
+		new SpriteState("run-left", 3, 4),
+		new SpriteState("idle-left", 4, 1),
+		new SpriteState("jump-left", 5, 1),
+	])
+);
 player.addComponent(new BoundingBox(16, 8, 0, 8, 3, true));
 ecs.addEntity(player);
 
 for (let i = 0; i < 10; i++) {
-	const tree = new ECS.Entity();
-	tree.addComponent(new Position(i * 90, canvas.height));
-	tree.addComponent(new Sprite(treeSprite, 16, 16));
-	tree.addComponent(new BoundingBox(16, 8, 0, 8, 0, false));
-	ecs.addEntity(tree);
+	ecs.addEntity(
+		new ECS.Entity().addComponent(new Position(i * 90, canvas.height)).addComponent(new Sprite(treeSprite, 16, 16))
+	);
 }
 
 {

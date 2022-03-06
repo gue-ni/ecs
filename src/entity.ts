@@ -15,10 +15,10 @@ class Entity {
 		this.ttl = ttl;
 	}
 
-	addComponent(component: Component): Component {
+	addComponent(component: Component): Entity {
 		component.entity = this;
 		this.components.set(component.name, component);
-		return component;
+		return this;
 	}
 
 	removeComponent(component: Component): void {
