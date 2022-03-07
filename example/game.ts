@@ -1,4 +1,5 @@
 //import * as ECS from "lofi-ecs";
+import { createEmitAndSemanticDiagnosticsBuilderProgram } from "typescript";
 import * as ECS from "../lib";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
@@ -14,7 +15,7 @@ const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
 const lightSprite = new Image();
-lightSprite.src = "assets/light.png";
+lightSprite.src = "assets/light2.png";
 
 const treeSprite = new Image();
 treeSprite.src = "assets/tree.png";
@@ -178,11 +179,13 @@ class Light extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
 	height: number;
-	constructor(image: HTMLImageElement, w: number, h: number) {
+	zFactor: number;
+	constructor(image: HTMLImageElement, w: number, h: number, zFactor: number = 0) {
 		super();
 		this.image = image;
 		this.width = w;
 		this.height = h;
+		this.zFactor = zFactor;
 	}
 }
 
@@ -391,7 +394,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(300 * dir, -50))
-				.addComponent(new Sprite(grenadeSprite, 9, 3))
+				.addComponent(new Light(grenadeSprite, 9, 3))
 				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
@@ -401,7 +404,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(500 * dir, -10))
-				.addComponent(new Sprite(bulletSprite, 3, 3))
+				.addComponent(new Light(bulletSprite, 3, 3))
 				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
@@ -468,7 +471,17 @@ class PhysicsSystem extends ECS.System {
 class LightSystem extends ECS.System {
 	constructor() {
 		super([Light, Position]);
+
+		this.updateCallback = (entities: ECS.Entity[]) => {
+
+			return entities.sort((a: ECS.Entity, b: ECS.Entity) => {
+				let al = a.getComponent(Light) as Light;
+				let bl = b.getComponent(Light) as Light;
+				return al.zFactor - bl.zFactor; 
+			});
+		}
 	}
+
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const sprite = entity.getComponent(Light) as Light;
@@ -692,18 +705,23 @@ class CollisionSystem extends ECS.System {
 							position.x -= x;
 						} else {
 							if (y > 0) {
-								if (Math.abs(y) > aabb.padding) {
+								if (y > aabb.padding) {
 									position.y -= y - aabb.padding;
 									velocity.y = Math.min(0, velocity.y);
-								} else {
+									console.log("collision!", y, aabb.padding)
+								} else if (aabb.padding == y) {
+									console.log("touching", y, aabb.padding)
+									velocity.y = Math.min(0, velocity.y);
 									aabb.bottomCollision = true;
 								}
 							} else if (y < 0) {
 								if (Math.abs(y) > aabb.padding) {
 									position.y -= y + aabb.padding;
 									velocity.y = Math.max(0, velocity.y);
+									//console.log("collision!", y)
 								} else {
 									aabb.topCollision = true;
+									//console.log("only touching!", y)
 								}
 							}
 						}
@@ -752,7 +770,7 @@ player.addComponent(new Weapons());
 player.addComponent(new MovementDirection());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-player.addComponent(new Light(lightSprite, 512, 512));
+player.addComponent(new Light(lightSprite, 512, 512, -1));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -768,12 +786,12 @@ player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
 let boxes = [
-	[16 * 0, 128],
-	[16 * 3, 128],
-	[16 * 5, 128 - 16 * 2],
-	[16 * 6, 128 - 16 * 1],
-	[16 * 7, 128 - 16 * 1],
-	[16 * 8, 128 - 16 * 1],
+	[16 * 4, 128],
+	[16 * 6, 128],
+	[16 * 8, 128 - 16 * 2],
+	[16 * 9, 128 - 16 * 1],
+	[16 * 10, 128 - 16 * 1],
+	[16 * 11, 128 - 16 * 1],
 ];
 
 for (let [x, y] of boxes) {
@@ -786,6 +804,14 @@ for (let [x, y] of boxes) {
 	ecs.addEntity(box);
 }
 
+let paused = false;
+document.addEventListener("keydown", (e) => {
+	if (e.code == "KeyP"){
+		paused = !paused;
+	}
+})
+
+
 let dt: number = 0;
 let then: number = 0;
 
@@ -797,11 +823,13 @@ function animate(now: number) {
 	dt = now - then;
 	then = now;
 
-	context.clearRect(0, 0, canvas.width, canvas.height);
-	context.fillStyle = "rgb(0,0,0)";
-	context.fillRect(0, 0, canvas.width, canvas.height);
 
-	ecs.update({ dt, canvas, context, ecs });
+	if (!paused){
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.fillStyle = "rgb(0,0,0)";
+		context.fillRect(0, 0, canvas.width, canvas.height);
+		ecs.update({ dt, canvas, context, ecs });
+	}
 	requestAnimationFrame(animate);
 }
 
