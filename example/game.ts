@@ -11,6 +11,10 @@ characterSprite.src = "assets/sprites.png";
 const grenadeSprite = new Image();
 grenadeSprite.src = "assets/lamp.png";
 
+const testLight = new Image();
+testLight.src = "assets/testlight.png";
+
+
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
@@ -25,7 +29,6 @@ boxSprite.src = "assets/box.png";
 
 const lampSprite = new Image();
 lampSprite.src = "assets/lamp.png";
-
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
@@ -398,7 +401,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(300 * dir, -50))
-				.addComponent(new Light(grenadeSprite, 64, 64))
+				.addComponent(new Light(testLight, 64, 64));
 			params.ecs.addEntity(projectile);
 		}
 
@@ -406,7 +409,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(500 * dir, -10))
-				.addComponent(new Sprite(bulletSprite, 3, 3))
+				.addComponent(new Light(bulletSprite, 3, 3))
 				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
@@ -473,38 +476,56 @@ class PhysicsSystem extends ECS.System {
 class LightSystem extends ECS.System {
 	first: boolean;
 
-	compositor: HTMLCanvasElement;
-	ccontext: CanvasRenderingContext2D;
+	canvas: HTMLCanvasElement;
+	context: CanvasRenderingContext2D;
 
 	constructor() {
 		super([Light, Position]);
 
-		this.compositor = document.createElement("canvas")
-		this.ccontext = this.compositor.getContext("2d");
-		//this.ccontext.globalCompositeOperation = "lighter";
-		this.compositor.width = canvas.width;
-		this.compositor.height = canvas.height;
-
+		this.canvas = document.createElement("canvas");
+		this.context = this.canvas.getContext("2d");
+		this.canvas.width = canvas.width;
+		this.canvas.height = canvas.height;
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			this.first = true;
+
+			this.context.clearRect(0,0,this.canvas.width, this.canvas.height)
+
+			this.context.fillStyle = "rgba(0,0,0,1)";
+			this.context.fillRect(0, 0, this.canvas.width, this.canvas.width);
+
+
+			//this.context.fillStyle = "rgba(255,0,0,1)";
+			//this.context.fillRect(10, 10, 20, 20);
+
+			/*
 			let e = entities.sort((a: ECS.Entity, b: ECS.Entity) => {
 				let al = a.getComponent(Light) as Light;
 				let bl = b.getComponent(Light) as Light;
 				return al.zFactor - bl.zFactor; 
 			});
 			return e;
-		}
+			*/
 
-		this.afterUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			return entities;
 		};
 
+		this.afterUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+			this.context.globalCompositeOperation = "source-over"
+
+			//this.context.fillStyle = "rgba(255,0,0,1)";
+			//this.context.fillRect(10, 10, 20, 20);
+
+
+			params.context.drawImage(this.canvas, 0 - windowOffsetX, 0, this.canvas.width, this.canvas.height);
+			//params.context.globalCompositeOperation = "source-over"
+			return entities;
+		};
 	}
 
-
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const sprite = entity.getComponent(Light) as Light;
+		const light = entity.getComponent(Light) as Light;
 		const coords = entity.getComponent(Position) as Position;
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
@@ -514,25 +535,24 @@ class LightSystem extends ECS.System {
 			params.context.globalCompositeOperation = "source-over"
 			this.first = false;
 		} else {
-			params.context.globalCompositeOperation = "destination-in"
 			console.log(params.context.globalCompositeOperation)
 		}
 		*/
-
-
-		params.context.drawImage(
-			sprite.image,
+			
+		this.context.globalCompositeOperation = "destination-out"
+		this.context.drawImage(
+			light.image,
 			0,
 			0,
-			sprite.width,
-			sprite.height,
-			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
-			coords.y - Math.round(sprite.height / 2),
-			sprite.width,
-			sprite.height
+			light.width,
+			light.height,
+			//coords.x - Math.round(sprite.width / 2) - windowOffsetX,
+			coords.x - Math.round(light.width / 2),
+			coords.y - Math.round(light.height / 2),
+			light.width,
+			light.height
 		);
-		
-		//params.context.globalCompositeOperation = "source-over"
+
 	}
 }
 
@@ -804,7 +824,8 @@ player.addComponent(new Weapons());
 player.addComponent(new MovementDirection());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-player.addComponent(new Light(lightSprite, 512, 512, -1));
+//player.addComponent(new Light(lightSprite, 512, 512, -1));
+player.addComponent(new Light(testLight, 64, 64, -1));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -840,11 +861,10 @@ for (let [x, y] of boxes) {
 
 let paused = false;
 document.addEventListener("keydown", (e) => {
-	if (e.code == "KeyP"){
+	if (e.code == "KeyP") {
 		paused = !paused;
 	}
-})
-
+});
 
 let dt: number = 0;
 let then: number = 0;
@@ -857,8 +877,7 @@ function animate(now: number) {
 	dt = now - then;
 	then = now;
 
-
-	if (!paused){
+	if (!paused) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
