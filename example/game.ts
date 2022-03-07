@@ -706,11 +706,9 @@ class CollisionSystem extends ECS.System {
 						} else {
 							if (y > 0) {
 								if (y > aabb.padding) {
-									position.y -= y - aabb.padding;
 									velocity.y = Math.min(0, velocity.y);
-									console.log("collision!", y, aabb.padding)
+									position.y -= y - aabb.padding;
 								} else if (aabb.padding == y) {
-									console.log("touching", y, aabb.padding)
 									velocity.y = Math.min(0, velocity.y);
 									aabb.bottomCollision = true;
 								}
