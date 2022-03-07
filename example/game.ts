@@ -8,26 +8,17 @@ const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRende
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
 
-const grenadeSprite = new Image();
-grenadeSprite.src = "assets/lamp.png";
+const lightSprite = new Image();
+lightSprite.src = "assets/light.png";
 
-const testLight = new Image();
-testLight.src = "assets/testlamp3.png";
+const lightSprite2 = new Image();
+lightSprite2.src = "assets/light2.png";
 
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
-const lightSprite = new Image();
-lightSprite.src = "assets/light2.png";
-
-const treeSprite = new Image();
-treeSprite.src = "assets/tree.png";
-
 const boxSprite = new Image();
 boxSprite.src = "assets/box.png";
-
-const lampSprite = new Image();
-lampSprite.src = "assets/lamp.png";
 
 const pixelSprite = new Image();
 pixelSprite.src = "assets/pixel.png";
@@ -37,8 +28,6 @@ smallLight.src = "assets/small-light.png";
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
-let windowCenterY = 0;
-let windowOffsetY = 0;
 
 class Vector {
 	x: number;
@@ -48,7 +37,7 @@ class Vector {
 		this.y = y;
 	}
 
-	mult(v: number): void {
+	scalarMult(v: number): void {
 		this.x *= v;
 		this.y *= v;
 	}
@@ -232,7 +221,7 @@ class Input extends ECS.Component {
 	}
 }
 
-class ScrollSystem extends ECS.System {
+class CameraSystem extends ECS.System {
 	constructor() {
 		super([Primary, Position]);
 	}
@@ -242,9 +231,6 @@ class ScrollSystem extends ECS.System {
 
 		let maxDiff = 40;
 		let diffX = position.x - windowCenterX;
-		let diffY = position.y - windowCenterY;
-
-		//console.log({ diffY, y: position.y, windowOffsetY });
 
 		if (diffX > maxDiff) {
 			let delta = diffX - maxDiff;
@@ -326,7 +312,6 @@ class MovementSystem extends ECS.System {
 		direction.right = diff > 0;
 		//console.log({right: direction.right, diff, mouse: input.mouseX, off, p: position.x})
 
-
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
 		if (this.is_pressed(input, "KeyD")) {
@@ -369,17 +354,19 @@ class WeaponSystem extends ECS.System {
 		dir.normalize();
 
 		if (input.is_pressed("Space", 500)) {
-			dir.mult(300);
+			dir.scalarMult(300);
+			let sprite = new Sprite(bulletSprite, 4, 4);
+			sprite.flushBottom = false;
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(dir.x, dir.y))
-				.addComponent(new Light(testLight, 128, 128))
-				.addComponent(new Sprite(bulletSprite, 4, 4));
+				.addComponent(new Light(lightSprite2, 128, 128))
+				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
 
 		if (input.is_pressed("KeyF", 100)) {
-			dir.mult(500);
+			dir.scalarMult(500);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(dir.x, dir.y))
@@ -461,7 +448,7 @@ class LightSystem extends ECS.System {
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.context.fillStyle = "rgba(0, 0, 0, 1)";
+			this.context.fillStyle = "rgba(0, 0, 0, 0.99)";
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 			return entities;
 		};
@@ -644,7 +631,7 @@ class PlayerLogginSystem extends ECS.System {
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new InputSystem());
-ecs.addSystem(new ScrollSystem());
+ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new MovementSystem());
@@ -661,7 +648,7 @@ player.addComponent(new Weapons());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-player.addComponent(new Light(testLight, 128, 128, 8));
+player.addComponent(new Light(lightSprite, 128, 128, 12));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -682,7 +669,7 @@ ecs.addEntity(player);
 	ecs.addEntity(
 		new ECS.Entity()
 			.addComponent(new Position(16 * 6, canvas.height - 16 * 2 - 8))
-			.addComponent(new Light(testLight, 128, 128))
+			.addComponent(new Light(lightSprite2, 128, 128))
 			.addComponent(sprite)
 	);
 }

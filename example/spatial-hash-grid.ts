@@ -156,3 +156,4 @@ export class SpatialHashGrid {
 		return [...possible];
 	}
 }
+
