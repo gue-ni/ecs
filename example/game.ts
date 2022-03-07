@@ -9,7 +9,7 @@ const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
 
 const grenadeSprite = new Image();
-grenadeSprite.src = "assets/grenade.png";
+grenadeSprite.src = "assets/lamp.png";
 
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
@@ -22,6 +22,10 @@ treeSprite.src = "assets/tree.png";
 
 const boxSprite = new Image();
 boxSprite.src = "assets/box.png";
+
+const lampSprite = new Image();
+lampSprite.src = "assets/lamp.png";
+
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
@@ -394,9 +398,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(300 * dir, -50))
-				.addComponent(new Light(grenadeSprite, 9, 3))
-				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
-				.addComponent(new Explosive());
+				.addComponent(new Light(grenadeSprite, 64, 64))
 			params.ecs.addEntity(projectile);
 		}
 
@@ -404,7 +406,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(500 * dir, -10))
-				.addComponent(new Light(bulletSprite, 3, 3))
+				.addComponent(new Sprite(bulletSprite, 3, 3))
 				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
@@ -425,7 +427,7 @@ class PositionChangeSystem extends ECS.System {
 
 class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([Position, Velocity, BoundingBox]); // necessary Components
+		super([Position, Velocity]); // necessary Components
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -438,7 +440,7 @@ class PhysicsSystem extends ECS.System {
 		position.x += params.dt * velocity.x;
 		position.y += params.dt * velocity.y;
 
-		if (position.y < params.canvas.height && !aabb.bottomCollision) {
+		if (position.y < params.canvas.height && (!aabb || !aabb.bottomCollision)) {
 			velocity.y += params.dt * 500;
 		}
 
@@ -469,23 +471,55 @@ class PhysicsSystem extends ECS.System {
 }
 
 class LightSystem extends ECS.System {
+	first: boolean;
+
+	compositor: HTMLCanvasElement;
+	ccontext: CanvasRenderingContext2D;
+
 	constructor() {
 		super([Light, Position]);
 
-		this.updateCallback = (entities: ECS.Entity[]) => {
+		this.compositor = document.createElement("canvas")
+		this.ccontext = this.compositor.getContext("2d");
+		//this.ccontext.globalCompositeOperation = "lighter";
+		this.compositor.width = canvas.width;
+		this.compositor.height = canvas.height;
 
-			return entities.sort((a: ECS.Entity, b: ECS.Entity) => {
+
+		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+			this.first = true;
+			let e = entities.sort((a: ECS.Entity, b: ECS.Entity) => {
 				let al = a.getComponent(Light) as Light;
 				let bl = b.getComponent(Light) as Light;
 				return al.zFactor - bl.zFactor; 
 			});
+			return e;
 		}
+
+		this.afterUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+			return entities;
+		};
+
 	}
 
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const sprite = entity.getComponent(Light) as Light;
 		const coords = entity.getComponent(Position) as Position;
+
+		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+
+		/*
+		if (this.first){
+			params.context.globalCompositeOperation = "source-over"
+			this.first = false;
+		} else {
+			params.context.globalCompositeOperation = "destination-in"
+			console.log(params.context.globalCompositeOperation)
+		}
+		*/
+
+
 		params.context.drawImage(
 			sprite.image,
 			0,
@@ -497,6 +531,8 @@ class LightSystem extends ECS.System {
 			sprite.width,
 			sprite.height
 		);
+		
+		//params.context.globalCompositeOperation = "source-over"
 	}
 }
 

@@ -2,10 +2,14 @@ import { ECS, UpdateParams } from "./ecs";
 import { Entity } from "./entity";
 import { Component } from "./component";
 
+type entityCallback = (entities: Entity[], params?: UpdateParams) => Entity[];
+
 class System {
 	private requiredComponents: any[];
 
 	ecs?: ECS;
+	beforeUpdate: entityCallback | null = null;
+	afterUpdate: entityCallback | null = null;
 
 	constructor(requiredComponents: any[]) {
 		this.requiredComponents = requiredComponents;
@@ -34,9 +38,17 @@ class System {
 		// TODO: implement your logic here
 	}
 
+	
+
 	updateSystem(entities: Entity[], params: UpdateParams): void {
+		if (this.beforeUpdate){
+			entities = this.beforeUpdate(entities, params)
+		}
 		for (let entity of entities) {
 			this.updateEntity(entity, params);
+		}
+		if (this.afterUpdate){
+			entities = this.afterUpdate(entities, params);
 		}
 	}
 }
