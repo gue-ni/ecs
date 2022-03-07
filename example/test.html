@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+	</head>
+	<body>
+    <canvas width="256" height="128" id="canvas"></canvas>
+		<script>
+			const canvas = document.getElementById("canvas");
+			const ctx = canvas.getContext("2d");
+
+			ctx.globalCompositeOperation = "xor";
+
+			ctx.fillStyle = "blue";
+			ctx.fillRect(10, 10, 100, 100);
+
+			ctx.fillStyle = "red";
+			ctx.fillRect(50, 50, 100, 100);
+
+			ctx.fillStyle = "green";
+			ctx.fillRect(70, 70, 120, 120);
+
+		</script>
+	</body>
+</html>
