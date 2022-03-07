@@ -1,6 +1,6 @@
 //import * as ECS from "lofi-ecs";
-import { createEmitAndSemanticDiagnosticsBuilderProgram } from "typescript";
 import * as ECS from "../lib";
+import { SpatialHashGrid, BoundingBox } from "./spatial-hash-grid";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -32,7 +32,6 @@ lampSprite.src = "assets/lamp.png";
 const smallLight = new Image();
 smallLight.src = "assets/small-light.png";
 
-
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
 let windowCenterY = 0;
@@ -50,66 +49,6 @@ class Vector extends ECS.Component {
 		super();
 		this.x = x;
 		this.y = y;
-	}
-}
-
-/**
- *       _
- *	  a	 |
- *       |  b
- * | --- X --- |
- *    d  |
- *       |c
- *       _
- */
-class BoundingBox extends ECS.Component {
-	active: boolean;
-	centerX: number;
-	centerY: number;
-
-	a: number;
-	b: number;
-	c: number;
-	d: number;
-	padding: number;
-
-	bottomCollision: boolean;
-	leftCollision: boolean;
-	rightCollision: boolean;
-	topCollision: boolean;
-
-	constructor(a: number, b: number, c: number, d: number, base: number = 0, active: boolean = false) {
-		super();
-		this.active = active;
-		this.a = a;
-		this.b = b;
-		this.c = c;
-		this.d = d;
-		this.padding = base;
-		this.bottomCollision = false;
-		this.topCollision = false;
-		this.rightCollision = false;
-		this.leftCollision = false;
-	}
-
-	set_center(x: number, y: number): void {
-		this.centerX = x;
-		this.centerY = y;
-	}
-
-	get minX() {
-		return this.centerX - this.d;
-	}
-
-	get maxX() {
-		return this.centerX + this.b;
-	}
-
-	get minY() {
-		return this.centerY - this.a - this.padding;
-	}
-	get maxY() {
-		return this.centerY + this.c + this.padding;
 	}
 }
 
@@ -406,7 +345,7 @@ class WeaponSystem extends ECS.System {
 				.addComponent(new Position(position.x, position.y - 5, false))
 				.addComponent(new Velocity(300 * dir, -80))
 				.addComponent(new Light(testLight, 128, 128))
-				.addComponent(new Sprite(bulletSprite, 4, 4))
+				.addComponent(new Sprite(bulletSprite, 4, 4));
 			params.ecs.addEntity(projectile);
 		}
 
@@ -497,7 +436,7 @@ class LightSystem extends ECS.System {
 
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-			this.context.fillStyle = "rgba(0,0,0, 0.99)";
+			this.context.fillStyle = "rgba(0, 0, 0, 1)";
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
 			//this.context.fillStyle = "rgba(255,0,0,1)";
@@ -527,7 +466,6 @@ class LightSystem extends ECS.System {
 		const coords = entity.getComponent(Position) as Position;
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
-
 
 		this.context.globalCompositeOperation = "destination-out";
 		this.context.drawImage(
@@ -589,103 +527,6 @@ class SpriteSystem extends ECS.System {
 			sprite.width,
 			sprite.height
 		);
-	}
-}
-
-class SpatialHashGrid {
-	_grid: Map<string, ECS.Entity[]>;
-	_lastPos: Map<string, number[]>;
-	_gridsize: number;
-
-	constructor(gridsize: number) {
-		this._grid = new Map();
-		this._lastPos = new Map();
-		this._gridsize = gridsize;
-	}
-
-	hash(x: number, y: number): number[] {
-		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
-	}
-
-	update(entity: ECS.Entity) {}
-
-	remove(entity: ECS.Entity): void {
-		if (!this._lastPos.has(entity.id)) return;
-
-		let [minX, minY, maxX, maxY] = this._lastPos.get(entity.id);
-		this._lastPos.delete(entity.id);
-
-		for (let i = minX; i <= maxX; i++) {
-			for (let j = minY; j <= maxY; j++) {
-				const key = `${i}/${j}`;
-
-				if (this._grid.has(key)) {
-					let cell = this._grid.get(key);
-					this._grid.set(
-						key,
-						cell.filter((item) => item != entity)
-					);
-				}
-			}
-		}
-	}
-
-	insert(entity: ECS.Entity): void {
-		let box = entity.getComponent(BoundingBox) as BoundingBox;
-		if (!box) new Error("Entity must have a bounding box");
-
-		let [minX, minY] = this.hash(box.minX, box.minY);
-		let [maxX, maxY] = this.hash(box.maxX, box.maxY);
-
-		/*
-		if (this._lastPos.has(entity.id)) {
-			let [lastMinX, lastMinY, lastMaxX, lastMaxY] = this._lastPos.get(entity.id);
-			if (minX == lastMinX && minY == lastMinY && maxX == lastMaxX && maxY == lastMaxY) {
-				return;
-			}
-		}
-		*/
-
-		this._lastPos.set(entity.id, [minX, minY, maxX, maxY]);
-
-		for (let i = minX; i <= maxX; i++) {
-			for (let j = minY; j <= maxY; j++) {
-				const key = `${i}/${j}`;
-
-				if (this._grid.has(key)) {
-					let list = this._grid.get(key);
-					list.push(entity);
-					this._grid.set(key, list);
-				} else {
-					this._grid.set(key, [entity]);
-				}
-			}
-		}
-	}
-
-	possible_collisions(entity: ECS.Entity): ECS.Entity[] {
-		let box = entity.getComponent(BoundingBox) as BoundingBox;
-		if (!box) new Error("Entity must have a bounding box");
-
-		let [minX, minY] = this.hash(box.minX, box.minY);
-		let [maxX, maxY] = this.hash(box.maxX, box.maxY);
-
-		let possible = new Set<ECS.Entity>();
-
-		for (let i = minX; i <= maxX; i++) {
-			for (let j = minY; j <= maxY; j++) {
-				const key = `${i}/${j}`;
-
-				if (this._grid.has(key)) {
-					this._grid
-						.get(key)
-						.filter((item) => item != entity)
-						.map((item) => possible.add(item));
-				}
-			}
-		}
-
-		return [...possible];
 	}
 }
 
@@ -829,6 +670,7 @@ player.addComponent(
 player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
+/*
 {
 	let sprite = new Sprite(bulletSprite, 4, 4);
 	sprite.flushBottom = false;
@@ -838,6 +680,7 @@ ecs.addEntity(player);
 		.addComponent(sprite);
 	ecs.addEntity(lamp);
 }
+*/
 
 let boxes = [
 	[16 * 4, 128],
@@ -845,7 +688,9 @@ let boxes = [
 	[16 * 8, 128 - 16 * 2],
 	[16 * 9, 128 - 16 * 1],
 	[16 * 10, 128 - 16 * 1],
-	[16 * 11, 128 - 16 * 1],
+	[16 * 13, 128 - 16 * 2],
+	[16 * 10, 128 - 16 * 4],
+	[16 * 14, 128 - 16 * 2],
 ];
 
 for (let [x, y] of boxes) {
