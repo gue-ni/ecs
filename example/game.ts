@@ -12,6 +12,10 @@ grenadeSprite.src = "assets/grenade.png";
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
+const lightSprite = new Image();
+lightSprite.src = "assets/light.png";
+
+
 const treeSprite = new Image();
 treeSprite.src = "assets/tree.png";
 
@@ -170,6 +174,18 @@ class SpriteState {
 	}
 }
 
+class Light extends ECS.Component {
+	image: HTMLImageElement;
+	width: number;
+	height: number;
+	constructor(image: HTMLImageElement, w: number, h: number){
+		super()
+		this.image = image;
+		this.width = w;
+		this.height  = h;
+	}
+}
+
 class Sprite extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
@@ -291,12 +307,14 @@ class InputSystem extends ECS.System {
 			delete this.keys[e.code];
 		});
 
+		/*
 		canvas.addEventListener("mousemove", function(e) { 
     	var cRect = canvas.getBoundingClientRect();        // Gets CSS pos, and width/height
     	var canvasX = Math.round(e.clientX - cRect.left) / 2;  // Subtract the 'left' of the canvas 
     	var canvasY = Math.round(e.clientY - cRect.top) / 2;   // from the X/Y positions to make  
 			console.log({canvasX, canvasY})
 		});
+		*/
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -443,6 +461,29 @@ class PhysicsSystem extends ECS.System {
 				velocity.x = 0;
 			}
 		}
+	}
+}
+
+class LightSystem extends ECS.System {
+	constructor(){
+		super([Light, Position])
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const sprite = entity.getComponent(Light) as Light;
+		const coords = entity.getComponent(Position) as Position;
+		params.context.drawImage(
+			sprite.image,
+			0,
+			0,
+			sprite.width,
+			sprite.height,
+			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
+			coords.y - Math.round(sprite.height / 2),
+			sprite.width,
+			sprite.height
+		);
+
 	}
 }
 
@@ -703,6 +744,7 @@ ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
+ecs.addSystem(new LightSystem());
 ecs.addSystem(new PositionChangeSystem());
 //ecs.addSystem(new PlayerLogginSystem());
 
@@ -713,6 +755,7 @@ player.addComponent(new Weapons());
 player.addComponent(new MovementDirection());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
+player.addComponent(new Light(lightSprite, 512, 512));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
