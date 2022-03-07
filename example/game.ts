@@ -14,7 +14,6 @@ grenadeSprite.src = "assets/lamp.png";
 const testLight = new Image();
 testLight.src = "assets/testlamp2.png";
 
-
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
@@ -29,6 +28,10 @@ boxSprite.src = "assets/box.png";
 
 const lampSprite = new Image();
 lampSprite.src = "assets/lamp.png";
+
+const smallLight = new Image();
+smallLight.src = "assets/small-light.png";
+
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
@@ -204,6 +207,7 @@ class Sprite extends ECS.Component {
 	states: SpriteState[];
 	state: SpriteState;
 	time: number;
+	flushBottom: boolean = true;
 
 	/**
 	 *
@@ -397,11 +401,12 @@ class WeaponSystem extends ECS.System {
 
 		const dir = direction.right ? 1 : -1;
 
-		if (input.is_pressed("Space", 200)) {
+		if (input.is_pressed("Space", 500)) {
 			const projectile = new ECS.Entity(1)
-				.addComponent(new Position(position.x + 6, position.y - 5, false))
-				.addComponent(new Velocity(300 * dir, -50))
-				.addComponent(new Light(testLight, 64, 64));
+				.addComponent(new Position(position.x, position.y - 5, false))
+				.addComponent(new Velocity(300 * dir, -80))
+				.addComponent(new Light(testLight, 128, 128))
+				.addComponent(new Sprite(bulletSprite, 4, 4))
 			params.ecs.addEntity(projectile);
 		}
 
@@ -409,7 +414,8 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x + 6, position.y - 5, false))
 				.addComponent(new Velocity(500 * dir, -10))
-				.addComponent(new Light(bulletSprite, 3, 3))
+				.addComponent(new Sprite(bulletSprite, 4, 4))
+				.addComponent(new Light(smallLight, 16, 16))
 				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
@@ -457,8 +463,7 @@ class PhysicsSystem extends ECS.System {
 				position.y = 0;
 				velocity.y = 0;
 			}
-
-			/*a
+			/*
 			if (position.x > params.canvas.width) {
 				position.x = params.canvas.width;
 				velocity.x = 0;
@@ -490,11 +495,10 @@ class LightSystem extends ECS.System {
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			this.first = true;
 
-			this.context.clearRect(0,0,this.canvas.width, this.canvas.height)
+			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-			this.context.fillStyle = "rgba(0,0,0,1)";
-			this.context.fillRect(0, 0, this.canvas.width, this.canvas.width);
-
+			this.context.fillStyle = "rgba(0,0,0, 0.99)";
+			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
 			//this.context.fillStyle = "rgba(255,0,0,1)";
 			//this.context.fillRect(10, 10, 20, 20);
@@ -512,14 +516,8 @@ class LightSystem extends ECS.System {
 		};
 
 		this.afterUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
-			this.context.globalCompositeOperation = "source-over"
-
-			//this.context.fillStyle = "rgba(255,0,0,1)";
-			//this.context.fillRect(10, 10, 20, 20);
-
-
-			params.context.drawImage(this.canvas, 0 - windowOffsetX, 0, this.canvas.width, this.canvas.height);
-			//params.context.globalCompositeOperation = "source-over"
+			this.context.globalCompositeOperation = "source-over";
+			params.context.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
 			return entities;
 		};
 	}
@@ -530,29 +528,20 @@ class LightSystem extends ECS.System {
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
 
-		/*
-		if (this.first){
-			params.context.globalCompositeOperation = "source-over"
-			this.first = false;
-		} else {
-			console.log(params.context.globalCompositeOperation)
-		}
-		*/
-			
-		this.context.globalCompositeOperation = "destination-out"
+
+		this.context.globalCompositeOperation = "destination-out";
 		this.context.drawImage(
 			light.image,
 			0,
 			0,
 			light.width,
 			light.height,
-			//coords.x - Math.round(sprite.width / 2) - windowOffsetX,
-			coords.x - Math.round(light.width / 2),
+			coords.x - Math.round(light.width / 2) - windowOffsetX,
+			//coords.x - Math.round(light.width / 2),
 			coords.y - Math.round(light.height / 2),
 			light.width,
 			light.height
 		);
-
 	}
 }
 
@@ -596,7 +585,7 @@ class SpriteSystem extends ECS.System {
 			sprite.width,
 			sprite.height,
 			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
-			coords.y - Math.round(sprite.height),
+			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)),
 			sprite.width,
 			sprite.height
 		);
@@ -825,7 +814,7 @@ player.addComponent(new MovementDirection());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
 //player.addComponent(new Light(lightSprite, 512, 512, -1));
-player.addComponent(new Light(testLight, 64, 64, -1));
+player.addComponent(new Light(testLight, 128, 128, -1));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -839,6 +828,16 @@ player.addComponent(
 );
 player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
+
+{
+	let sprite = new Sprite(bulletSprite, 4, 4);
+	sprite.flushBottom = false;
+	let lamp = new ECS.Entity()
+		.addComponent(new Position(16 * 6, canvas.height - 16 * 2 - 8))
+		.addComponent(new Light(testLight, 128, 128))
+		.addComponent(sprite);
+	ecs.addEntity(lamp);
+}
 
 let boxes = [
 	[16 * 4, 128],
