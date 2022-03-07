@@ -1,4 +1,5 @@
-import * as ECS from "lofi-ecs";
+//import * as ECS from "lofi-ecs";
+import * as ECS from "../lib";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -14,7 +15,6 @@ bulletSprite.src = "assets/bullet.png";
 
 const lightSprite = new Image();
 lightSprite.src = "assets/light.png";
-
 
 const treeSprite = new Image();
 treeSprite.src = "assets/tree.png";
@@ -178,11 +178,11 @@ class Light extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
 	height: number;
-	constructor(image: HTMLImageElement, w: number, h: number){
-		super()
+	constructor(image: HTMLImageElement, w: number, h: number) {
+		super();
 		this.image = image;
 		this.width = w;
-		this.height  = h;
+		this.height = h;
 	}
 }
 
@@ -274,9 +274,6 @@ class ScrollSystem extends ECS.System {
 
 		//console.log({ diffY, y: position.y, windowOffsetY });
 
-
-		
-
 		if (diffX > maxDiff) {
 			let delta = diffX - maxDiff;
 			windowOffsetX += delta;
@@ -363,7 +360,11 @@ class MovementSystem extends ECS.System {
 			velocity.x = -speed;
 		}
 
-		if (this.is_pressed(input, "KeyW") && (aabb.bottomCollision || position.y == params.canvas.height) && !aabb.topCollision) {
+		if (
+			this.is_pressed(input, "KeyW") &&
+			(aabb.bottomCollision || position.y == params.canvas.height) &&
+			!aabb.topCollision
+		) {
 			//sprite.setState("jump")
 			velocity.y = -150;
 		}
@@ -465,8 +466,8 @@ class PhysicsSystem extends ECS.System {
 }
 
 class LightSystem extends ECS.System {
-	constructor(){
-		super([Light, Position])
+	constructor() {
+		super([Light, Position]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -483,7 +484,6 @@ class LightSystem extends ECS.System {
 			sprite.width,
 			sprite.height
 		);
-
 	}
 }
 
@@ -549,9 +549,7 @@ class SpatialHashGrid {
 		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
 	}
 
-	update(entity: ECS.Entity){
-
-	}
+	update(entity: ECS.Entity) {}
 
 	remove(entity: ECS.Entity): void {
 		if (!this._lastPos.has(entity.id)) return;
@@ -690,7 +688,6 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
 						const [x, y] = depth;
 
-
 						if (Math.abs(x) < Math.abs(y) - aabb.padding * 2) {
 							position.x -= x;
 						} else {
@@ -702,7 +699,7 @@ class CollisionSystem extends ECS.System {
 									aabb.bottomCollision = true;
 								}
 							} else if (y < 0) {
-								if (Math.abs(y) > aabb.padding){
+								if (Math.abs(y) > aabb.padding) {
 									position.y -= y + aabb.padding;
 									velocity.y = Math.max(0, velocity.y);
 								} else {
@@ -770,53 +767,24 @@ player.addComponent(
 player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
-/*
-for (let i = 0; i < 10; i++) {
-	ecs.addEntity(
-		new ECS.Entity().addComponent(new Position(i * 90, canvas.height)).addComponent(new Sprite(treeSprite, 16, 16))
-	);
-}
-*/
+let boxes = [
+	[16 * 0, 128],
+	[16 * 3, 128],
+	[16 * 5, 128 - 16 * 2],
+	[16 * 6, 128 - 16 * 1],
+	[16 * 7, 128 - 16 * 1],
+	[16 * 8, 128 - 16 * 1],
+];
 
-{
+for (let [x, y] of boxes) {
 	const box = new ECS.Entity()
-		.addComponent(new Position(100, canvas.height))
+		.addComponent(new Position(x, y))
 		.addComponent(new Sprite(boxSprite, 16, 16))
 		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
 		.addComponent(new Destructible())
 		.addComponent(new Static());
 	ecs.addEntity(box);
 }
-{
-	const box = new ECS.Entity()
-		.addComponent(new Position(146, canvas.height - 32))
-		.addComponent(new Sprite(boxSprite, 16, 16))
-		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
-		.addComponent(new Destructible())
-		.addComponent(new Static());
-	ecs.addEntity(box);
-}
-{
-	const box = new ECS.Entity()
-		.addComponent(new Position(130, canvas.height - 32))
-		.addComponent(new Sprite(boxSprite, 16, 16))
-		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
-		.addComponent(new Destructible())
-		.addComponent(new Static());
-	ecs.addEntity(box);
-}
-{
-	const box = new ECS.Entity()
-		.addComponent(new Position(150, canvas.height - 64))
-		.addComponent(new Sprite(boxSprite, 16, 16))
-		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
-		.addComponent(new Destructible())
-		.addComponent(new Static());
-	ecs.addEntity(box);
-}
-
-
-
 
 let dt: number = 0;
 let then: number = 0;

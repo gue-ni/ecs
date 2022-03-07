@@ -13,7 +13,7 @@ module.exports = {
     ]
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.js'],
+    extensions: ['.ts', '.js'],
   },
   output: {
     filename: "game.js",
@@ -23,8 +23,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: "./*.html", to: "." },
-        { from: "./*.css", to: "." },
-        { from: "assets/*.png", to: "assets" }
+        { from: "assets", to: "assets" }
       ],
     }),
   ],
