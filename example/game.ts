@@ -673,6 +673,19 @@ ecs.addEntity(player);
 			.addComponent(sprite)
 	);
 }
+/*
+{
+	let sprite = new Sprite(bulletSprite, 4, 4);
+	sprite.flushBottom = false;
+	ecs.addEntity(
+		new ECS.Entity()
+			.addComponent(new Position(16 * 13, canvas.height - 16 * 4 - 8))
+			.addComponent(new Light(lightSprite2, 128, 128))
+			.addComponent(sprite)
+	);
+}
+*/
+
 
 let boxes = [
 	[16 * 4, 128],
