@@ -12,7 +12,7 @@ const grenadeSprite = new Image();
 grenadeSprite.src = "assets/lamp.png";
 
 const testLight = new Image();
-testLight.src = "assets/testlamp2.png";
+testLight.src = "assets/testlamp3.png";
 
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
@@ -29,6 +29,9 @@ boxSprite.src = "assets/box.png";
 const lampSprite = new Image();
 lampSprite.src = "assets/lamp.png";
 
+const pixelSprite = new Image();
+pixelSprite.src = "assets/pixel.png";
+
 const smallLight = new Image();
 smallLight.src = "assets/small-light.png";
 
@@ -37,11 +40,31 @@ let windowCenterX = canvas.width / 2;
 let windowCenterY = 0;
 let windowOffsetY = 0;
 
-/**
- * Components
- */
+class Vector {
+	x: number;
+	y: number;
+	constructor(x: number, y: number) {
+		this.x = x;
+		this.y = y;
+	}
 
-class Vector extends ECS.Component {
+	mult(v: number): void {
+		this.x *= v;
+		this.y *= v;
+	}
+
+	magnitude(): number {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+
+	normalize(): void {
+		let mag = this.magnitude();
+		this.x /= mag;
+		this.y /= mag;
+	}
+}
+
+class Velocity extends ECS.Component {
 	x: number;
 	y: number;
 
@@ -60,11 +83,9 @@ class Static extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
-class MovementDirection extends ECS.Component {
+class Direction extends ECS.Component {
 	right: boolean = true;
 }
-
-class Velocity extends Vector {}
 
 class Position extends ECS.Component {
 	_x: number;
@@ -128,13 +149,13 @@ class Light extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
 	height: number;
-	zFactor: number;
-	constructor(image: HTMLImageElement, w: number, h: number, zFactor: number = 0) {
+	yOffset: number;
+	constructor(image: HTMLImageElement, w: number, h: number, yOffset: number = 0) {
 		super();
 		this.image = image;
 		this.width = w;
 		this.height = h;
-		this.zFactor = zFactor;
+		this.yOffset = yOffset;
 	}
 }
 
@@ -191,6 +212,8 @@ class Destructible extends ECS.Component {}
 class Input extends ECS.Component {
 	pressed: any;
 	last_pressed: any;
+	mouseY: number;
+	mouseX: number;
 
 	constructor() {
 		super();
@@ -208,10 +231,6 @@ class Input extends ECS.Component {
 		return false;
 	}
 }
-
-/**
- * Systems
- */
 
 class ScrollSystem extends ECS.System {
 	constructor() {
@@ -243,6 +262,8 @@ class ScrollSystem extends ECS.System {
 
 class InputSystem extends ECS.System {
 	keys: any;
+	mouseX: number;
+	mouseY: number;
 
 	constructor() {
 		super([Input]);
@@ -257,25 +278,26 @@ class InputSystem extends ECS.System {
 			delete this.keys[e.code];
 		});
 
-		/*
-		canvas.addEventListener("mousemove", function(e) { 
-    	var cRect = canvas.getBoundingClientRect();        // Gets CSS pos, and width/height
-    	var canvasX = Math.round(e.clientX - cRect.left) / 2;  // Subtract the 'left' of the canvas 
-    	var canvasY = Math.round(e.clientY - cRect.top) / 2;   // from the X/Y positions to make  
-			console.log({canvasX, canvasY})
+		canvas.addEventListener("mousemove", (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const scaleX = canvas.width / rect.width;
+			const scaleY = canvas.height / rect.height;
+			this.mouseX = Math.round((e.clientX - rect.left) * scaleX);
+			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
 		});
-		*/
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		input.pressed = { ...this.keys };
+		input.mouseX = this.mouseX;
+		input.mouseY = this.mouseY;
 	}
 }
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input, Velocity, BoundingBox, Position, MovementDirection]);
+		super([Input, Velocity, BoundingBox, Position, Direction]);
 	}
 
 	is_pressed(input: Input, key: string, delay?: number): boolean {
@@ -294,10 +316,16 @@ class MovementSystem extends ECS.System {
 		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
 		const position = entity.getComponent(Position) as Position;
 		const sprite = entity.getComponent(Sprite) as Sprite;
-		const direction = entity.getComponent(MovementDirection) as MovementDirection;
+		const direction = entity.getComponent(Direction) as Direction;
 
 		velocity.x = 0;
 		const speed = 100;
+
+		let off = position.x - windowOffsetX;
+		let diff = input.mouseX - off;
+		direction.right = diff > 0;
+		//console.log({right: direction.right, diff, mouse: input.mouseX, off, p: position.x})
+
 
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
@@ -318,7 +346,6 @@ class MovementSystem extends ECS.System {
 			(aabb.bottomCollision || position.y == params.canvas.height) &&
 			!aabb.topCollision
 		) {
-			//sprite.setState("jump")
 			velocity.y = -150;
 		}
 
@@ -330,32 +357,35 @@ class MovementSystem extends ECS.System {
 
 class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Weapons, MovementDirection]);
+		super([Input, Position, Weapons]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const position = entity.getComponent(Position) as Position;
-		const direction = entity.getComponent(MovementDirection) as MovementDirection;
 
-		const dir = direction.right ? 1 : -1;
+		let gunPosOffset = 8;
+		let dir = new Vector(input.mouseX - (position.x - windowOffsetX), input.mouseY - (position.y - gunPosOffset));
+		dir.normalize();
 
 		if (input.is_pressed("Space", 500)) {
-			const projectile = new ECS.Entity(1)
-				.addComponent(new Position(position.x, position.y - 5, false))
-				.addComponent(new Velocity(300 * dir, -80))
+			dir.mult(300);
+			const projectile = new ECS.Entity(2)
+				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
+				.addComponent(new Velocity(dir.x, dir.y))
 				.addComponent(new Light(testLight, 128, 128))
 				.addComponent(new Sprite(bulletSprite, 4, 4));
 			params.ecs.addEntity(projectile);
 		}
 
-		if (input.is_pressed("KeyF", 50)) {
+		if (input.is_pressed("KeyF", 100)) {
+			dir.mult(500);
 			const projectile = new ECS.Entity(1)
-				.addComponent(new Position(position.x + 6, position.y - 5, false))
-				.addComponent(new Velocity(500 * dir, -10))
-				.addComponent(new Sprite(bulletSprite, 4, 4))
+				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
+				.addComponent(new Velocity(dir.x, dir.y))
+				.addComponent(new Sprite(pixelSprite, 1, 1))
 				.addComponent(new Light(smallLight, 16, 16))
-				.addComponent(new BoundingBox(5, 5, 5, 5, 0, true))
+				.addComponent(new BoundingBox(1, 1, 1, 1, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -418,8 +448,6 @@ class PhysicsSystem extends ECS.System {
 }
 
 class LightSystem extends ECS.System {
-	first: boolean;
-
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
 
@@ -432,25 +460,9 @@ class LightSystem extends ECS.System {
 		this.canvas.height = canvas.height;
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
-			this.first = true;
-
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
 			this.context.fillStyle = "rgba(0, 0, 0, 1)";
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-			//this.context.fillStyle = "rgba(255,0,0,1)";
-			//this.context.fillRect(10, 10, 20, 20);
-
-			/*
-			let e = entities.sort((a: ECS.Entity, b: ECS.Entity) => {
-				let al = a.getComponent(Light) as Light;
-				let bl = b.getComponent(Light) as Light;
-				return al.zFactor - bl.zFactor; 
-			});
-			return e;
-			*/
-
 			return entities;
 		};
 
@@ -475,8 +487,8 @@ class LightSystem extends ECS.System {
 			light.width,
 			light.height,
 			coords.x - Math.round(light.width / 2) - windowOffsetX,
-			//coords.x - Math.round(light.width / 2),
-			coords.y - Math.round(light.height / 2),
+			coords.y - Math.round(light.height / 2) - light.yOffset,
+			// coords.y - (light.flushBottom ? Math.round(light.height) : Math.round(light.height / 2)),
 			light.width,
 			light.height
 		);
@@ -491,7 +503,7 @@ class SpriteSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: any): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const coords = entity.getComponent(Position) as Position;
-		const direction = entity.getComponent(MovementDirection) as MovementDirection;
+		const direction = entity.getComponent(Direction) as Direction;
 
 		if (sprite.state.frames > 1) {
 			sprite.time += params.dt;
@@ -630,12 +642,7 @@ class PlayerLogginSystem extends ECS.System {
 	}
 }
 
-/**
- * Setup
- */
-
 const ecs = new ECS.ECS();
-
 ecs.addSystem(new InputSystem());
 ecs.addSystem(new ScrollSystem());
 ecs.addSystem(new PhysicsSystem());
@@ -651,11 +658,10 @@ const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
 player.addComponent(new Input());
 player.addComponent(new Weapons());
-player.addComponent(new MovementDirection());
+player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-//player.addComponent(new Light(lightSprite, 512, 512, -1));
-player.addComponent(new Light(testLight, 128, 128, -1));
+player.addComponent(new Light(testLight, 128, 128, 8));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -670,17 +676,16 @@ player.addComponent(
 player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
-/*
 {
 	let sprite = new Sprite(bulletSprite, 4, 4);
 	sprite.flushBottom = false;
-	let lamp = new ECS.Entity()
-		.addComponent(new Position(16 * 6, canvas.height - 16 * 2 - 8))
-		.addComponent(new Light(testLight, 128, 128))
-		.addComponent(sprite);
-	ecs.addEntity(lamp);
+	ecs.addEntity(
+		new ECS.Entity()
+			.addComponent(new Position(16 * 6, canvas.height - 16 * 2 - 8))
+			.addComponent(new Light(testLight, 128, 128))
+			.addComponent(sprite)
+	);
 }
-*/
 
 let boxes = [
 	[16 * 4, 128],
