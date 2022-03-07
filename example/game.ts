@@ -12,7 +12,7 @@ const grenadeSprite = new Image();
 grenadeSprite.src = "assets/lamp.png";
 
 const testLight = new Image();
-testLight.src = "assets/testlight.png";
+testLight.src = "assets/testlamp2.png";
 
 
 const bulletSprite = new Image();
