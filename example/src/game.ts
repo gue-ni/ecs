@@ -2,8 +2,13 @@
 import * as ECS from "../../lib";
 import { SpatialHashGrid, BoundingBox } from "./spatial-hash-grid";
 
-const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+
+let windowOffsetX = 0;
+let windowCenterX = canvas.width / 2;
+
+
 
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
@@ -25,9 +30,6 @@ pixelSprite.src = "assets/pixel.png";
 
 const smallLight = new Image();
 smallLight.src = "assets/small-light.png";
-
-let windowOffsetX = 0;
-let windowCenterX = canvas.width / 2;
 
 class Vector {
 	x: number;
@@ -158,13 +160,6 @@ class Sprite extends ECS.Component {
 	time: number;
 	flushBottom: boolean = true;
 
-	/**
-	 *
-	 * @param image
-	 * @param width
-	 * @param height
-	 * @param states
-	 */
 	constructor(image: HTMLImageElement, width: number, height: number, states: SpriteState[] = []) {
 		super();
 		this.image = image;
@@ -203,6 +198,10 @@ class Input extends ECS.Component {
 	last_pressed: any;
 	mouseY: number;
 	mouseX: number;
+	leftMousedown: boolean;
+	rightMousedown: boolean;
+	lastLeftMousedown: number = 0;
+	lastRightMousedown: number = 0;
 
 	constructor() {
 		super();
@@ -210,7 +209,7 @@ class Input extends ECS.Component {
 		this.last_pressed = {};
 	}
 
-	is_pressed(key: string, delay?: number): boolean {
+	is_key_pressed(key: string, delay?: number): boolean {
 		if (this.pressed[key]) {
 			if (!delay || !this.last_pressed[key] || Date.now() - this.last_pressed[key] > delay) {
 				this.last_pressed[key] = Date.now();
@@ -218,6 +217,29 @@ class Input extends ECS.Component {
 			}
 		}
 		return false;
+	}
+
+	// returns true if mouse is down and there has been a delay since last mousedown
+	is_left_mouse_down(delay?: number): boolean {
+		if (this.leftMousedown) {
+			if (!delay || Date.now() - this.lastLeftMousedown > delay) {
+				this.lastLeftMousedown = Date.now();
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	is_right_mouse_down(delay?: number): boolean {
+		if (this.rightMousedown) {
+			if (!delay || Date.now() - this.lastRightMousedown > delay) {
+				this.lastRightMousedown = Date.now();
+				return true;
+			}
+		} else {
+			return false;
+		}
 	}
 }
 
@@ -250,6 +272,8 @@ class InputSystem extends ECS.System {
 	keys: any;
 	mouseX: number;
 	mouseY: number;
+	leftMousedown: boolean = false;
+	rightMousedown: boolean = false;
 
 	constructor() {
 		super([Input]);
@@ -263,6 +287,24 @@ class InputSystem extends ECS.System {
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
 		});
+
+		canvas.addEventListener("mousedown", (e) => {
+			if (e.button == 0) {
+				this.leftMousedown = true;
+			} else if (e.button == 2) {
+				this.rightMousedown = true;
+			}
+		});
+
+		canvas.addEventListener("mouseup", (e) => {
+			if (e.button == 0) {
+				this.leftMousedown = false;
+			} else if (e.button == 2) {
+				this.rightMousedown = false;
+			}
+		});
+
+		canvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
 		canvas.addEventListener("mousemove", (e) => {
 			const rect = canvas.getBoundingClientRect();
@@ -278,6 +320,8 @@ class InputSystem extends ECS.System {
 		input.pressed = { ...this.keys };
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
+		input.leftMousedown = this.leftMousedown;
+		input.rightMousedown = this.rightMousedown;
 	}
 }
 
@@ -353,7 +397,7 @@ class WeaponSystem extends ECS.System {
 		let dir = new Vector(input.mouseX - (position.x - windowOffsetX), input.mouseY - (position.y - gunPosOffset));
 		dir.normalize();
 
-		if (input.is_pressed("Space", 500)) {
+		if (input.is_right_mouse_down(500)) {
 			dir.scalarMult(300);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
@@ -365,7 +409,7 @@ class WeaponSystem extends ECS.System {
 			params.ecs.addEntity(projectile);
 		}
 
-		if (input.is_pressed("KeyF", 100)) {
+		if (input.is_left_mouse_down(100)) {
 			dir.scalarMult(500);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
@@ -686,7 +730,6 @@ ecs.addEntity(player);
 }
 */
 
-
 let boxes = [
 	[16 * 4, 128],
 	[16 * 6, 128],
@@ -730,7 +773,7 @@ function animate(now: number) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
-		ecs.update({ dt, canvas, context, ecs });
+		ecs.update({ dt, canvas:canvas, context:context, ecs });
 	}
 	requestAnimationFrame(animate);
 }
