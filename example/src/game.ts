@@ -1,5 +1,5 @@
 //import * as ECS from "lofi-ecs";
-import * as ECS from "../lib";
+import * as ECS from "../../lib";
 import { SpatialHashGrid, BoundingBox } from "./spatial-hash-grid";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;

@@ -2,7 +2,7 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
-  entry: "./game.ts",
+  entry: "./src/game.ts",
   module: {
     rules: [
       {
@@ -23,6 +23,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: "./*.html", to: "." },
+        { from: "./favicon.ico", to: "." },
         { from: "assets", to: "assets" }
       ],
     }),

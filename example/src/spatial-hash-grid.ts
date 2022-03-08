@@ -1,4 +1,4 @@
-import * as ECS from "../lib";
+import * as ECS from "../../lib";
 
 /**
  *       _
