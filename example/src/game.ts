@@ -922,7 +922,8 @@ ecs.addEntity(player);
 			.addComponent(new Position(16 * 12, canvas.height))
 			//.addComponent(new DetectionRange(16))
 			.addComponent(new Detectable())
-			.addComponent(new Collider(8, 8, 8, 8, 0, false))
+			.addComponent(new Destructible())
+			.addComponent(new Collider(16, 8, 0, 8, 0, false))
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
