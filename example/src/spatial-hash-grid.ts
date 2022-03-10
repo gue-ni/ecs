@@ -60,6 +60,12 @@ export class BoundingBox extends ECS.Component {
 	}
 }
 
+export class DetectionRange extends BoundingBox {
+	constructor(range: number){
+		super(range, range, range, range)
+	}
+}
+
 export class SpatialHashGrid {
 	_grid: Map<string, ECS.Entity[]>;
 	_lastPos: Map<string, number[]>;

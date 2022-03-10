@@ -1,14 +1,12 @@
 //import * as ECS from "lofi-ecs";
 import * as ECS from "../../lib";
-import { SpatialHashGrid, BoundingBox } from "./spatial-hash-grid";
+import { SpatialHashGrid, BoundingBox, DetectionRange } from "./spatial-hash-grid";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
-
-
 
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
@@ -31,6 +29,9 @@ pixelSprite.src = "assets/pixel.png";
 const smallLight = new Image();
 smallLight.src = "assets/small-light.png";
 
+const cthulluSprite = new Image();
+cthulluSprite.src = "assets/cthullu.png";
+
 class Vector {
 	x: number;
 	y: number;
@@ -44,6 +45,10 @@ class Vector {
 		this.y *= v;
 	}
 
+	add(a: Vector): Vector {
+		return new Vector(this.x + a.x, this.x + a.x);
+	}
+
 	magnitude(): number {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
@@ -55,6 +60,18 @@ class Vector {
 	}
 }
 
+class Weapons extends ECS.Component {}
+
+class Primary extends ECS.Component {}
+
+class Static extends ECS.Component {}
+
+class Dynamic extends ECS.Component {}
+
+class Explosive extends ECS.Component {}
+
+class Destructible extends ECS.Component {}
+
 class Velocity extends ECS.Component {
 	x: number;
 	y: number;
@@ -65,14 +82,6 @@ class Velocity extends ECS.Component {
 		this.y = y;
 	}
 }
-
-class Weapons extends ECS.Component {}
-
-class Primary extends ECS.Component {}
-
-class Static extends ECS.Component {}
-
-class Dynamic extends ECS.Component {}
 
 class Direction extends ECS.Component {
 	right: boolean = true;
@@ -188,10 +197,6 @@ class Sprite extends ECS.Component {
 		this.state.timeLeft = 0;
 	}
 }
-
-class Explosive extends ECS.Component {}
-
-class Destructible extends ECS.Component {}
 
 class Input extends ECS.Component {
 	pressed: any;
@@ -538,7 +543,7 @@ class SpriteSystem extends ECS.System {
 
 		if (sprite.state.frames > 1) {
 			sprite.time += params.dt;
-			if (sprite.time > 0.08) {
+			if (sprite.time > 0.1) {
 				sprite.time = 0;
 				sprite.state.frameX = (sprite.state.frameX + 1) % sprite.state.frames;
 			}
@@ -583,19 +588,13 @@ class CollisionSystem extends ECS.System {
 
 	_intersection(a: BoundingBox, b: BoundingBox): number[] | null {
 		if (a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY) {
-			let d0: number;
-			let d1: number;
-
+			let d0: number, d1: number;
 			d0 = a.maxX - b.minX;
 			d1 = b.maxX - a.minX;
 			let x = d0 < d1 ? d0 : -d1;
-
 			d0 = a.maxY - b.minY;
 			d1 = b.maxY - a.minY;
 			let y = d0 < d1 ? d0 : -d1;
-
-			//console.log(d0, d1, a.maxY, a.minY, b.maxY, b.minY);
-
 			return [x, y];
 		} else {
 			return null;
@@ -708,6 +707,17 @@ player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
 ecs.addEntity(player);
 
 {
+	ecs.addEntity(
+		new ECS.Entity()
+			.addComponent(new Position(16 * 12, canvas.height))
+			.addComponent(new Sprite(cthulluSprite, 16, 16,
+				[
+					new SpriteState("idle", 0, 4)
+				]))
+			.addComponent(new DetectionRange(32))
+	);
+}
+{
 	let sprite = new Sprite(bulletSprite, 4, 4);
 	sprite.flushBottom = false;
 	ecs.addEntity(
@@ -773,7 +783,7 @@ function animate(now: number) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
-		ecs.update({ dt, canvas:canvas, context:context, ecs });
+		ecs.update({ dt, canvas: canvas, context: context, ecs });
 	}
 	requestAnimationFrame(animate);
 }
