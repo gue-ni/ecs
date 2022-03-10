@@ -1,6 +1,6 @@
 //import * as ECS from "lofi-ecs";
 import * as ECS from "../../lib";
-import { SpatialHashGrid, BoundingBox, DetectionRange } from "./spatial-hash-grid";
+//import { SpatialHashGrid, Collider, DetectionRange } from "./spatial-hash-grid";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -59,6 +59,8 @@ class Vector {
 		this.y /= mag;
 	}
 }
+
+class Detectable extends ECS.Component {}
 
 class Weapons extends ECS.Component {}
 
@@ -332,7 +334,7 @@ class InputSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input, Velocity, BoundingBox, Position, Direction]);
+		super([Input, Velocity, Collider, Position, Direction]);
 	}
 
 	is_pressed(input: Input, key: string, delay?: number): boolean {
@@ -348,7 +350,7 @@ class MovementSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
-		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
+		const aabb = entity.getComponent(Collider) as Collider;
 		const position = entity.getComponent(Position) as Position;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const direction = entity.getComponent(Direction) as Direction;
@@ -421,7 +423,7 @@ class WeaponSystem extends ECS.System {
 				.addComponent(new Velocity(dir.x, dir.y))
 				.addComponent(new Sprite(pixelSprite, 1, 1))
 				.addComponent(new Light(smallLight, 16, 16))
-				.addComponent(new BoundingBox(1, 1, 1, 1, 0, true))
+				.addComponent(new Collider(1, 1, 1, 1, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
@@ -447,7 +449,7 @@ class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
-		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
+		const aabb = entity.getComponent(Collider) as Collider;
 
 		// debug
 
@@ -578,15 +580,103 @@ class SpriteSystem extends ECS.System {
 	}
 }
 
-class CollisionSystem extends ECS.System {
-	sph: SpatialHashGrid;
+class Collider extends ECS.Component {
+	active: boolean;
+	centerX: number;
+	centerY: number;
 
-	constructor() {
-		super([Position, BoundingBox]);
-		this.sph = new SpatialHashGrid(16);
+	a: number;
+	b: number;
+	c: number;
+	d: number;
+	padding: number;
+
+	bottomCollision: boolean;
+	leftCollision: boolean;
+	rightCollision: boolean;
+	topCollision: boolean;
+
+	constructor(a: number, b: number, c: number, d: number, base: number = 0, active: boolean = false) {
+		super();
+		this.active = active;
+		this.a = a;
+		this.b = b;
+		this.c = c;
+		this.d = d;
+		this.padding = base;
+		this.bottomCollision = false;
+		this.topCollision = false;
+		this.rightCollision = false;
+		this.leftCollision = false;
 	}
 
-	_intersection(a: BoundingBox, b: BoundingBox): number[] | null {
+	/*
+
+	set_center(x: number, y: number): void {
+		this.centerX = x;
+		this.centerY = y;
+	}
+
+	get minX() {
+		return this.centerX - this.d;
+	}
+
+	get maxX() {
+		return this.centerX + this.b;
+	}
+
+	get minY() {
+		return this.centerY - this.a - this.padding;
+	}
+	get maxY() {
+		return this.centerY + this.c + this.padding;
+	}
+
+	*/
+}
+
+class AABB {
+	position: Position;
+	collider: Collider;
+	constructor(collider: Collider, position: Position) {
+		this.position = position;
+		this.collider = collider;
+	}
+
+	get minX() {
+		return this.position.x - this.collider.d;
+	}
+
+	get maxX() {
+		return this.position.x + this.collider.b;
+	}
+
+	get minY() {
+		return this.position.y - this.collider.a - this.collider.padding;
+	}
+	get maxY() {
+		return this.position.y + this.collider.c + this.collider.padding;
+	}
+}
+
+class DetectionRange extends Collider {
+	constructor(range: number) {
+		super(range, range, range, range);
+	}
+}
+
+class SpatialHashGrid {
+	_grid: Map<string, ECS.Entity[]>;
+	_lastPos: Map<string, number[]>;
+	_gridsize: number;
+
+	constructor(gridsize: number) {
+		this._grid = new Map();
+		this._lastPos = new Map();
+		this._gridsize = gridsize;
+	}
+
+	static check_collision(a: AABB, b: AABB): number[] | null {
 		if (a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY) {
 			let d0: number, d1: number;
 			d0 = a.maxX - b.minX;
@@ -601,26 +691,144 @@ class CollisionSystem extends ECS.System {
 		}
 	}
 
+	hash(x: number, y: number): number[] {
+		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
+	}
+
+	update(entity: ECS.Entity) {}
+
+	remove(entity: ECS.Entity): void {
+		if (!this._lastPos.has(entity.id)) return;
+
+		let [minX, minY, maxX, maxY] = this._lastPos.get(entity.id);
+		this._lastPos.delete(entity.id);
+
+		for (let i = minX; i <= maxX; i++) {
+			for (let j = minY; j <= maxY; j++) {
+				const key = `${i}/${j}`;
+
+				if (this._grid.has(key)) {
+					let cell = this._grid.get(key);
+					this._grid.set(
+						key,
+						cell.filter((item) => item != entity)
+					);
+				}
+			}
+		}
+	}
+
+	insert(entity: ECS.Entity, aabb: AABB): void {
+		//let collider = entity.getComponent(Collider) as Collider;
+		// let position = entity.getComponent(Position)  as Position;
+		// let aabb = new AABB(collider, position);
+
+		let [minX, minY] = this.hash(aabb.minX, aabb.minY);
+		let [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
+
+		this._lastPos.set(entity.id, [minX, minY, maxX, maxY]);
+
+		for (let i = minX; i <= maxX; i++) {
+			for (let j = minY; j <= maxY; j++) {
+				const key = `${i}/${j}`;
+
+				if (this._grid.has(key)) {
+					let list = this._grid.get(key);
+					list.push(entity);
+					this._grid.set(key, list);
+				} else {
+					this._grid.set(key, [entity]);
+				}
+			}
+		}
+	}
+
+	possible_collisions(entity: ECS.Entity, aabb: AABB): ECS.Entity[] {
+		//let collider = entity.getComponent(Collider) as Collider;
+		//let position = entity.getComponent(Position) as Position;
+
+		//let aabb = new AABB(collider, position);
+
+		let [minX, minY] = this.hash(aabb.minX, aabb.minY);
+		let [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
+
+		let possible = new Set<ECS.Entity>();
+
+		for (let i = minX; i <= maxX; i++) {
+			for (let j = minY; j <= maxY; j++) {
+				const key = `${i}/${j}`;
+
+				if (this._grid.has(key)) {
+					this._grid
+						.get(key)
+						.filter((item) => item != entity)
+						.map((item) => possible.add(item));
+				}
+			}
+		}
+
+		return [...possible];
+	}
+}
+
+class DetectionSystem extends ECS.System {
+	sph: SpatialHashGrid;
+
+	constructor(sph: SpatialHashGrid) {
+		super([Position, DetectionRange]);
+		this.sph = sph;
+	}
+
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		// update bounding box
-		let aabb = entity.getComponent(BoundingBox) as BoundingBox;
+		let position = entity.getComponent(Position) as Position;
+		let detection = entity.getComponent(DetectionRange) as DetectionRange;
+
+		let aabb = new AABB(detection, position);
+
+		for (const other_entity of this.sph.possible_collisions(entity, aabb)) {
+			let p = other_entity.getComponent(Position) as Position;
+			let c = other_entity.getComponent(Collider) as Collider;
+			let other_aabb = new AABB(c, p);
+
+			if (SpatialHashGrid.check_collision(aabb, other_aabb)) {
+				if (other_entity.getComponent(Detectable)){
+					console.log("detected something");
+				}
+			}
+		}
+	}
+}
+
+class CollisionSystem extends ECS.System {
+	sph: SpatialHashGrid;
+
+	constructor(sph: SpatialHashGrid) {
+		super([Position, Collider]);
+		this.sph = sph;
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		let collider = entity.getComponent(Collider) as Collider;
 		let position = entity.getComponent(Position) as Position;
 		let velocity = entity.getComponent(Velocity) as Velocity;
+		let aabb = new AABB(collider, position);
 
 		if (position.changed) {
 			this.sph.remove(entity);
-			aabb.set_center(position.x, position.y);
-			this.sph.insert(entity);
+			this.sph.insert(entity, aabb);
 		}
 
-		aabb.topCollision = false;
-		aabb.bottomCollision = false;
+		collider.topCollision = false;
+		collider.bottomCollision = false;
 
-		if (aabb.active) {
-			for (const possible of this.sph.possible_collisions(entity)) {
-				const possible_aabb = possible.getComponent(BoundingBox) as BoundingBox;
+		if (collider.active) {
+			for (const possible of this.sph.possible_collisions(entity, aabb)) {
+				const possible_col = possible.getComponent(Collider) as Collider;
+				const possible_pos = possible.getComponent(Position) as Position;
 
-				let depth = this._intersection(aabb, possible_aabb);
+				let possible_aabb = new AABB(possible_col, possible_pos);
+
+				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
 					if (entity.getComponent(Explosive) && possible.getComponent(Destructible)) {
 						params.ecs.removeEntity(entity);
@@ -629,32 +837,29 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
 						const [x, y] = depth;
 
-						if (Math.abs(x) < Math.abs(y) - aabb.padding * 2) {
+						if (Math.abs(x) < Math.abs(y) - collider.padding * 2) {
 							position.x -= x;
 						} else {
 							if (y > 0) {
-								if (y > aabb.padding) {
+								if (y > collider.padding) {
 									velocity.y = Math.min(0, velocity.y);
-									position.y -= y - aabb.padding;
-								} else if (aabb.padding == y) {
+									position.y -= y - collider.padding;
+								} else if (collider.padding == y) {
 									velocity.y = Math.min(0, velocity.y);
-									aabb.bottomCollision = true;
+									collider.bottomCollision = true;
 								}
 							} else if (y < 0) {
-								if (Math.abs(y) > aabb.padding) {
-									position.y -= y + aabb.padding;
+								if (Math.abs(y) > collider.padding) {
+									position.y -= y + collider.padding;
 									velocity.y = Math.max(0, velocity.y);
-									//console.log("collision!", y)
 								} else {
-									aabb.topCollision = true;
-									//console.log("only touching!", y)
+									collider.topCollision = true;
 								}
 							}
 						}
 					}
 				}
 			}
-			//console.log(aabb.bottomCollision)
 		}
 	}
 }
@@ -667,16 +872,19 @@ class PlayerLogginSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
-		const aabb = entity.getComponent(BoundingBox) as BoundingBox;
+		const aabb = entity.getComponent(Collider) as Collider;
 		console.log(position.x, position.y, velocity.x.toFixed(2), velocity.y.toFixed(2), aabb.bottomCollision);
 	}
 }
+
+const sph = new SpatialHashGrid(16);
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new InputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
-ecs.addSystem(new CollisionSystem());
+ecs.addSystem(new CollisionSystem(sph));
+ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
@@ -703,20 +911,22 @@ player.addComponent(
 		new SpriteState("jump-left", 5, 1),
 	])
 );
-player.addComponent(new BoundingBox(16, 2, 0, 2, 3, true));
+player.addComponent(new Collider(16, 2, 0, 2, 3, true));
+//player.addComponent(new Detectable())
+player.addComponent(new DetectionRange(16))
 ecs.addEntity(player);
 
 {
 	ecs.addEntity(
 		new ECS.Entity()
 			.addComponent(new Position(16 * 12, canvas.height))
-			.addComponent(new Sprite(cthulluSprite, 16, 16,
-				[
-					new SpriteState("idle", 0, 4)
-				]))
-			.addComponent(new DetectionRange(32))
+			//.addComponent(new DetectionRange(16))
+			.addComponent(new Detectable())
+			.addComponent(new Collider(8, 8, 8, 8, 0, false))
+			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
+
 {
 	let sprite = new Sprite(bulletSprite, 4, 4);
 	sprite.flushBottom = false;
@@ -755,7 +965,7 @@ for (let [x, y] of boxes) {
 	const box = new ECS.Entity()
 		.addComponent(new Position(x, y))
 		.addComponent(new Sprite(boxSprite, 16, 16))
-		.addComponent(new BoundingBox(16, 8, 0, 8, 0, false))
+		.addComponent(new Collider(16, 8, 0, 8, 0, false))
 		.addComponent(new Destructible())
 		.addComponent(new Static());
 	ecs.addEntity(box);
