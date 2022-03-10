@@ -1,6 +1,5 @@
 //import * as ECS from "lofi-ecs";
 import * as ECS from "../../lib";
-//import { SpatialHashGrid, Collider, DetectionRange } from "./spatial-hash-grid";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -40,13 +39,17 @@ class Vector {
 		this.y = y;
 	}
 
-	scalarMult(v: number): void {
-		this.x *= v;
-		this.y *= v;
+	scalarMult(scalar: number): void {
+		this.x *= scalar;
+		this.y *= scalar;
 	}
 
-	add(a: Vector): Vector {
-		return new Vector(this.x + a.x, this.x + a.x);
+	add(vector: Vector): Vector {
+		return new Vector(this.x + vector.x, this.y + vector.y);
+	}
+
+	sub(vector: Vector): Vector {
+		return new Vector(this.x - vector.x, this.y - vector.y);
 	}
 
 	magnitude(): number {
@@ -111,6 +114,10 @@ class Position extends ECS.Component {
 		return Math.floor(this._y);
 	}
 
+	get vector() : Vector {
+		return new Vector(this._x, this._y);
+	}
+
 	set x(x) {
 		this.changed = true;
 		this._x = x;
@@ -122,27 +129,24 @@ class Position extends ECS.Component {
 	}
 }
 
-class SpriteState {
-	name: string;
+class SpriteState extends ECS.State {
 	frameX: number;
 	frameY: number;
 	frames: number;
 	duration: number;
 	timeLeft: number;
 
-	/**
-	 *
-	 * @param name name of state
-	 * @param row
-	 * @param frames
-	 * @param duration play for this time, then go back to idle
-	 */
 	constructor(name: string, row: number, frames: number, duration: number = -1) {
-		this.name = name;
+		super(name);
+		//this.name = name;
 		this.frameX = 0;
 		this.frameY = row;
 		this.frames = frames;
 		this.duration = duration;
+		this.timeLeft = 0;
+	}
+
+	enter(): void {
 		this.timeLeft = 0;
 	}
 }
@@ -166,7 +170,7 @@ class Sprite extends ECS.Component {
 	width: number;
 	height: number;
 
-	states: SpriteState[];
+	states: Map<string, SpriteState>;
 	state: SpriteState;
 	time: number;
 	flushBottom: boolean = true;
@@ -177,8 +181,7 @@ class Sprite extends ECS.Component {
 		this.width = width;
 		this.height = height;
 		this.time = 0;
-
-		this.states = [];
+		this.states = new Map();
 
 		if (states.length == 0) {
 			this.state = new SpriteState("idle", 0, 1);
@@ -191,12 +194,13 @@ class Sprite extends ECS.Component {
 	}
 
 	addState(state: SpriteState) {
-		this.states[state.name] = state;
+		this.states.set(state.name, state);
 	}
 
 	setState(name: string) {
-		this.state = this.states[name];
-		this.state.timeLeft = 0;
+		this.state?.exit();
+		this.state = this.states.get(name);
+		this.state?.enter();
 	}
 }
 
@@ -555,12 +559,14 @@ class SpriteSystem extends ECS.System {
 			sprite.state.timeLeft += params.dt;
 			if (sprite.state.timeLeft > sprite.state.duration) {
 				sprite.state.timeLeft = 0;
-
+				sprite.setState(sprite.state.previous.name);
+				/*
 				if (direction) {
 					sprite.setState(direction.right ? "idle-right" : "idle-left");
 				} else {
 					sprite.setState("idle");
 				}
+				*/
 			}
 		}
 
@@ -596,7 +602,14 @@ class Collider extends ECS.Component {
 	rightCollision: boolean;
 	topCollision: boolean;
 
-	constructor(top: number, right: number, bottom: number, left: number, padding: number = 0, active: boolean = false) {
+	constructor(
+		top: number,
+		right: number,
+		bottom: number,
+		left: number,
+		padding: number = 0,
+		active: boolean = false
+	) {
 		super();
 		this.active = active;
 		this.top = top;
@@ -609,8 +622,6 @@ class Collider extends ECS.Component {
 		this.rightCollision = false;
 		this.leftCollision = false;
 	}
-
-	
 }
 
 class AABB {
@@ -632,22 +643,25 @@ class AABB {
 	get minY() {
 		return this.position.y - this.collider.top - this.collider.padding;
 	}
-	
+
 	get maxY() {
 		return this.position.y + this.collider.bottom + this.collider.padding;
 	}
 }
 
-class DetectionRange extends Collider {
+class DetectionRadius extends Collider {
+
+	detected: ECS.Entity[];
+
 	constructor(range: number) {
 		super(range, range, range, range);
 	}
 }
 
 class SpatialHashGrid {
-	_grid: Map<string, ECS.Entity[]>;
-	_lastPos: Map<string, number[]>;
 	_gridsize: number;
+	_lastPos: Map<string, number[]>;
+	_grid: Map<string, ECS.Entity[]>;
 
 	constructor(gridsize: number) {
 		this._grid = new Map();
@@ -674,8 +688,6 @@ class SpatialHashGrid {
 		return [Math.floor(x / this._gridsize), Math.floor(y / this._gridsize)];
 	}
 
-	update(entity: ECS.Entity) {}
-
 	remove(entity: ECS.Entity): void {
 		if (!this._lastPos.has(entity.id)) return;
 
@@ -698,12 +710,8 @@ class SpatialHashGrid {
 	}
 
 	insert(entity: ECS.Entity, aabb: AABB): void {
-		//let collider = entity.getComponent(Collider) as Collider;
-		// let position = entity.getComponent(Position)  as Position;
-		// let aabb = new AABB(collider, position);
-
-		let [minX, minY] = this.hash(aabb.minX, aabb.minY);
-		let [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
+		const [minX, minY] = this.hash(aabb.minX, aabb.minY);
+		const [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
 
 		this._lastPos.set(entity.id, [minX, minY, maxX, maxY]);
 
@@ -723,13 +731,8 @@ class SpatialHashGrid {
 	}
 
 	possible_collisions(entity: ECS.Entity, aabb: AABB): ECS.Entity[] {
-		//let collider = entity.getComponent(Collider) as Collider;
-		//let position = entity.getComponent(Position) as Position;
-
-		//let aabb = new AABB(collider, position);
-
-		let [minX, minY] = this.hash(aabb.minX, aabb.minY);
-		let [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
+		const [minX, minY] = this.hash(aabb.minX, aabb.minY);
+		const [maxX, maxY] = this.hash(aabb.maxX, aabb.maxY);
 
 		let possible = new Set<ECS.Entity>();
 
@@ -754,15 +757,16 @@ class DetectionSystem extends ECS.System {
 	sph: SpatialHashGrid;
 
 	constructor(sph: SpatialHashGrid) {
-		super([Position, DetectionRange]);
+		super([Position, DetectionRadius]);
 		this.sph = sph;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		let position = entity.getComponent(Position) as Position;
-		let detection = entity.getComponent(DetectionRange) as DetectionRange;
+		let detection = entity.getComponent(DetectionRadius) as DetectionRadius;
 
 		let aabb = new AABB(detection, position);
+		detection.detected = []
 
 		for (const other_entity of this.sph.possible_collisions(entity, aabb)) {
 			let p = other_entity.getComponent(Position) as Position;
@@ -770,8 +774,8 @@ class DetectionSystem extends ECS.System {
 			let other_aabb = new AABB(c, p);
 
 			if (SpatialHashGrid.check_collision(aabb, other_aabb)) {
-				if (other_entity.getComponent(Detectable)){
-					console.log("detected something");
+				if (other_entity.getComponent(Detectable)) {
+					detection.detected.push(other_entity);
 				}
 			}
 		}
@@ -810,6 +814,7 @@ class CollisionSystem extends ECS.System {
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
 					if (entity.getComponent(Explosive) && possible.getComponent(Shootable)) {
+						// console.log("collision", entity.id, possible.id)
 						params.ecs.removeEntity(entity);
 					}
 
@@ -843,20 +848,60 @@ class CollisionSystem extends ECS.System {
 	}
 }
 
-class PlayerLogginSystem extends ECS.System {
-	constructor() {
-		super([Primary]);
-	}
+class Ai extends ECS.Component {
+	time: number = 0;
+}
 
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(Position) as Position;
-		const velocity = entity.getComponent(Velocity) as Velocity;
-		const aabb = entity.getComponent(Collider) as Collider;
-		console.log(position.x, position.y, velocity.x.toFixed(2), velocity.y.toFixed(2), aabb.bottomCollision);
-	}
+class AiSystem extends ECS.System {
+  constructor(){
+    super([Ai, DetectionRadius, Position])
+  }
+
+  updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = (entity.getComponent(Position) as Position).vector;
+		const detection = entity.getComponent(DetectionRadius) as DetectionRadius;
+		const ai = entity.getComponent(Ai) as Ai;
+
+		for (const detected_entity of detection.detected){
+			if (detected_entity.getComponent(Primary)){
+				const target_position = (detected_entity.getComponent(Position) as Position).vector;
+
+				const offset = 8;
+				position.y -= offset;
+				target_position.y -= offset;
+				const dir = target_position.sub(position);
+				dir.normalize()
+
+				dir.scalarMult(500);
+
+				ai.time += params.dt;
+				if (ai.time > 0.3){
+					console.log("shoot")
+					const projectile = new ECS.Entity(1)
+						.addComponent(new Position(position.x, position.y, false))
+						.addComponent(new Velocity(dir.x, dir.y))
+						.addComponent(new Sprite(pixelSprite, 1, 1))
+						.addComponent(new Light(smallLight, 16, 16))
+						.addComponent(new Collider(1, 1, 1, 1, 0, true))
+						.addComponent(new Explosive());
+					params.ecs.addEntity(projectile);
+					ai.time = 0;
+				}
+
+
+
+			}
+		}
+  }
 }
 
 const sph = new SpatialHashGrid(16);
+const gameState = new ECS.FiniteStateMachine();
+gameState.addState(new ECS.State("pause"));
+gameState.addState(new ECS.State("play"));
+gameState.addState(new ECS.State("dead"));
+gameState.addState(new ECS.State("title"));
+gameState.setState("play");
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new InputSystem());
@@ -864,6 +909,7 @@ ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
+ecs.addSystem(new AiSystem())
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
@@ -891,17 +937,17 @@ player.addComponent(
 	])
 );
 player.addComponent(new Collider(16, 2, 0, 2, 3, true));
-//player.addComponent(new Detectable())
-player.addComponent(new DetectionRange(16))
+player.addComponent(new Detectable())
+//player.addComponent(new DetectionRadius(16));
 ecs.addEntity(player);
 
 {
 	ecs.addEntity(
 		new ECS.Entity()
 			.addComponent(new Position(16 * 12, canvas.height))
-			//.addComponent(new DetectionRange(16))
-			.addComponent(new Detectable())
-			.addComponent(new Shootable())
+			.addComponent(new DetectionRadius(50))
+			//.addComponent(new Shootable())
+			.addComponent(new Ai())
 			.addComponent(new Collider(16, 8, 0, 8, 0, false))
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
@@ -955,6 +1001,11 @@ let paused = false;
 document.addEventListener("keydown", (e) => {
 	if (e.code == "KeyP") {
 		paused = !paused;
+		if (gameState.current.name == "pause"){
+			gameState.setState(gameState.current.previous.name);
+		} else {
+			gameState.setState("pause")
+		}
 	}
 });
 
@@ -969,7 +1020,7 @@ function animate(now: number) {
 	dt = now - then;
 	then = now;
 
-	if (!paused) {
+	if (gameState.current.name === "play") {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
