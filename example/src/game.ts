@@ -72,7 +72,7 @@ class Dynamic extends ECS.Component {}
 
 class Explosive extends ECS.Component {}
 
-class Destructible extends ECS.Component {}
+class Shootable extends ECS.Component {}
 
 class Velocity extends ECS.Component {
 	x: number;
@@ -585,10 +585,10 @@ class Collider extends ECS.Component {
 	centerX: number;
 	centerY: number;
 
-	a: number;
-	b: number;
-	c: number;
-	d: number;
+	top: number;
+	right: number;
+	bottom: number;
+	left: number;
 	padding: number;
 
 	bottomCollision: boolean;
@@ -596,43 +596,21 @@ class Collider extends ECS.Component {
 	rightCollision: boolean;
 	topCollision: boolean;
 
-	constructor(a: number, b: number, c: number, d: number, base: number = 0, active: boolean = false) {
+	constructor(top: number, right: number, bottom: number, left: number, padding: number = 0, active: boolean = false) {
 		super();
 		this.active = active;
-		this.a = a;
-		this.b = b;
-		this.c = c;
-		this.d = d;
-		this.padding = base;
+		this.top = top;
+		this.right = right;
+		this.bottom = bottom;
+		this.left = left;
+		this.padding = padding;
 		this.bottomCollision = false;
 		this.topCollision = false;
 		this.rightCollision = false;
 		this.leftCollision = false;
 	}
 
-	/*
-
-	set_center(x: number, y: number): void {
-		this.centerX = x;
-		this.centerY = y;
-	}
-
-	get minX() {
-		return this.centerX - this.d;
-	}
-
-	get maxX() {
-		return this.centerX + this.b;
-	}
-
-	get minY() {
-		return this.centerY - this.a - this.padding;
-	}
-	get maxY() {
-		return this.centerY + this.c + this.padding;
-	}
-
-	*/
+	
 }
 
 class AABB {
@@ -644,18 +622,19 @@ class AABB {
 	}
 
 	get minX() {
-		return this.position.x - this.collider.d;
+		return this.position.x - this.collider.left;
 	}
 
 	get maxX() {
-		return this.position.x + this.collider.b;
+		return this.position.x + this.collider.right;
 	}
 
 	get minY() {
-		return this.position.y - this.collider.a - this.collider.padding;
+		return this.position.y - this.collider.top - this.collider.padding;
 	}
+	
 	get maxY() {
-		return this.position.y + this.collider.c + this.collider.padding;
+		return this.position.y + this.collider.bottom + this.collider.padding;
 	}
 }
 
@@ -830,7 +809,7 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
-					if (entity.getComponent(Explosive) && possible.getComponent(Destructible)) {
+					if (entity.getComponent(Explosive) && possible.getComponent(Shootable)) {
 						params.ecs.removeEntity(entity);
 					}
 
@@ -922,7 +901,7 @@ ecs.addEntity(player);
 			.addComponent(new Position(16 * 12, canvas.height))
 			//.addComponent(new DetectionRange(16))
 			.addComponent(new Detectable())
-			.addComponent(new Destructible())
+			.addComponent(new Shootable())
 			.addComponent(new Collider(16, 8, 0, 8, 0, false))
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
@@ -967,7 +946,7 @@ for (let [x, y] of boxes) {
 		.addComponent(new Position(x, y))
 		.addComponent(new Sprite(boxSprite, 16, 16))
 		.addComponent(new Collider(16, 8, 0, 8, 0, false))
-		.addComponent(new Destructible())
+		.addComponent(new Shootable())
 		.addComponent(new Static());
 	ecs.addEntity(box);
 }
