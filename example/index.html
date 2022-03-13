@@ -3,7 +3,12 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!--
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+		-->
+
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+
 
 		<!-- Primary Meta Tags -->
 		<title>Darkness!</title>
@@ -27,36 +32,61 @@
 		<style>
 			* {
 				box-sizing: border-box;
+				-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+				-webkit-tap-highlight-color: transparent;
+				-webkit-user-select: none;
+				-khtml-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				user-select: none;
 			}
 
-			main {
-				max-width: 700px;
-				margin: 0 auto;
-				display: flex;
-				align-items: center;
-				justify-content: center;
+			html, body {
+				margin: 0 !important;
+				padding: 0 !important;
+				width: 100%;
+				height: 100%;
 			}
 
 			canvas {
 				border: 1px solid black;
-				width: 1024px;
-				height: 512px;
+
+				width: 100%;
+				height: 100%;
+
 				image-rendering: -moz-crisp-edges;
 				image-rendering: -webkit-crisp-edges;
 				image-rendering: pixelated;
 				image-rendering: crisp-edges;
-				/* cursor: crosshair; */
 				cursor: url("assets/cursor.png"), pointer;
 			}
+
+			@media only screen and (min-width: 992px){
+				main {
+					max-width: 700px;
+					margin: 0 auto;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+				}
+
+				canvas {
+					width: 1024px;
+					height: 512px;
+				}
+			}
+
+
 		</style>
 	</head>
 	<body>
-		<main>
-			<div>
-				<canvas id="canvas" width="256" height="128"></canvas>
-				<p>WASD to move, MOUSE to aim and shoot.</p>
-			</div>
-		</main>
+				<!--
+				<canvas id="canvas" width="100%" height="100%"></canvas>
+				<canvas id="canvas"></canvas>
+				-->
+				<main>
+					<canvas id="canvas" width="256" height="128"></canvas>
+				</main>
 		<script src="game.js"></script>
 	</body>
 </html>

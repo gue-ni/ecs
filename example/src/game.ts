@@ -4,6 +4,8 @@ import * as ECS from "../../lib";
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
+//screen?.orientation?.lock('landscape');
+
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
 
@@ -114,7 +116,7 @@ class Position extends ECS.Component {
 		return Math.floor(this._y);
 	}
 
-	get vector() : Vector {
+	get vector(): Vector {
 		return new Vector(this._x, this._y);
 	}
 
@@ -650,7 +652,6 @@ class AABB {
 }
 
 class DetectionRadius extends Collider {
-
 	detected: ECS.Entity[];
 
 	constructor(range: number) {
@@ -766,7 +767,7 @@ class DetectionSystem extends ECS.System {
 		let detection = entity.getComponent(DetectionRadius) as DetectionRadius;
 
 		let aabb = new AABB(detection, position);
-		detection.detected = []
+		detection.detected = [];
 
 		for (const other_entity of this.sph.possible_collisions(entity, aabb)) {
 			let p = other_entity.getComponent(Position) as Position;
@@ -853,30 +854,30 @@ class Ai extends ECS.Component {
 }
 
 class AiSystem extends ECS.System {
-  constructor(){
-    super([Ai, DetectionRadius, Position])
-  }
+	constructor() {
+		super([Ai, DetectionRadius, Position]);
+	}
 
-  updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = (entity.getComponent(Position) as Position).vector;
 		const detection = entity.getComponent(DetectionRadius) as DetectionRadius;
 		const ai = entity.getComponent(Ai) as Ai;
 
-		for (const detected_entity of detection.detected){
-			if (detected_entity.getComponent(Primary)){
+		for (const detected_entity of detection.detected) {
+			if (detected_entity.getComponent(Primary)) {
 				const target_position = (detected_entity.getComponent(Position) as Position).vector;
 
 				const offset = 8;
 				position.y -= offset;
 				target_position.y -= offset;
 				const dir = target_position.sub(position);
-				dir.normalize()
+				dir.normalize();
 
 				dir.scalarMult(500);
 
 				ai.time += params.dt;
-				if (ai.time > 0.3){
-					console.log("shoot")
+				if (ai.time > 0.3) {
+					console.log("shoot");
 					const projectile = new ECS.Entity(1)
 						.addComponent(new Position(position.x, position.y, false))
 						.addComponent(new Velocity(dir.x, dir.y))
@@ -887,12 +888,9 @@ class AiSystem extends ECS.System {
 					params.ecs.addEntity(projectile);
 					ai.time = 0;
 				}
-
-
-
 			}
 		}
-  }
+	}
 }
 
 const sph = new SpatialHashGrid(16);
@@ -909,7 +907,7 @@ ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
-ecs.addSystem(new AiSystem())
+ecs.addSystem(new AiSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
@@ -937,7 +935,7 @@ player.addComponent(
 	])
 );
 player.addComponent(new Collider(16, 2, 0, 2, 3, true));
-player.addComponent(new Detectable())
+player.addComponent(new Detectable());
 //player.addComponent(new DetectionRadius(16));
 ecs.addEntity(player);
 
@@ -1001,13 +999,26 @@ let paused = false;
 document.addEventListener("keydown", (e) => {
 	if (e.code == "KeyP") {
 		paused = !paused;
-		if (gameState.current.name == "pause"){
+		if (gameState.current.name == "pause") {
 			gameState.setState(gameState.current.previous.name);
 		} else {
-			gameState.setState("pause")
+			gameState.setState("pause");
 		}
 	}
 });
+
+document.addEventListener(
+	"touchstart",
+	(e) => {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen().then(() => {
+				screen.orientation.lock("landscape");
+				//gameState.setState("play")
+			});
+		}
+	},
+	false
+);
 
 let dt: number = 0;
 let then: number = 0;
