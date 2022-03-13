@@ -7,8 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
 		-->
 
-		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
 
 		<!-- Primary Meta Tags -->
 		<title>Darkness!</title>
@@ -41,7 +40,8 @@
 				user-select: none;
 			}
 
-			html, body {
+			html,
+			body {
 				margin: 0 !important;
 				padding: 0 !important;
 				width: 100%;
@@ -61,6 +61,8 @@
 				cursor: url("assets/cursor.png"), pointer;
 			}
 
+			/*
+
 			@media only screen and (min-width: 992px){
 				main {
 					max-width: 700px;
@@ -75,18 +77,15 @@
 					height: 512px;
 				}
 			}
-
-
+			*/
 		</style>
 	</head>
 	<body>
-				<!--
+		<!--
 				<canvas id="canvas" width="100%" height="100%"></canvas>
 				<canvas id="canvas"></canvas>
 				-->
-				<main>
-					<canvas id="canvas" width="256" height="128"></canvas>
-				</main>
+		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js"></script>
 	</body>
 </html>
