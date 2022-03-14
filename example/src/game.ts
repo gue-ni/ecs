@@ -23,7 +23,6 @@ characterSprite.src = "assets/sprites.png";
 const spikes = new Image();
 spikes.src = "assets/bottom_spikes.png";
 
-
 const lightSprite = new Image();
 lightSprite.src = "assets/light.png";
 
@@ -252,16 +251,15 @@ class HealthSystem extends ECS.System {
 	healthDisplay: HTMLElement;
 	constructor() {
 		super([Health]);
-		this.healthDisplay = document.querySelector('#health')
+		this.healthDisplay = document.querySelector("#health");
 		this.healthDisplay.style.display = "flex";
-
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const health = entity.getComponent(Health) as Health;
 
-		if (entity.getComponent(Player)){
-			this.healthDisplay.innerText = `${health.value}`
+		if (entity.getComponent(Player)) {
+			this.healthDisplay.innerText = `${health.value}`;
 		}
 
 		if (health.value <= 0) {
@@ -345,8 +343,6 @@ class InputSystem extends ECS.System {
 				case "KeyF":
 					this.grenade = true;
 					break;
-
-
 			}
 		});
 
@@ -368,7 +364,6 @@ class InputSystem extends ECS.System {
 				case "KeyF":
 					this.grenade = false;
 					break;
-
 			}
 		});
 	}
@@ -377,7 +372,7 @@ class InputSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		input.jump = this.jump;
 		input.shoot = this.shoot;
-		input.grenade  =this.grenade;
+		input.grenade = this.grenade;
 		input.leftRight = this.leftRight;
 	}
 }
@@ -901,10 +896,9 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
-
 					// spikes are dangerous!
-					if (health && possible.getComponent(Spikes)){
-						console.log("spike")
+					if (health && possible.getComponent(Spikes)) {
+						console.log("spike");
 						velocity.y = -100;
 						health.value -= 1;
 					}
@@ -1017,6 +1011,8 @@ player.addComponent(new Input());
 player.addComponent(new Health());
 player.addComponent(new Light(lightSprite, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
+player.addComponent(new Collider(16, 5, 0, 5, 3, true));
+player.addComponent(new Detectable());
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
@@ -1027,8 +1023,6 @@ player.addComponent(
 		new SpriteState("jump-left", 5, 1),
 	])
 );
-player.addComponent(new Collider(16, 5, 0, 5, 3, true));
-player.addComponent(new Detectable());
 ecs.addEntity(player);
 
 {
@@ -1046,38 +1040,38 @@ ecs.addEntity(player);
 {
 	ecs.addEntity(
 		new ECS.Entity()
-		.addComponent(new Position(16 * 12, GROUND_LEVEL))
-		.addComponent(new Collider(8, 8, 0, 8))
-		.addComponent(new Sprite(spikes, 16, 16))
-		.addComponent(new Spikes())
-	)
+			.addComponent(new Position(16 * 12, GROUND_LEVEL))
+			.addComponent(new Collider(8, 8, 0, 8))
+			.addComponent(new Sprite(spikes, 16, 16))
+			.addComponent(new Spikes())
+	);
 }
 
 const boxes = [
 	[7, 0],
-	[8,2],
-	[9,3],
-	[10,3],
-	[11,3],
-	[12,4],
-	[13,4],
-	[15,2],
-	[13,7],
-	[16,2],
-	[18,1],
-	[20,2],
-	[21,2],
-	[25,2],
-	[26,2],
-	[28,4],
-	[25,6],
-	[23,7],
-	[22,7],
-	[19,8],
-	[16,8],
-	[15,8],
-	[14,8],
-]
+	[8, 2],
+	[9, 3],
+	[10, 3],
+	[11, 3],
+	[12, 4],
+	[13, 4],
+	[15, 2],
+	[13, 7],
+	[16, 2],
+	[18, 1],
+	[20, 2],
+	[21, 2],
+	[25, 2],
+	[26, 2],
+	[28, 4],
+	[25, 6],
+	[23, 7],
+	[22, 7],
+	[19, 8],
+	[16, 8],
+	[15, 8],
+	[14, 8],
+];
 
 const lights = [
 	[7, 4],
