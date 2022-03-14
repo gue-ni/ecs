@@ -212,8 +212,8 @@ class Input extends ECS.Component {
 	leftRight: number = 0;
 	jump: boolean = false;
 	shoot: boolean = false;
-	constructor(){
-		super()
+	constructor() {
+		super();
 	}
 }
 
@@ -249,7 +249,6 @@ class InputSystem extends ECS.System {
 	leftMousedown: boolean = false;
 	rightMousedown: boolean = false;
 
-
 	leftRight: number = 0;
 	jump: boolean = false;
 	shoot: boolean = false;
@@ -262,7 +261,7 @@ class InputSystem extends ECS.System {
 		window.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
 
-			switch (e.code){
+			switch (e.code) {
 				case "KeyA":
 					this.leftRight = -1;
 					break;
@@ -277,7 +276,7 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
-			switch (e.code){
+			switch (e.code) {
 				case "KeyA":
 					this.leftRight = Math.max(this.leftRight, 0);
 					break;
@@ -333,74 +332,66 @@ class InputSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		input.leftRight = this.leftRight;
 		input.jump = this.jump;
-
 	}
 }
 
 class MobileInputSystem extends ECS.System {
-
 	leftRight: number = 0;
 	topDown: number = 0;
 	jump: boolean = false;
 
-	constructor(){
+	constructor() {
 		super([Input]);
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
-		left_control.style.display = "block"
+		left_control.style.display = "block";
 		let left_debug = document.querySelector("#left-debug") as HTMLElement;
 		let bbox = left_control.getBoundingClientRect();
 		left_control.addEventListener("touchmove", (e: TouchEvent) => {
 			let touch = e.changedTouches[0];
 			let x = touch.clientX - bbox.left;
 			let width = bbox.right - bbox.left;
-			let h = (width / 2)
+			let h = width / 2;
 			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
-			left_debug.innerText = `${this.leftRight}`
-
+			left_debug.innerText = `${this.leftRight}`;
 		});
 
 		left_control.addEventListener("touchstart", (e: TouchEvent) => {
 			let touch = e.changedTouches[0];
 			let x = touch.clientX - bbox.left;
 			let width = bbox.right - bbox.left;
-			let h = (width / 2)
+			let h = width / 2;
 			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
-			left_debug.innerText = `${this.leftRight}`
-		})
+			left_debug.innerText = `${this.leftRight}`;
+		});
 
 		left_control.addEventListener("touchend", (e) => {
-			console.log("touchend")
+			console.log("touchend");
 			this.leftRight = 0;
-			left_debug.innerText = `${this.leftRight}`
-		})
+			left_debug.innerText = `${this.leftRight}`;
+		});
 
-		const right_control = document.querySelector('#right-control') as HTMLElement;
-		right_control.style.display = "block"
+		const right_control = document.querySelector("#right-control") as HTMLElement;
+		right_control.style.display = "block";
 		right_control.addEventListener("touchstart", (e) => {
 			this.jump = true;
-		})
+		});
 
 		right_control.addEventListener("touchend", (e) => {
 			this.jump = false;
-		})
-
-
-
+		});
 	}
-
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		input.leftRight = this.leftRight;
 		input.jump = this.jump;
-		
 	}
 }
 
 class MovementSystem extends ECS.System {
-	constructor(){
-		super([Input, Velocity, Position, Collider, Direction, Sprite])
+	constructor() {
+		super([Input, Velocity, Position, Collider, Direction, Sprite]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -414,17 +405,13 @@ class MovementSystem extends ECS.System {
 		const speed = 50;
 		velocity.x = speed * input.leftRight;
 
-		if (
-			input.jump &&
-			(aabb.bottomCollision || position.y == GROUND_LEVEL) &&
-			!aabb.topCollision
-		) {
+		if (input.jump && (aabb.bottomCollision || position.y == GROUND_LEVEL) && !aabb.topCollision) {
 			velocity.y = -200;
 		}
-		
+
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
-		if (Math.abs(input.leftRight) > 0)	{
+		if (Math.abs(input.leftRight) > 0) {
 			direction.right = input.leftRight >= 0;
 			sprite.setState(direction.right ? "run-right" : "run-left");
 		}
@@ -489,7 +476,7 @@ class PositionChangeSystem extends ECS.System {
 
 class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([Position, Velocity]); 
+		super([Position, Velocity]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -498,10 +485,10 @@ class PhysicsSystem extends ECS.System {
 		const aabb = entity.getComponent(Collider) as Collider; // optional
 
 		let dt = params.dt;
-		
+
 		position._lastX = position.x;
 		position._lastY = position.y;
-		
+
 		position.x += dt * velocity.x;
 		position.y += dt * velocity.y;
 
@@ -950,7 +937,7 @@ player.addComponent(new Weapons());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
-player.addComponent(new Input())
+player.addComponent(new Input());
 player.addComponent(new Light(lightSprite, 128, 128, 12));
 player.addComponent(new Position(windowCenterX, GROUND_LEVEL));
 player.addComponent(
@@ -992,7 +979,6 @@ ecs.addEntity(player);
 	);
 }
 
-
 let boxes = [
 	[16 * 4, GROUND_LEVEL],
 	[16 * 6, GROUND_LEVEL - 16 * 1],
@@ -1030,7 +1016,7 @@ document.addEventListener(
 	(e) => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
-				console.log("set full screen")
+				console.log("set full screen");
 				screen.orientation.lock("landscape");
 				//gameState.setState("play")
 			});
@@ -1039,42 +1025,44 @@ document.addEventListener(
 	false
 );
 
-let fps_display = document.querySelector('#fps') as HTMLElement;
+const fps_display = document.querySelector("#fps") as HTMLElement;
+let tmp = 0;
 
 let dt: number = 0;
 let then: number = 0;
-let tmp = 0;
 
 /**
  * Game Loop
  */
 function animate(now: number) {
-	now *= 0.001;
-	dt = now - then;
-	then = now;
+	(now *= 0.001), (dt = now - then), (then = now);
 
-	if ((tmp += dt) > 1){
+	if ((tmp += dt) > 1) {
 		tmp = 0;
-		fps_display.innerText = `${(1 / dt).toFixed(2)} fps`
+		fps_display.innerText = `${(1 / dt).toFixed(2)} fps`;
 	}
-	
+
 	if (gameState.current.name === "play") {
 		{
+			// clear screen
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			context.fillStyle = "rgb(0,0,0)";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 		}
 		{
-			context.beginPath()
+			// draw ground level line
+			context.beginPath();
 			context.moveTo(0, GROUND_LEVEL + 0.5);
-			context.lineTo(canvas.width, GROUND_LEVEL + 0.5)
-			context.strokeStyle = "#fff"
+			context.lineTo(canvas.width, GROUND_LEVEL + 0.5);
+			context.strokeStyle = "#fff";
 			context.lineWidth = 1;
-			context.stroke()
-			context.closePath()
+			context.stroke();
+			context.closePath();
 		}
-		ecs.update({ dt, canvas: canvas, context: context, ecs });
-
+		{
+			// update game
+			ecs.update({ dt, canvas: canvas, context: context, ecs });
+		}
 	}
 	requestAnimationFrame(animate);
 }
