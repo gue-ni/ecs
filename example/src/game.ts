@@ -20,6 +20,10 @@ gameState.setState("title");
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
 
+const spikes = new Image();
+spikes.src = "assets/bottom_spikes.png";
+
+
 const lightSprite = new Image();
 lightSprite.src = "assets/light.png";
 
@@ -83,6 +87,8 @@ class Rifle extends Gun {}
 
 class LightLauncher extends Gun {}
 
+class Spikes extends ECS.Component {}
+
 class Player extends ECS.Component {}
 
 class Static extends ECS.Component {}
@@ -98,8 +104,6 @@ class Bullet extends ECS.Component {
 		this.shotBy = shotBy;
 	}
 }
-
-class Shootable extends ECS.Component {}
 
 class Velocity extends ECS.Component {
 	x: number;
@@ -245,12 +249,20 @@ class Health extends ECS.Component {
 }
 
 class HealthSystem extends ECS.System {
+	healthDisplay: HTMLElement;
 	constructor() {
 		super([Health]);
+		this.healthDisplay = document.querySelector('#health')
+		this.healthDisplay.style.display = "flex";
+
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const health = entity.getComponent(Health) as Health;
+
+		if (entity.getComponent(Player)){
+			this.healthDisplay.innerText = `${health.value}`
+		}
 
 		if (health.value <= 0) {
 			if (entity.getComponent(Player)) {
@@ -307,6 +319,7 @@ class InputSystem extends ECS.System {
 	leftRight: number = 0;
 	jump: boolean = false;
 	shoot: boolean = false;
+	grenade: boolean = false;
 
 	constructor() {
 		super([Input]);
@@ -329,6 +342,11 @@ class InputSystem extends ECS.System {
 				case "Space":
 					this.shoot = true;
 					break;
+				case "KeyF":
+					this.grenade = true;
+					break;
+
+
 			}
 		});
 
@@ -347,6 +365,10 @@ class InputSystem extends ECS.System {
 				case "Space":
 					this.shoot = false;
 					break;
+				case "KeyF":
+					this.grenade = false;
+					break;
+
 			}
 		});
 	}
@@ -355,6 +377,7 @@ class InputSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		input.jump = this.jump;
 		input.shoot = this.shoot;
+		input.grenade  =this.grenade;
 		input.leftRight = this.leftRight;
 	}
 }
@@ -472,12 +495,12 @@ class WeaponSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 
 		let gunPosOffset = 8;
-		const vector = new Vector(direction.right ? 1 : -1, 0);
 
 		if ((grenade.firingRate -= params.dt) < 0 && input.grenade) {
 			grenade.firingRate = 0.5;
 
-			vector.scalarMult(300);
+			const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
+			vector.scalarMult(200);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
 
@@ -492,6 +515,7 @@ class WeaponSystem extends ECS.System {
 		if ((rifle.firingRate -= params.dt) < 0 && input.shoot) {
 			rifle.firingRate = 0.1;
 
+			const vector = new Vector(direction.right ? 1 : -1, 0);
 			vector.scalarMult(700);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
@@ -855,6 +879,9 @@ class CollisionSystem extends ECS.System {
 		let collider = entity.getComponent(Collider) as Collider;
 		let position = entity.getComponent(Position) as Position;
 		let velocity = entity.getComponent(Velocity) as Velocity;
+		let health = entity.getComponent(Health) as Health;
+		let bullet = entity.getComponent(Bullet) as Bullet;
+
 		let aabb = new AABB(collider, position);
 
 		if (position.changed) {
@@ -874,10 +901,16 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
-					let bullet = entity.getComponent(Bullet) as Bullet;
-					if (bullet && bullet.shotBy.id !== possible.id && possible.getComponent(Shootable)) {
-						params.ecs.removeEntity(entity);
 
+					// spikes are dangerous!
+					if (health && possible.getComponent(Spikes)){
+						console.log("spike")
+						velocity.y = -100;
+						health.value -= 1;
+					}
+
+					if (bullet && bullet.shotBy.id !== possible.id) {
+						params.ecs.removeEntity(entity);
 						let health = possible.getComponent(Health) as Health;
 						if (health) {
 							health.value -= bullet.damage;
@@ -983,7 +1016,7 @@ player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Health());
 player.addComponent(new Light(lightSprite, 128, 128, 12));
-player.addComponent(new Position(WINDOW_CENTER_X, GROUND_LEVEL));
+player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
@@ -996,15 +1029,13 @@ player.addComponent(
 );
 player.addComponent(new Collider(16, 5, 0, 5, 3, true));
 player.addComponent(new Detectable());
-player.addComponent(new Shootable());
 ecs.addEntity(player);
 
 {
 	ecs.addEntity(
 		new ECS.Entity()
-			.addComponent(new Position(16 * 12, GROUND_LEVEL))
+			.addComponent(new Position(16 * 20, GROUND_LEVEL - 16 * 5))
 			.addComponent(new DetectionRadius(50))
-			.addComponent(new Shootable())
 			.addComponent(new Ai())
 			.addComponent(new Health())
 			.addComponent(new Collider(16, 8, 0, 8, 0, false))
@@ -1012,17 +1043,48 @@ ecs.addEntity(player);
 	);
 }
 
-const boxes = [
-	[4, 1],
-	[6, 1],
-	[8, 2],
-	[10, 1],
-	[13, 2],
-	[10, 4],
-	[14, 2],
-];
+{
+	ecs.addEntity(
+		new ECS.Entity()
+		.addComponent(new Position(16 * 12, GROUND_LEVEL))
+		.addComponent(new Collider(8, 8, 0, 8))
+		.addComponent(new Sprite(spikes, 16, 16))
+		.addComponent(new Spikes())
+	)
+}
 
-const lights = [[6, 2]];
+const boxes = [
+	[7, 0],
+	[8,2],
+	[9,3],
+	[10,3],
+	[11,3],
+	[12,4],
+	[13,4],
+	[15,2],
+	[13,7],
+	[16,2],
+	[18,1],
+	[20,2],
+	[21,2],
+	[25,2],
+	[26,2],
+	[28,4],
+	[25,6],
+	[23,7],
+	[22,7],
+	[19,8],
+	[16,8],
+	[15,8],
+	[14,8],
+]
+
+const lights = [
+	[7, 4],
+	[18, 4],
+	[19, 10],
+	[23, 4],
+];
 
 for (let [x, y] of lights) {
 	let sprite = new Sprite(bulletSprite, 4, 4);
@@ -1040,7 +1102,6 @@ for (let [x, y] of boxes) {
 		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
 		.addComponent(new Sprite(boxSprite, 16, 16))
 		.addComponent(new Collider(16, 8, 0, 8, 0, false))
-		.addComponent(new Shootable())
 		.addComponent(new Static());
 	ecs.addEntity(box);
 }
