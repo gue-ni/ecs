@@ -1039,8 +1039,11 @@ document.addEventListener(
 	false
 );
 
+let fps_display = document.querySelector('#fps') as HTMLElement;
+
 let dt: number = 0;
 let then: number = 0;
+let tmp = 0;
 
 /**
  * Game Loop
@@ -1050,18 +1053,26 @@ function animate(now: number) {
 	dt = now - then;
 	then = now;
 
-
+	if ((tmp += dt) > 1){
+		tmp = 0;
+		fps_display.innerText = `${(1 / dt).toFixed(2)} fps`
+	}
+	
 	if (gameState.current.name === "play") {
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "rgb(0,0,0)";
-		context.fillRect(0, 0, canvas.width, canvas.height);
-		context.beginPath()
-		context.moveTo(0, GROUND_LEVEL + 0.5);
-		context.lineTo(canvas.width, GROUND_LEVEL + 0.5)
-		context.strokeStyle = "#fff"
-		context.lineWidth = 1;
-		context.stroke()
-		context.closePath()
+		{
+			context.clearRect(0, 0, canvas.width, canvas.height);
+			context.fillStyle = "rgb(0,0,0)";
+			context.fillRect(0, 0, canvas.width, canvas.height);
+		}
+		{
+			context.beginPath()
+			context.moveTo(0, GROUND_LEVEL + 0.5);
+			context.lineTo(canvas.width, GROUND_LEVEL + 0.5)
+			context.strokeStyle = "#fff"
+			context.lineWidth = 1;
+			context.stroke()
+			context.closePath()
+		}
 		ecs.update({ dt, canvas: canvas, context: context, ecs });
 
 	}
