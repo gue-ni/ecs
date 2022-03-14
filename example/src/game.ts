@@ -1,4 +1,3 @@
-import { classicNameResolver } from "typescript";
 import * as ECS from "../../lib";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
@@ -7,8 +6,16 @@ let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderi
 let on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let windowOffsetX = 0;
-let windowCenterX = canvas.width / 2;
-const GROUND_LEVEL = canvas.height - (on_mobile ? 32 : 16);
+let windowOffsetY = 0;
+let WINDOW_CENTER_X = canvas.width / 2;
+const GROUND_LEVEL = canvas.height - (on_mobile ? 40 : 16);
+
+const gameState = new ECS.FiniteStateMachine();
+gameState.addState(new ECS.HTMLState("pause", "#paused"));
+gameState.addState(new ECS.HTMLState("play", "#hud"));
+gameState.addState(new ECS.HTMLState("dead", "#dead"));
+gameState.addState(new ECS.HTMLState("title", "#title"));
+gameState.setState("title");
 
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
@@ -72,18 +79,25 @@ class Gun extends ECS.Component {
 	firingRate: number = 0;
 }
 
-class Rifle extends Gun {
-}
+class Rifle extends Gun {}
 
-class GrenadeLauncher extends Gun {}
+class LightLauncher extends Gun {}
 
-class Primary extends ECS.Component {}
+class Player extends ECS.Component {}
 
 class Static extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
-class Explosive extends ECS.Component {}
+class Bullet extends ECS.Component {
+	damage: number;
+	shotBy: ECS.Entity;
+	constructor(shotBy: ECS.Entity, damage: number = 10) {
+		super();
+		this.damage = damage;
+		this.shotBy = shotBy;
+	}
+}
 
 class Shootable extends ECS.Component {}
 
@@ -223,26 +237,59 @@ class Input extends ECS.Component {
 	grenade: boolean = false;
 }
 
+class Health extends ECS.Component {
+	value: number = 100;
+	constructor() {
+		super();
+	}
+}
+
+class HealthSystem extends ECS.System {
+	constructor() {
+		super([Health]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const health = entity.getComponent(Health) as Health;
+
+		if (health.value <= 0) {
+			if (entity.getComponent(Player)) {
+				console.log("you died!");
+				gameState.setState("dead");
+			} else {
+				params.ecs.removeEntity(entity);
+			}
+		}
+	}
+}
+
 class CameraSystem extends ECS.System {
 	constructor() {
-		super([Primary, Position]);
+		super([Player, Position]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(Position) as Position;
 
-		let maxDiff = 40;
-		let diffX = position.x - windowCenterX;
+		const maxDiffX = 40;
+		const maxDiffY = 80;
+		let diffX = position.x - WINDOW_CENTER_X;
 
-		if (diffX > maxDiff) {
-			let delta = diffX - maxDiff;
-			windowOffsetX += delta;
-			windowCenterX += delta;
+		let diffY = canvas.height - position.y;
+
+		if (diffY > maxDiffY) {
+			windowOffsetY = diffY - maxDiffY;
 		}
 
-		if (diffX < -maxDiff) {
-			let delta = maxDiff + diffX;
-			windowCenterX += delta;
+		if (diffX > maxDiffX) {
+			let delta = diffX - maxDiffX;
+			windowOffsetX += delta;
+			WINDOW_CENTER_X += delta;
+		}
+
+		if (diffX < -maxDiffX) {
+			let delta = maxDiffX + diffX;
+			WINDOW_CENTER_X += delta;
 			windowOffsetX += delta;
 		}
 	}
@@ -321,8 +368,7 @@ class MobileInputSystem extends ECS.System {
 
 	constructor() {
 		super([Input]);
-		console.log("mobile")
-
+		console.log("mobile");
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
 		left_control.style.display = "flex";
@@ -333,15 +379,15 @@ class MobileInputSystem extends ECS.System {
 			let touch = e.touches[0];
 			let x = touch.clientX - bbox.left;
 			let width = left_control.offsetWidth;
-			this.leftRight = x < width / 2 ? -1 :1;
+			this.leftRight = x < width / 2 ? -1 : 1;
 			//left_debug.innerText = `${this.leftRight}, x=${x}, width=${width}`;
-		}
+		};
 
-		left_control.addEventListener("touchstart",handleTouch );
-		left_control.addEventListener("touchmove",handleTouch );
-		left_control.addEventListener("touchend", () =>{
+		left_control.addEventListener("touchstart", handleTouch);
+		left_control.addEventListener("touchmove", handleTouch);
+		left_control.addEventListener("touchend", () => {
 			this.leftRight = 0;
-		} );
+		});
 
 		const right_control = document.querySelector("#right-control") as HTMLElement;
 		right_control.style.display = "flex";
@@ -352,23 +398,23 @@ class MobileInputSystem extends ECS.System {
 			this.jump = false;
 		});
 
-		const button_1 = document.querySelector('#button-1')  as HTMLElement
+		const button_1 = document.querySelector("#button-1") as HTMLElement;
 		button_1.style.display = "flex";
 		button_1.addEventListener("touchstart", () => {
 			this.shoot = true;
-		})
+		});
 		button_1.addEventListener("touchend", () => {
 			this.shoot = false;
-		})
+		});
 
-		const button_2 = document.querySelector('#button-2')  as HTMLElement
+		const button_2 = document.querySelector("#button-2") as HTMLElement;
 		button_2.style.display = "flex";
 		button_2.addEventListener("touchstart", () => {
 			this.grenade = true;
-		})
+		});
 		button_2.addEventListener("touchend", () => {
 			this.grenade = false;
-		})
+		});
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -415,13 +461,13 @@ class MovementSystem extends ECS.System {
 
 class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Rifle, Direction, GrenadeLauncher]);
+		super([Input, Position, Rifle, Direction, LightLauncher]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const rifle = entity.getComponent(Rifle) as Rifle;
-		const grenade = entity.getComponent(GrenadeLauncher) as GrenadeLauncher;
+		const grenade = entity.getComponent(LightLauncher) as LightLauncher;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
 
@@ -453,7 +499,7 @@ class WeaponSystem extends ECS.System {
 				.addComponent(new Sprite(pixelSprite, 1, 1))
 				.addComponent(new Light(smallLight, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
-				.addComponent(new Explosive());
+				.addComponent(new Bullet(entity));
 			params.ecs.addEntity(projectile);
 		}
 	}
@@ -545,7 +591,7 @@ class LightSystem extends ECS.System {
 			light.width,
 			light.height,
 			coords.x - Math.round(light.width / 2) - windowOffsetX,
-			coords.y - Math.round(light.height / 2) - light.yOffset,
+			coords.y - Math.round(light.height / 2) - light.yOffset + windowOffsetY,
 			// coords.y - (light.flushBottom ? Math.round(light.height) : Math.round(light.height / 2)),
 			light.width,
 			light.height
@@ -595,7 +641,7 @@ class SpriteSystem extends ECS.System {
 			sprite.width,
 			sprite.height,
 			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
-			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)),
+			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) + windowOffsetY,
 			sprite.width,
 			sprite.height
 		);
@@ -828,9 +874,14 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
-					if (entity.getComponent(Explosive) && possible.getComponent(Shootable)) {
-						// console.log("collision", entity.id, possible.id)
+					let bullet = entity.getComponent(Bullet) as Bullet;
+					if (bullet && bullet.shotBy.id !== possible.id && possible.getComponent(Shootable)) {
 						params.ecs.removeEntity(entity);
+
+						let health = possible.getComponent(Health) as Health;
+						if (health) {
+							health.value -= bullet.damage;
+						}
 					}
 
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
@@ -878,7 +929,7 @@ class AiSystem extends ECS.System {
 		const ai = entity.getComponent(Ai) as Ai;
 
 		for (const detected_entity of detection.detected) {
-			if (detected_entity.getComponent(Primary)) {
+			if (detected_entity.getComponent(Player)) {
 				const target_position = (detected_entity.getComponent(Position) as Position).vector;
 
 				const offset = 8;
@@ -897,7 +948,7 @@ class AiSystem extends ECS.System {
 						.addComponent(new Sprite(pixelSprite, 1, 1))
 						.addComponent(new Light(smallLight, 16, 16))
 						.addComponent(new Collider(1, 1, 1, 1, 0, true))
-						.addComponent(new Explosive());
+						.addComponent(new Bullet(entity));
 					params.ecs.addEntity(projectile);
 					ai.time = 0;
 				}
@@ -907,45 +958,6 @@ class AiSystem extends ECS.System {
 }
 
 const sph = new SpatialHashGrid(16);
-
-class TitleState extends ECS.State {
-	el: HTMLElement | undefined;
-	constructor(name: string){
-		super(name)
-		this.el = document.querySelector('#title')
-	}
-
-	enter(): void {
-		this.el.style.display = "block"	
-	}
-
-	exit(): void {
-		this.el.style.display = "none"	
-	}
-}
-
-class PlayState extends ECS.State {
-	el: HTMLElement | undefined;
-	constructor(name: string){
-		super(name)
-		this.el = document.querySelector('#hud')
-	}
-
-	enter(): void {
-		this.el.style.display = "block"	
-	}
-
-	exit(): void {
-		this.el.style.display = "none"	
-	}
-}
-
-const gameState = new ECS.FiniteStateMachine();
-gameState.addState(new ECS.State("pause"));
-gameState.addState(new PlayState("play"));
-gameState.addState(new ECS.State("dead"));
-gameState.addState(new TitleState("title"));
-gameState.setState("title");
 
 const ecs = new ECS.ECS();
 ecs.addSystem(on_mobile ? new MobileInputSystem() : new InputSystem());
@@ -958,18 +970,20 @@ ecs.addSystem(new MovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new LightSystem());
+ecs.addSystem(new HealthSystem());
 ecs.addSystem(new PositionChangeSystem());
 
 const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
 player.addComponent(new Rifle());
-player.addComponent(new GrenadeLauncher());
+player.addComponent(new LightLauncher());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
-player.addComponent(new Primary());
+player.addComponent(new Player());
 player.addComponent(new Input());
+player.addComponent(new Health());
 player.addComponent(new Light(lightSprite, 128, 128, 12));
-player.addComponent(new Position(windowCenterX, GROUND_LEVEL));
+player.addComponent(new Position(WINDOW_CENTER_X, GROUND_LEVEL));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
@@ -982,46 +996,48 @@ player.addComponent(
 );
 player.addComponent(new Collider(16, 5, 0, 5, 3, true));
 player.addComponent(new Detectable());
+player.addComponent(new Shootable());
 ecs.addEntity(player);
 
-/*
 {
 	ecs.addEntity(
 		new ECS.Entity()
 			.addComponent(new Position(16 * 12, GROUND_LEVEL))
 			.addComponent(new DetectionRadius(50))
-			//.addComponent(new Shootable())
+			.addComponent(new Shootable())
 			.addComponent(new Ai())
+			.addComponent(new Health())
 			.addComponent(new Collider(16, 8, 0, 8, 0, false))
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
-*/
 
-{
+const boxes = [
+	[4, 1],
+	[6, 1],
+	[8, 2],
+	[10, 1],
+	[13, 2],
+	[10, 4],
+	[14, 2],
+];
+
+const lights = [[6, 2]];
+
+for (let [x, y] of lights) {
 	let sprite = new Sprite(bulletSprite, 4, 4);
 	sprite.flushBottom = false;
 	ecs.addEntity(
 		new ECS.Entity()
-			.addComponent(new Position(16 * 6, GROUND_LEVEL - 16 * 2 - 8))
+			.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
 			.addComponent(new Light(lightSprite2, 128, 128))
 			.addComponent(sprite)
 	);
 }
 
-let boxes = [
-	[16 * 4, GROUND_LEVEL],
-	[16 * 6, GROUND_LEVEL - 16 * 1],
-	[16 * 8, GROUND_LEVEL - 16 * 2],
-	[16 * 10, GROUND_LEVEL - 16 * 1],
-	[16 * 13, GROUND_LEVEL - 16 * 2],
-	[16 * 10, GROUND_LEVEL - 16 * 4],
-	[16 * 14, GROUND_LEVEL - 16 * 2],
-];
-
 for (let [x, y] of boxes) {
 	const box = new ECS.Entity()
-		.addComponent(new Position(x, y))
+		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
 		.addComponent(new Sprite(boxSprite, 16, 16))
 		.addComponent(new Collider(16, 8, 0, 8, 0, false))
 		.addComponent(new Shootable())
@@ -1041,13 +1057,13 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-document.addEventListener( "touchstart",() => {
+document.addEventListener(
+	"touchstart",
+	() => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
-				screen.orientation.lock("landscape")
-				if (gameState.current.name === "title"){
-					gameState.setState("play")
-				}
+				screen.orientation.lock("landscape");
+				if (gameState.current.name === "title") gameState.setState("play");
 			});
 		}
 	},
@@ -1055,10 +1071,16 @@ document.addEventListener( "touchstart",() => {
 );
 
 document.addEventListener("click", () => {
-	if (gameState.current.name === "title"){
-		gameState.setState("play")
+	switch (gameState.current.name) {
+		case "title":
+			gameState.setState("play");
+			break;
+		case "dead":
+			// TODO reset everything
+			location.reload();
+			break;
 	}
-})
+});
 
 const fps_display = document.querySelector("#fps") as HTMLElement;
 let tmp = 0;
@@ -1086,12 +1108,12 @@ function animate(now: number) {
 	{
 		// draw ground level line
 	}
-	if (gameState.current.name == "play"){
+	if (gameState.current.name == "play") {
 		// update game
 
 		context.beginPath();
-		context.moveTo(0, GROUND_LEVEL + 0.5);
-		context.lineTo(canvas.width, GROUND_LEVEL + 0.5);
+		context.moveTo(0, GROUND_LEVEL + 0.5 + windowOffsetY);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + windowOffsetY);
 		context.strokeStyle = "#fff";
 		context.lineWidth = 1;
 		context.stroke();

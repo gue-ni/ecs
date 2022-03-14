@@ -28,7 +28,6 @@
 		<meta property="twitter:image" content="" />
 
 		<style>
-
 			:root {
 				--primary: rgba(255, 255, 255, 0.7);
 			}
@@ -57,10 +56,10 @@
 				position: absolute;
 				left: 50%;
 				top: 50%;
-
 			}
 
 			.centered {
+				display: none;
 				position: relative;
 				transform: translate(-50%, -50%);
 			}
@@ -130,24 +129,26 @@
 	</head>
 	<body>
 		<div class="overlay">
-			<div class="centered" id="title">
-				Click anyhwere to begin.
-			</div>
+			<div class="centered" id="title">Click anywhere.</div>
 		</div>
-		<div id="hud">
+		<div class="overlay">
+			<div class="centered" id="paused">Paused</div>
+		</div>
+		<div class="overlay">
+			<div class="centered" id="dead">You are dead.</div>
+		</div>
 
-		<div class="input" id="fps">
-			fps
-		</div>
-		<div class="input" id="left-control">
+
+
+		<div id="hud">
+			<div class="input" id="fps">fps</div>
+			<div class="input" id="left-control">
 				move
-			<span id="left-debug"></span>
-		</div>
-		<div class="input" id="right-control">
-			jump
-		</div>
-		<div  class="input" id="button-1">shoot</div>
-		<div class="input" id="button-2">light</div>
+				<span id="left-debug"></span>
+			</div>
+			<div class="input" id="right-control">jump</div>
+			<div class="input" id="button-1">shoot</div>
+			<div class="input" id="button-2">light</div>
 		</div>
 		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js"></script>
