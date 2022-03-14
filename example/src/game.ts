@@ -97,6 +97,8 @@ class Direction extends ECS.Component {
 class Position extends ECS.Component {
 	_x: number;
 	_y: number;
+	_lastX: number;
+	_lastY: number;
 	clamp: boolean;
 	changed: boolean;
 
@@ -109,11 +111,11 @@ class Position extends ECS.Component {
 	}
 
 	get x() {
-		return Math.floor(this._x);
+		return Math.round(this._x);
 	}
 
 	get y() {
-		return Math.floor(this._y);
+		return Math.round(this._y);
 	}
 
 	get vector(): Vector {
@@ -460,8 +462,7 @@ class NewMovementSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
-		//input.leftRight
-		const speed = 100;
+		const speed = 50;
 		velocity.x = speed * input.leftRight;
 
 		if (
@@ -469,7 +470,8 @@ class NewMovementSystem extends ECS.System {
 			(aabb.bottomCollision || position.y == GROUND_LEVEL) &&
 			!aabb.topCollision
 		) {
-			velocity.y = -150;
+			velocity.y = -200;
+			console.log("jump")
 		}
 		
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
@@ -596,21 +598,24 @@ class PositionChangeSystem extends ECS.System {
 
 class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([Position, Velocity]); // necessary Components
+		super([Position, Velocity]); 
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
-		const aabb = entity.getComponent(Collider) as Collider;
+		const aabb = entity.getComponent(Collider) as Collider; // optional
 
-		// debug
-
-		position.x += params.dt * velocity.x;
-		position.y += params.dt * velocity.y;
+		let dt = params.dt;
+		
+		position._lastX = position.x;
+		position._lastY = position.y;
+		
+		position.x += dt * velocity.x;
+		position.y += dt * velocity.y;
 
 		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision)) {
-			velocity.y += params.dt * 500;
+			velocity.y += dt * 500;
 		}
 
 		if (position.clamp) {
@@ -618,7 +623,6 @@ class PhysicsSystem extends ECS.System {
 				position.y = GROUND_LEVEL;
 				velocity.y = 0;
 			}
-
 			if (position.x < 0) {
 				position.x = 0;
 				velocity.x = 0;
@@ -1037,19 +1041,12 @@ gameState.addState(new ECS.State("title"));
 gameState.setState("play");
 
 const ecs = new ECS.ECS();
-if( on_mobile) {
-	console.log("on mobile")
-	ecs.addSystem(new MobileInputSystem())
-} else {
-	console.log("on desktop")
-	ecs.addSystem(new InputSystem());
-}
+ecs.addSystem(on_mobile ? new MobileInputSystem() : new InputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
-//ecs.addSystem(new MovementSystem());
 ecs.addSystem(new NewMovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
@@ -1080,6 +1077,7 @@ player.addComponent(new Collider(16, 2, 0, 2, 3, true));
 player.addComponent(new Detectable());
 ecs.addEntity(player);
 
+/*
 {
 	ecs.addEntity(
 		new ECS.Entity()
@@ -1091,6 +1089,7 @@ ecs.addEntity(player);
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
+*/
 
 {
 	let sprite = new Sprite(bulletSprite, 4, 4);
@@ -1160,6 +1159,7 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
+
 
 	if (gameState.current.name === "play") {
 		context.clearRect(0, 0, canvas.width, canvas.height);
