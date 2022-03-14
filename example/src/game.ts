@@ -1,3 +1,4 @@
+import { classicNameResolver } from "typescript";
 import * as ECS from "../../lib";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
@@ -67,7 +68,14 @@ class Vector {
 
 class Detectable extends ECS.Component {}
 
-class Weapons extends ECS.Component {}
+class Gun extends ECS.Component {
+	firingRate: number = 0;
+}
+
+class Rifle extends Gun {
+}
+
+class GrenadeLauncher extends Gun {}
 
 class Primary extends ECS.Component {}
 
@@ -212,9 +220,7 @@ class Input extends ECS.Component {
 	leftRight: number = 0;
 	jump: boolean = false;
 	shoot: boolean = false;
-	constructor() {
-		super();
-	}
+	grenade: boolean = false;
 }
 
 class CameraSystem extends ECS.System {
@@ -244,10 +250,12 @@ class CameraSystem extends ECS.System {
 
 class InputSystem extends ECS.System {
 	keys: any;
+	/*
 	mouseX: number;
 	mouseY: number;
 	leftMousedown: boolean = false;
 	rightMousedown: boolean = false;
+	*/
 
 	leftRight: number = 0;
 	jump: boolean = false;
@@ -271,6 +279,9 @@ class InputSystem extends ECS.System {
 				case "KeyW":
 					this.jump = true;
 					break;
+				case "Space":
+					this.shoot = true;
+					break;
 			}
 		});
 
@@ -286,52 +297,18 @@ class InputSystem extends ECS.System {
 				case "KeyW":
 					this.jump = false;
 					break;
+				case "Space":
+					this.shoot = false;
+					break;
 			}
 		});
-
-		/*
-		canvas.addEventListener("mousedown", (e) => {
-			if (e.button == 0) {
-				this.leftMousedown = true;
-			} else if (e.button == 2) {
-				this.rightMousedown = true;
-			}
-		});
-
-		canvas.addEventListener("mouseup", (e) => {
-			if (e.button == 0) {
-				this.leftMousedown = false;
-			} else if (e.button == 2) {
-				this.rightMousedown = false;
-			}
-		});
-
-		canvas.addEventListener("contextmenu", (e) => e.preventDefault());
-
-		canvas.addEventListener("mousemove", (e) => {
-			const rect = canvas.getBoundingClientRect();
-			const scaleX = canvas.width / rect.width;
-			const scaleY = canvas.height / rect.height;
-			this.mouseX = Math.round((e.clientX - rect.left) * scaleX);
-			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
-		});
-
-		*/
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		/*
 		const input = entity.getComponent(Input) as Input;
-		input.pressed = { ...this.keys };
-		input.mouseX = this.mouseX;
-		input.mouseY = this.mouseY;
-		input.leftMousedown = this.leftMousedown;
-		input.rightMousedown = this.rightMousedown;
-		*/
-
-		const input = entity.getComponent(Input) as Input;
-		input.leftRight = this.leftRight;
 		input.jump = this.jump;
+		input.shoot = this.shoot;
+		input.leftRight = this.leftRight;
 	}
 }
 
@@ -339,9 +316,12 @@ class MobileInputSystem extends ECS.System {
 	leftRight: number = 0;
 	topDown: number = 0;
 	jump: boolean = false;
+	shoot: boolean = false;
+	grenade: boolean = false;
 
 	constructor() {
 		super([Input]);
+
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
 		left_control.style.display = "block";
@@ -351,8 +331,13 @@ class MobileInputSystem extends ECS.System {
 			let touch = e.changedTouches[0];
 			let x = touch.clientX - bbox.left;
 			let width = bbox.right - bbox.left;
+
+			this.leftRight = x < width / 2 ? -1 :1;
+
+			/*
 			let h = width / 2;
 			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
+			*/
 			left_debug.innerText = `${this.leftRight}`;
 		});
 
@@ -360,13 +345,15 @@ class MobileInputSystem extends ECS.System {
 			let touch = e.changedTouches[0];
 			let x = touch.clientX - bbox.left;
 			let width = bbox.right - bbox.left;
+			this.leftRight = x < width / 2 ? -1 :1;
+			/*
 			let h = width / 2;
 			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
+			*/
 			left_debug.innerText = `${this.leftRight}`;
 		});
 
 		left_control.addEventListener("touchend", (e) => {
-			console.log("touchend");
 			this.leftRight = 0;
 			left_debug.innerText = `${this.leftRight}`;
 		});
@@ -380,12 +367,34 @@ class MobileInputSystem extends ECS.System {
 		right_control.addEventListener("touchend", (e) => {
 			this.jump = false;
 		});
+
+		const button_1 = document.querySelector('#button-1')  as HTMLElement
+		button_1.style.display = "block";
+		button_1.addEventListener("touchstart", () => {
+			this.shoot = true;
+		})
+		button_1.addEventListener("touchend", () => {
+			this.shoot = false;
+		})
+
+		const button_2 = document.querySelector('#button-2')  as HTMLElement
+		button_2.style.display = "block";
+		button_2.addEventListener("touchstart", () => {
+			this.grenade = true;
+		})
+		button_2.addEventListener("touchend", () => {
+			this.grenade = false;
+		})
+
+
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
-		input.leftRight = this.leftRight;
 		input.jump = this.jump;
+		input.shoot = this.shoot;
+		input.grenade = this.grenade;
+		input.leftRight = this.leftRight;
 	}
 }
 
@@ -424,42 +433,47 @@ class MovementSystem extends ECS.System {
 
 class WeaponSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Weapons]);
+		super([Input, Position, Rifle, Direction, GrenadeLauncher]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		//const input = entity.getComponent(Input) as Input;
-		/*
+		const input = entity.getComponent(Input) as Input;
+		const rifle = entity.getComponent(Rifle) as Rifle;
+		const grenade = entity.getComponent(GrenadeLauncher) as GrenadeLauncher;
 		const position = entity.getComponent(Position) as Position;
+		const direction = entity.getComponent(Direction) as Direction;
 
 		let gunPosOffset = 8;
-		let dir = new Vector(input.mouseX - (position.x - windowOffsetX), input.mouseY - (position.y - gunPosOffset));
-		dir.normalize();
+		const vector = new Vector(direction.right ? 1 : -1, 0);
 
-		if (input.is_right_mouse_down(500)) {
-			dir.scalarMult(300);
+		if ((grenade.firingRate -= params.dt) < 0 && input.grenade) {
+			grenade.firingRate = 0.5;
+
+			vector.scalarMult(300);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
+
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(dir.x, dir.y))
+				.addComponent(new Velocity(vector.x, vector.y))
 				.addComponent(new Light(lightSprite2, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
 
-		if (input.is_left_mouse_down(100)) {
-			dir.scalarMult(500);
+		if ((rifle.firingRate -= params.dt) < 0 && input.shoot) {
+			rifle.firingRate = 0.1;
+
+			vector.scalarMult(700);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(dir.x, dir.y))
+				.addComponent(new Velocity(vector.x, vector.y))
 				.addComponent(new Sprite(pixelSprite, 1, 1))
 				.addComponent(new Light(smallLight, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
 				.addComponent(new Explosive());
 			params.ecs.addEntity(projectile);
 		}
-		*/
 	}
 }
 
@@ -933,7 +947,8 @@ ecs.addSystem(new PositionChangeSystem());
 
 const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
-player.addComponent(new Weapons());
+player.addComponent(new Rifle());
+player.addComponent(new GrenadeLauncher());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
@@ -950,7 +965,7 @@ player.addComponent(
 		new SpriteState("jump-left", 5, 1),
 	])
 );
-player.addComponent(new Collider(16, 2, 0, 2, 3, true));
+player.addComponent(new Collider(16, 5, 0, 5, 3, true));
 player.addComponent(new Detectable());
 ecs.addEntity(player);
 

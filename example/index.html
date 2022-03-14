@@ -82,6 +82,28 @@
 				top: 10%;
 			}
 
+			#button-1 {
+				display: none;
+				color: white;
+				position: absolute;
+				left: 80%;
+				top: 40%;
+				height: 25%;
+				width: 15%;
+				border: 1px solid white;
+			}
+
+			#button-2 {
+				display: none;
+				color: white;
+				position: absolute;
+				left: 80%;
+				top: 10%;
+				height: 25%;
+				width: 15%;
+				border: 1px solid white;
+			}
+
 			#right-control {
 				display: none;
 				color: white;
@@ -114,12 +136,14 @@
 			fps
 		</div>
 		<div id="left-control">
-			left
+			move
 			<span id="left-debug"></span>
 		</div>
 		<div id="right-control">
-			right
+			jump
 		</div>
+		<div id="button-1">1</div>
+		<div id="button-2">2</div>
 		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js"></script>
 	</body>
