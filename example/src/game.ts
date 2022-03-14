@@ -324,52 +324,36 @@ class MobileInputSystem extends ECS.System {
 
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
-		left_control.style.display = "block";
+		left_control.style.display = "flex";
+
 		let left_debug = document.querySelector("#left-debug") as HTMLElement;
 		let bbox = left_control.getBoundingClientRect();
-		left_control.addEventListener("touchmove", (e: TouchEvent) => {
-			let touch = e.changedTouches[0];
+
+		const handleTouch = (e: TouchEvent) => {
+			let touch = e.touches[0];
 			let x = touch.clientX - bbox.left;
-			let width = bbox.right - bbox.left;
-
+			let width = left_control.offsetWidth;
 			this.leftRight = x < width / 2 ? -1 :1;
+			//left_debug.innerText = `${this.leftRight}, x=${x}, width=${width}`;
+		}
 
-			/*
-			let h = width / 2;
-			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
-			*/
-			left_debug.innerText = `${this.leftRight}`;
-		});
-
-		left_control.addEventListener("touchstart", (e: TouchEvent) => {
-			let touch = e.changedTouches[0];
-			let x = touch.clientX - bbox.left;
-			let width = bbox.right - bbox.left;
-			this.leftRight = x < width / 2 ? -1 :1;
-			/*
-			let h = width / 2;
-			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
-			*/
-			left_debug.innerText = `${this.leftRight}`;
-		});
-
-		left_control.addEventListener("touchend", (e) => {
+		left_control.addEventListener("touchstart",handleTouch );
+		left_control.addEventListener("touchmove",handleTouch );
+		left_control.addEventListener("touchend", () =>{
 			this.leftRight = 0;
-			left_debug.innerText = `${this.leftRight}`;
-		});
+		} );
 
 		const right_control = document.querySelector("#right-control") as HTMLElement;
-		right_control.style.display = "block";
+		right_control.style.display = "flex";
 		right_control.addEventListener("touchstart", (e) => {
 			this.jump = true;
 		});
-
 		right_control.addEventListener("touchend", (e) => {
 			this.jump = false;
 		});
 
 		const button_1 = document.querySelector('#button-1')  as HTMLElement
-		button_1.style.display = "block";
+		button_1.style.display = "flex";
 		button_1.addEventListener("touchstart", () => {
 			this.shoot = true;
 		})
@@ -378,15 +362,13 @@ class MobileInputSystem extends ECS.System {
 		})
 
 		const button_2 = document.querySelector('#button-2')  as HTMLElement
-		button_2.style.display = "block";
+		button_2.style.display = "flex";
 		button_2.addEventListener("touchstart", () => {
 			this.grenade = true;
 		})
 		button_2.addEventListener("touchend", () => {
 			this.grenade = false;
 		})
-
-
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {

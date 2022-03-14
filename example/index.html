@@ -28,10 +28,12 @@
 		<meta property="twitter:image" content="" />
 
 		<style>
+
+			:root {
+				--primary: rgba(255, 255, 255, 0.7);
+			}
+
 			* {
-				/*
-				box-sizing: border-box;
-				*/
 				-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 				-webkit-tap-highlight-color: transparent;
 				-webkit-user-select: none;
@@ -63,56 +65,47 @@
 				transform: translate(-50%, -50%);
 			}
 
-			#left-control {
-				color: white;
+			.input {
+				color: var(--primary);
 				position: absolute;
 				display: none;
+				border: 1px solid var(--primary);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
+			#left-control {
 				left: 5%;
 				top: 70%;
 				height: 25%;
 				width: 30%;
-				border: 1px solid white;
-
 			}
 
 			#fps {
-				color: white;
-				position: absolute;
 				left: 5%;
 				top: 10%;
 			}
 
 			#button-1 {
-				display: none;
-				color: white;
-				position: absolute;
 				left: 80%;
 				top: 40%;
 				height: 25%;
 				width: 15%;
-				border: 1px solid white;
 			}
 
 			#button-2 {
-				display: none;
-				color: white;
-				position: absolute;
 				left: 80%;
 				top: 10%;
 				height: 25%;
 				width: 15%;
-				border: 1px solid white;
 			}
 
 			#right-control {
-				display: none;
-				color: white;
-				position: absolute;
 				left: 80%;
 				top: 70%;
 				height: 25%;
 				width: 15%;
-				border: 1px solid white;
 			}
 
 			canvas {
@@ -132,18 +125,18 @@
 			<div class="centered">
 			</div>
 		</div>
-		<div id="fps">
+		<div class="input" id="fps">
 			fps
 		</div>
-		<div id="left-control">
-			move
+		<div class="input" id="left-control">
+				move
 			<span id="left-debug"></span>
 		</div>
-		<div id="right-control">
+		<div class="input" id="right-control">
 			jump
 		</div>
-		<div id="button-1">1</div>
-		<div id="button-2">2</div>
+		<div  class="input" id="button-1">shoot</div>
+		<div class="input" id="button-2">light</div>
 		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js"></script>
 	</body>
