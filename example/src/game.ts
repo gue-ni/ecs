@@ -3,7 +3,7 @@ import * as ECS from "../../lib";
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-let on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let windowOffsetX = 0;
 let windowOffsetY = 0;
@@ -91,6 +91,8 @@ class Spikes extends ECS.Component {}
 class Player extends ECS.Component {}
 
 class Static extends ECS.Component {}
+
+class Gravity extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
@@ -502,6 +504,7 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
+				.addComponent(new Gravity())
 				.addComponent(new Light(lightSprite2, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
@@ -553,7 +556,7 @@ class PhysicsSystem extends ECS.System {
 		position.x += dt * velocity.x;
 		position.y += dt * velocity.y;
 
-		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision)) {
+		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision) && entity.getComponent(Gravity)) {
 			velocity.y += dt * 500;
 		}
 
@@ -1004,6 +1007,7 @@ const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
 player.addComponent(new Rifle());
 player.addComponent(new LightLauncher());
+player.addComponent(new Gravity());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Player());
