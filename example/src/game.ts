@@ -3,8 +3,11 @@ import * as ECS from "../../lib";
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
+let on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
+const GROUND_LEVEL = canvas.height - (on_mobile ? 32 : 16);
 
 const characterSprite = new Image();
 characterSprite.src = "assets/sprites.png";
@@ -256,6 +259,7 @@ class Input extends ECS.Component {
 class NewInput extends ECS.Component {
 	leftRight: number = 0;
 	jump: boolean = false;
+	shoot: boolean = false;
 	constructor(){
 		super()
 	}
@@ -296,6 +300,7 @@ class InputSystem extends ECS.System {
 
 	leftRight: number = 0;
 	jump: boolean = false;
+	shoot: boolean = false;
 
 	constructor() {
 		super([NewInput]);
@@ -360,6 +365,7 @@ class InputSystem extends ECS.System {
 			this.mouseX = Math.round((e.clientX - rect.left) * scaleX);
 			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
 		});
+
 		*/
 	}
 
@@ -389,7 +395,8 @@ class MobileInputSystem extends ECS.System {
 	constructor(){
 		super([NewInput]);
 
-		let left_control = document.querySelector("#left-control");
+		let left_control = document.querySelector("#left-control") as HTMLElement;
+		left_control.style.display = "block"
 		let left_debug = document.querySelector("#left-debug") as HTMLElement;
 		let bbox = left_control.getBoundingClientRect();
 		left_control.addEventListener("touchmove", (e: TouchEvent) => {
@@ -417,7 +424,8 @@ class MobileInputSystem extends ECS.System {
 			left_debug.innerText = `${this.leftRight}`
 		})
 
-		const right_control = document.querySelector('#right-control')
+		const right_control = document.querySelector('#right-control') as HTMLElement;
+		right_control.style.display = "block"
 		right_control.addEventListener("touchstart", (e) => {
 			this.jump = true;
 		})
@@ -458,7 +466,7 @@ class NewMovementSystem extends ECS.System {
 
 		if (
 			input.jump &&
-			(aabb.bottomCollision || position.y == params.canvas.height) &&
+			(aabb.bottomCollision || position.y == GROUND_LEVEL) &&
 			!aabb.topCollision
 		) {
 			velocity.y = -150;
@@ -471,7 +479,7 @@ class NewMovementSystem extends ECS.System {
 			sprite.setState(direction.right ? "run-right" : "run-left");
 		}
 
-		if (!(aabb.bottomCollision || position.y == params.canvas.height)) {
+		if (!(aabb.bottomCollision || position.y == GROUND_LEVEL)) {
 			sprite.setState(direction.right ? "jump-right" : "jump-left");
 		}
 	}
@@ -601,26 +609,15 @@ class PhysicsSystem extends ECS.System {
 		position.x += params.dt * velocity.x;
 		position.y += params.dt * velocity.y;
 
-		if (position.y < params.canvas.height && (!aabb || !aabb.bottomCollision)) {
+		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision)) {
 			velocity.y += params.dt * 500;
 		}
 
 		if (position.clamp) {
-			if (position.y > params.canvas.height) {
-				position.y = params.canvas.height;
+			if (position.y > GROUND_LEVEL) {
+				position.y = GROUND_LEVEL;
 				velocity.y = 0;
 			}
-
-			if (position.y < 0) {
-				position.y = 0;
-				velocity.y = 0;
-			}
-			/*
-			if (position.x > params.canvas.width) {
-				position.x = params.canvas.width;
-				velocity.x = 0;
-			}
-			*/
 
 			if (position.x < 0) {
 				position.x = 0;
@@ -1040,7 +1037,7 @@ gameState.addState(new ECS.State("title"));
 gameState.setState("play");
 
 const ecs = new ECS.ECS();
-if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+if( on_mobile) {
 	console.log("on mobile")
 	ecs.addSystem(new MobileInputSystem())
 } else {
@@ -1058,7 +1055,6 @@ ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new LightSystem());
 ecs.addSystem(new PositionChangeSystem());
-//ecs.addSystem(new PlayerLogginSystem());
 
 const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
@@ -1069,7 +1065,7 @@ player.addComponent(new Dynamic());
 player.addComponent(new Primary());
 player.addComponent(new NewInput())
 player.addComponent(new Light(lightSprite, 128, 128, 12));
-player.addComponent(new Position(windowCenterX, canvas.height));
+player.addComponent(new Position(windowCenterX, GROUND_LEVEL));
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
@@ -1087,7 +1083,7 @@ ecs.addEntity(player);
 {
 	ecs.addEntity(
 		new ECS.Entity()
-			.addComponent(new Position(16 * 12, canvas.height))
+			.addComponent(new Position(16 * 12, GROUND_LEVEL))
 			.addComponent(new DetectionRadius(50))
 			//.addComponent(new Shootable())
 			.addComponent(new Ai())
@@ -1101,33 +1097,21 @@ ecs.addEntity(player);
 	sprite.flushBottom = false;
 	ecs.addEntity(
 		new ECS.Entity()
-			.addComponent(new Position(16 * 6, canvas.height - 16 * 2 - 8))
+			.addComponent(new Position(16 * 6, GROUND_LEVEL - 16 * 2 - 8))
 			.addComponent(new Light(lightSprite2, 128, 128))
 			.addComponent(sprite)
 	);
 }
-/*
-{
-	let sprite = new Sprite(bulletSprite, 4, 4);
-	sprite.flushBottom = false;
-	ecs.addEntity(
-		new ECS.Entity()
-			.addComponent(new Position(16 * 13, canvas.height - 16 * 4 - 8))
-			.addComponent(new Light(lightSprite2, 128, 128))
-			.addComponent(sprite)
-	);
-}
-*/
+
 
 let boxes = [
-	[16 * 4, 128],
-	[16 * 6, 128],
-	[16 * 8, 128 - 16 * 2],
-	[16 * 9, 128 - 16 * 1],
-	[16 * 10, 128 - 16 * 1],
-	[16 * 13, 128 - 16 * 2],
-	[16 * 10, 128 - 16 * 4],
-	[16 * 14, 128 - 16 * 2],
+	[16 * 4, GROUND_LEVEL],
+	[16 * 6, GROUND_LEVEL - 16 * 1],
+	[16 * 8, GROUND_LEVEL - 16 * 2],
+	[16 * 10, GROUND_LEVEL - 16 * 1],
+	[16 * 13, GROUND_LEVEL - 16 * 2],
+	[16 * 10, GROUND_LEVEL - 16 * 4],
+	[16 * 14, GROUND_LEVEL - 16 * 2],
 ];
 
 for (let [x, y] of boxes) {
@@ -1181,7 +1165,15 @@ function animate(now: number) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
+		context.beginPath()
+		context.moveTo(0, GROUND_LEVEL + 0.5);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5)
+		context.strokeStyle = "#fff"
+		context.lineWidth = 1;
+		context.stroke()
+		context.closePath()
 		ecs.update({ dt, canvas: canvas, context: context, ecs });
+
 	}
 	requestAnimationFrame(animate);
 }
