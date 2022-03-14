@@ -1,10 +1,7 @@
-//import * as ECS from "lofi-ecs";
 import * as ECS from "../../lib";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-
-//screen?.orientation?.lock('landscape');
 
 let windowOffsetX = 0;
 let windowCenterX = canvas.width / 2;
@@ -256,6 +253,14 @@ class Input extends ECS.Component {
 	}
 }
 
+class NewInput extends ECS.Component {
+	leftRight: number = 0;
+	jump: boolean = false;
+	constructor(){
+		super()
+	}
+}
+
 class CameraSystem extends ECS.System {
 	constructor() {
 		super([Primary, Position]);
@@ -288,19 +293,48 @@ class InputSystem extends ECS.System {
 	leftMousedown: boolean = false;
 	rightMousedown: boolean = false;
 
+
+	leftRight: number = 0;
+	jump: boolean = false;
+
 	constructor() {
-		super([Input]);
+		super([NewInput]);
 
 		this.keys = {};
 
 		window.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
+
+			switch (e.code){
+				case "KeyA":
+					this.leftRight = -1;
+					break;
+				case "KeyD":
+					this.leftRight = 1;
+					break;
+				
+				case "KeyW":
+					this.jump = true;
+					break;
+			}
 		});
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
+			switch (e.code){
+				case "KeyA":
+					this.leftRight = 0;
+					break;
+				case "KeyD":
+					this.leftRight = 0;
+					break;
+				case "KeyW":
+					this.jump = false;
+					break;
+			}
 		});
 
+		/*
 		canvas.addEventListener("mousedown", (e) => {
 			if (e.button == 0) {
 				this.leftMousedown = true;
@@ -326,15 +360,120 @@ class InputSystem extends ECS.System {
 			this.mouseX = Math.round((e.clientX - rect.left) * scaleX);
 			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
 		});
+		*/
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		/*
 		const input = entity.getComponent(Input) as Input;
 		input.pressed = { ...this.keys };
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
 		input.leftMousedown = this.leftMousedown;
 		input.rightMousedown = this.rightMousedown;
+		*/
+
+		const input = entity.getComponent(NewInput) as NewInput;
+		input.leftRight = this.leftRight;
+		input.jump = this.jump;
+
+	}
+}
+
+class MobileInputSystem extends ECS.System {
+
+	leftRight: number = 0;
+	topDown: number = 0;
+	jump: boolean = false;
+
+	constructor(){
+		super([NewInput]);
+
+		let left_control = document.querySelector("#left-control");
+		let left_debug = document.querySelector("#left-debug") as HTMLElement;
+		let bbox = left_control.getBoundingClientRect();
+		left_control.addEventListener("touchmove", (e: TouchEvent) => {
+			let touch = e.changedTouches[0];
+			let x = touch.clientX - bbox.left;
+			let width = bbox.right - bbox.left;
+			let h = (width / 2)
+			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
+			left_debug.innerText = `${this.leftRight}`
+
+		});
+
+		left_control.addEventListener("touchstart", (e: TouchEvent) => {
+			let touch = e.changedTouches[0];
+			let x = touch.clientX - bbox.left;
+			let width = bbox.right - bbox.left;
+			let h = (width / 2)
+			this.leftRight = Math.min(Math.max((x - h) / h, -1.0), 1.0);
+			left_debug.innerText = `${this.leftRight}`
+		})
+
+		left_control.addEventListener("touchend", (e) => {
+			console.log("touchend")
+			this.leftRight = 0;
+			left_debug.innerText = `${this.leftRight}`
+		})
+
+		const right_control = document.querySelector('#right-control')
+		right_control.addEventListener("touchstart", (e) => {
+			this.jump = true;
+		})
+
+		right_control.addEventListener("touchend", (e) => {
+			this.jump = false;
+		})
+
+
+
+	}
+
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(NewInput) as NewInput;
+		input.leftRight = this.leftRight;
+		input.jump = this.jump;
+		
+	}
+}
+
+class NewMovementSystem extends ECS.System {
+	constructor(){
+		super([NewInput, Velocity, Position, Collider, Direction, Sprite])
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(NewInput) as NewInput;
+		const velocity = entity.getComponent(Velocity) as Velocity;
+		const aabb = entity.getComponent(Collider) as Collider;
+		const position = entity.getComponent(Position) as Position;
+		const direction = entity.getComponent(Direction) as Direction;
+		const sprite = entity.getComponent(Sprite) as Sprite;
+
+		//input.leftRight
+		const speed = 100;
+		velocity.x = speed * input.leftRight;
+
+		if (
+			input.jump &&
+			(aabb.bottomCollision || position.y == params.canvas.height) &&
+			!aabb.topCollision
+		) {
+			velocity.y = -150;
+		}
+		
+		sprite.setState(direction.right ? "idle-right" : "idle-left");
+
+		if (Math.abs(input.leftRight) > 0)	{
+			direction.right = input.leftRight >= 0;
+			sprite.setState(direction.right ? "run-right" : "run-left");
+		}
+
+		if (!(aabb.bottomCollision || position.y == params.canvas.height)) {
+			sprite.setState(direction.right ? "jump-right" : "jump-left");
+		}
 	}
 }
 
@@ -877,7 +1016,6 @@ class AiSystem extends ECS.System {
 
 				ai.time += params.dt;
 				if (ai.time > 0.3) {
-					console.log("shoot");
 					const projectile = new ECS.Entity(1)
 						.addComponent(new Position(position.x, position.y, false))
 						.addComponent(new Velocity(dir.x, dir.y))
@@ -902,13 +1040,20 @@ gameState.addState(new ECS.State("title"));
 gameState.setState("play");
 
 const ecs = new ECS.ECS();
-ecs.addSystem(new InputSystem());
+if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+	console.log("on mobile")
+	ecs.addSystem(new MobileInputSystem())
+} else {
+	console.log("on desktop")
+	ecs.addSystem(new InputSystem());
+}
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
-ecs.addSystem(new MovementSystem());
+//ecs.addSystem(new MovementSystem());
+ecs.addSystem(new NewMovementSystem());
 ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new LightSystem());
@@ -922,6 +1067,7 @@ player.addComponent(new Weapons());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Primary());
+player.addComponent(new NewInput())
 player.addComponent(new Light(lightSprite, 128, 128, 12));
 player.addComponent(new Position(windowCenterX, canvas.height));
 player.addComponent(
@@ -936,7 +1082,6 @@ player.addComponent(
 );
 player.addComponent(new Collider(16, 2, 0, 2, 3, true));
 player.addComponent(new Detectable());
-//player.addComponent(new DetectionRadius(16));
 ecs.addEntity(player);
 
 {
@@ -1012,6 +1157,7 @@ document.addEventListener(
 	(e) => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
+				console.log("set full screen")
 				screen.orientation.lock("landscape");
 				//gameState.setState("play")
 			});
