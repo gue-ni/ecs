@@ -321,12 +321,12 @@ class MobileInputSystem extends ECS.System {
 
 	constructor() {
 		super([Input]);
+		console.log("mobile")
 
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
 		left_control.style.display = "flex";
 
-		let left_debug = document.querySelector("#left-debug") as HTMLElement;
 		let bbox = left_control.getBoundingClientRect();
 
 		const handleTouch = (e: TouchEvent) => {
@@ -907,12 +907,45 @@ class AiSystem extends ECS.System {
 }
 
 const sph = new SpatialHashGrid(16);
+
+class TitleState extends ECS.State {
+	el: HTMLElement | undefined;
+	constructor(name: string){
+		super(name)
+		this.el = document.querySelector('#title')
+	}
+
+	enter(): void {
+		this.el.style.display = "block"	
+	}
+
+	exit(): void {
+		this.el.style.display = "none"	
+	}
+}
+
+class PlayState extends ECS.State {
+	el: HTMLElement | undefined;
+	constructor(name: string){
+		super(name)
+		this.el = document.querySelector('#hud')
+	}
+
+	enter(): void {
+		this.el.style.display = "block"	
+	}
+
+	exit(): void {
+		this.el.style.display = "none"	
+	}
+}
+
 const gameState = new ECS.FiniteStateMachine();
 gameState.addState(new ECS.State("pause"));
-gameState.addState(new ECS.State("play"));
+gameState.addState(new PlayState("play"));
 gameState.addState(new ECS.State("dead"));
-gameState.addState(new ECS.State("title"));
-gameState.setState("play");
+gameState.addState(new TitleState("title"));
+gameState.setState("title");
 
 const ecs = new ECS.ECS();
 ecs.addSystem(on_mobile ? new MobileInputSystem() : new InputSystem());
@@ -1008,19 +1041,24 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-document.addEventListener(
-	"touchstart",
-	(e) => {
+document.addEventListener( "touchstart",() => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
-				console.log("set full screen");
-				screen.orientation.lock("landscape");
-				//gameState.setState("play")
+				screen.orientation.lock("landscape")
+				if (gameState.current.name === "title"){
+					gameState.setState("play")
+				}
 			});
 		}
 	},
 	false
 );
+
+document.addEventListener("click", () => {
+	if (gameState.current.name === "title"){
+		gameState.setState("play")
+	}
+})
 
 const fps_display = document.querySelector("#fps") as HTMLElement;
 let tmp = 0;
@@ -1039,28 +1077,29 @@ function animate(now: number) {
 		fps_display.innerText = `${(1 / dt).toFixed(2)} fps`;
 	}
 
-	if (gameState.current.name === "play") {
-		{
-			// clear screen
-			context.clearRect(0, 0, canvas.width, canvas.height);
-			context.fillStyle = "rgb(0,0,0)";
-			context.fillRect(0, 0, canvas.width, canvas.height);
-		}
-		{
-			// draw ground level line
-			context.beginPath();
-			context.moveTo(0, GROUND_LEVEL + 0.5);
-			context.lineTo(canvas.width, GROUND_LEVEL + 0.5);
-			context.strokeStyle = "#fff";
-			context.lineWidth = 1;
-			context.stroke();
-			context.closePath();
-		}
-		{
-			// update game
-			ecs.update({ dt, canvas: canvas, context: context, ecs });
-		}
+	{
+		// clear screen
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.fillStyle = "rgb(0,0,0)";
+		context.fillRect(0, 0, canvas.width, canvas.height);
 	}
+	{
+		// draw ground level line
+	}
+	if (gameState.current.name == "play"){
+		// update game
+
+		context.beginPath();
+		context.moveTo(0, GROUND_LEVEL + 0.5);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5);
+		context.strokeStyle = "#fff";
+		context.lineWidth = 1;
+		context.stroke();
+		context.closePath();
+
+		ecs.update({ dt, canvas: canvas, context: context, ecs });
+	}
+
 	requestAnimationFrame(animate);
 }
 

@@ -68,7 +68,6 @@
 			.input {
 				color: var(--primary);
 				position: absolute;
-				display: none;
 				border: 1px solid var(--primary);
 				display: flex;
 				align-items: center;
@@ -76,6 +75,7 @@
 			}
 
 			#left-control {
+				display: none;
 				left: 5%;
 				top: 70%;
 				height: 25%;
@@ -83,11 +83,13 @@
 			}
 
 			#fps {
+				display: none;
 				left: 5%;
 				top: 10%;
 			}
 
 			#button-1 {
+				display: none;
 				left: 80%;
 				top: 40%;
 				height: 25%;
@@ -95,13 +97,19 @@
 			}
 
 			#button-2 {
+				display: none;
 				left: 80%;
 				top: 10%;
 				height: 25%;
 				width: 15%;
 			}
 
+			#hud {
+				display: none;
+			}
+
 			#right-control {
+				display: none;
 				left: 80%;
 				top: 70%;
 				height: 25%;
@@ -122,9 +130,12 @@
 	</head>
 	<body>
 		<div class="overlay">
-			<div class="centered">
+			<div class="centered" id="title">
+				Click anyhwere to begin.
 			</div>
 		</div>
+		<div id="hud">
+
 		<div class="input" id="fps">
 			fps
 		</div>
@@ -137,6 +148,7 @@
 		</div>
 		<div  class="input" id="button-1">shoot</div>
 		<div class="input" id="button-2">light</div>
+		</div>
 		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js"></script>
 	</body>
