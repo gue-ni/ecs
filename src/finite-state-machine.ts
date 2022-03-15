@@ -11,6 +11,22 @@ export class State {
 	enter() {}
 }
 
+export class HTMLState extends State {
+	el: HTMLElement | null;
+	constructor(name: string, selector: string){
+		super(name)
+		this.el = document.querySelector(selector)
+	}
+
+	enter(): void {
+		if (this.el) this.el.style.display = "block"	
+	}
+
+	exit(): void {
+		if (this.el) this.el.style.display = "none"	
+	}
+}
+
 export class FiniteStateMachine {
 	current: State | undefined;
 	states: Map<string, State>;
