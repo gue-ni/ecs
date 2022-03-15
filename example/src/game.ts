@@ -3,12 +3,12 @@ import * as ECS from "../../lib";
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
-const on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-let windowOffsetX = 0;
-let windowOffsetY = 0;
+let WINDOW_OFFSET_X = 0;
+let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
-const BOTTOM_BORDER = (on_mobile ? 40 : 30)
+const BOTTOM_BORDER = (ON_MOBILE ? 40 : 30)
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const gameState = new ECS.FiniteStateMachine();
@@ -304,27 +304,27 @@ class CameraSystem extends ECS.System {
 		const minDiffY = BOTTOM_BORDER;
 		let diffX = position.x - WINDOW_CENTER_X;
 
-		let diffY = canvas.height - windowOffsetY - position.y;
+		let diffY = canvas.height - WINDOW_OFFSET_Y - position.y;
 
 		let delta = 0;
 		if (diffY > maxDiffY) {
 			delta = diffY - maxDiffY
-			windowOffsetY += delta;
+			WINDOW_OFFSET_Y += delta;
 		} else if (diffY < minDiffY){
 			delta = diffY - minDiffY;
-			windowOffsetY += delta;
+			WINDOW_OFFSET_Y += delta;
 		}
 		
 		if (diffX > maxDiffX) {
 			let delta = diffX - maxDiffX;
-			windowOffsetX += delta;
+			WINDOW_OFFSET_X += delta;
 			WINDOW_CENTER_X += delta;
 		}
 
 		if (diffX < -maxDiffX) {
 			let delta = maxDiffX + diffX;
 			WINDOW_CENTER_X += delta;
-			windowOffsetX += delta;
+			WINDOW_OFFSET_X += delta;
 		}
 	}
 }
@@ -427,6 +427,17 @@ class MobileInputSystem extends ECS.System {
 			//left_debug.innerText = `${this.leftRight}, x=${x}, width=${width}`;
 		};
 
+		const handleTouch2 = (e: TouchEvent)=> {
+			let touch = e.changedTouches[0];
+			let x = touch.clientX - bbox.left;
+			let width = left_control.offsetWidth;
+			let h = width / 2;
+			let val = (x - h) / h
+			val *= 3;
+			//let sigmoid = 1 / (1 + Math.exp(-val)) * Math.sign(val);
+			this.leftRight = Math.min(Math.max(val, -1.0), 1.0);
+		}
+
 		left_control.addEventListener("touchstart", handleTouch);
 		left_control.addEventListener("touchmove", handleTouch);
 		left_control.addEventListener("touchend", () => {
@@ -477,14 +488,14 @@ class MovementSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
-		const velocity = entity.getComponent(Velocity) as Velocity;
 		const aabb = entity.getComponent(Collider) as Collider;
+		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const speed = 50;
-		const jump_speed = -200;
+		const jump_speed = -150;
 		velocity.x = speed * input.leftRight;
 
 		const standing = (aabb.bottomCollision || position.y == GROUND_LEVEL)
@@ -643,8 +654,8 @@ class LightSystem extends ECS.System {
 			0,
 			light.width,
 			light.height,
-			coords.x - Math.round(light.width / 2) - windowOffsetX,
-			coords.y - Math.round(light.height / 2) - light.yOffset + windowOffsetY,
+			coords.x - Math.round(light.width / 2) - WINDOW_OFFSET_X,
+			coords.y - Math.round(light.height / 2) - light.yOffset + WINDOW_OFFSET_Y,
 			// coords.y - (light.flushBottom ? Math.round(light.height) : Math.round(light.height / 2)),
 			light.width,
 			light.height
@@ -693,8 +704,8 @@ class SpriteSystem extends ECS.System {
 			sprite.state.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
-			coords.x - Math.round(sprite.width / 2) - windowOffsetX,
-			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) + windowOffsetY,
+			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X,
+			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) + WINDOW_OFFSET_Y,
 			sprite.width,
 			sprite.height
 		);
@@ -1028,7 +1039,7 @@ class AiSystem extends ECS.System {
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
-ecs.addSystem(on_mobile ? new MobileInputSystem() : new InputSystem());
+ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new InputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
@@ -1242,8 +1253,8 @@ function animate(now: number) {
 		// update game
 
 		context.beginPath();
-		context.moveTo(0, GROUND_LEVEL + 0.5 + windowOffsetY);
-		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + windowOffsetY);
+		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
 		context.strokeStyle = "#fff";
 		context.lineWidth = 1;
 		context.stroke();
