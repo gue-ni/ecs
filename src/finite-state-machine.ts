@@ -42,7 +42,9 @@ export class FiniteStateMachine {
 	setState(name: string) {
 		const previous = this.current;
 		previous?.exit();
-		this.current = this.states.get(name)!;
+		const state = this.states.get(name);
+		if (!state) throw new Error("state does not exist!")
+		this.current = state;
 		this.current.previous = previous;
 		this.current.enter();
 	}

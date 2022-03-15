@@ -21,7 +21,7 @@ class Entity {
 		return this;
 	}
 
-	removeComponent(component: Component): void {
+	removeComponent(component: any): void {
 		const removed = this.components.get(component.name);
 		if (removed) {
 			removed.destroy();
