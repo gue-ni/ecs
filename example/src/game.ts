@@ -8,7 +8,8 @@ const on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 let windowOffsetX = 0;
 let windowOffsetY = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
-const GROUND_LEVEL = canvas.height - (on_mobile ? 40 : 16);
+const BOTTOM_BORDER = (on_mobile ? 40 : 16)
+const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const gameState = new ECS.FiniteStateMachine();
 gameState.addState(new ECS.HTMLState("pause", "#paused"));
@@ -240,6 +241,8 @@ class Input extends ECS.Component {
 	jump: boolean = false;
 	shoot: boolean = false;
 	grenade: boolean = false;
+	doubleJumpAllowed: boolean = false;
+	timeBetweenJumps: number = 0;
 }
 
 class Health extends ECS.Component {
@@ -285,14 +288,20 @@ class CameraSystem extends ECS.System {
 
 		const maxDiffX = 40;
 		const maxDiffY = 80;
+		const minDiffY = BOTTOM_BORDER;
 		let diffX = position.x - WINDOW_CENTER_X;
 
-		let diffY = canvas.height - position.y;
+		let diffY = canvas.height - windowOffsetY - position.y;
 
+		let delta = 0;
 		if (diffY > maxDiffY) {
-			windowOffsetY = diffY - maxDiffY;
+			delta = diffY - maxDiffY
+			windowOffsetY += delta;
+		} else if (diffY < minDiffY){
+			delta = diffY - minDiffY;
+			windowOffsetY += delta;
 		}
-
+		
 		if (diffX > maxDiffX) {
 			let delta = diffX - maxDiffX;
 			windowOffsetX += delta;
@@ -328,6 +337,7 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
+			console.log("keydown", e.code)
 
 			switch (e.code) {
 				case "KeyA":
@@ -350,6 +360,7 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
+			console.log("keyup", e.code)
 			switch (e.code) {
 				case "KeyA":
 					this.leftRight = Math.max(this.leftRight, 0);
@@ -460,10 +471,18 @@ class MovementSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const speed = 50;
+		const jump_speed = -200;
 		velocity.x = speed * input.leftRight;
 
-		if (input.jump && (aabb.bottomCollision || position.y == GROUND_LEVEL) && !aabb.topCollision) {
-			velocity.y = -200;
+		const standing = (aabb.bottomCollision || position.y == GROUND_LEVEL)
+
+		input.timeBetweenJumps += params.dt;
+		if (input.jump && (standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.5)) && !aabb.topCollision) {
+			console.log({doubleJump: input.doubleJumpAllowed, jump: input.jump})
+			
+			input.timeBetweenJumps = 0;
+			input.doubleJumpAllowed = standing;
+			velocity.y = jump_speed;
 		}
 
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
@@ -1029,6 +1048,7 @@ player.addComponent(
 );
 ecs.addEntity(player);
 
+/*
 {
 	ecs.addEntity(
 		new ECS.Entity()
@@ -1040,6 +1060,7 @@ ecs.addEntity(player);
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
+*/
 
 {
 	ecs.addEntity(
