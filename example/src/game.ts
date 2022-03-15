@@ -8,7 +8,7 @@ const on_mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 let windowOffsetX = 0;
 let windowOffsetY = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
-const BOTTOM_BORDER = (on_mobile ? 40 : 16)
+const BOTTOM_BORDER = (on_mobile ? 40 : 30)
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const gameState = new ECS.FiniteStateMachine();
@@ -24,8 +24,12 @@ characterSprite.src = "assets/sprites.png";
 const spikes = new Image();
 spikes.src = "assets/bottom_spikes.png";
 
-const lightSprite = new Image();
-lightSprite.src = "assets/light.png";
+const BIG_LIGHT_SPRITE = new Image();
+BIG_LIGHT_SPRITE.src = "assets/light.png";
+
+const COIN_SPRITE = new Image();
+COIN_SPRITE.src = "assets/coin.png";
+
 
 const lightSprite2 = new Image();
 lightSprite2.src = "assets/light2.png";
@@ -33,8 +37,8 @@ lightSprite2.src = "assets/light2.png";
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
-const boxSprite = new Image();
-boxSprite.src = "assets/box.png";
+const BOX_SPRITE = new Image();
+BOX_SPRITE.src = "assets/box.png";
 
 const pixelSprite = new Image();
 pixelSprite.src = "assets/pixel.png";
@@ -90,6 +94,8 @@ class LightLauncher extends Gun {}
 class Spikes extends ECS.Component {}
 
 class Player extends ECS.Component {}
+
+class Collectible extends ECS.Component {}
 
 class Static extends ECS.Component {}
 
@@ -197,6 +203,11 @@ class Light extends ECS.Component {
 	}
 }
 
+interface SpriteConfig {
+	states?: SpriteState[];
+	flushBottom?: boolean;
+}
+
 class Sprite extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
@@ -230,8 +241,10 @@ class Sprite extends ECS.Component {
 	}
 
 	setState(name: string) {
+		let newState =this.states.get(name);
+		if (!newState) throw new Error("state does not exist")
 		this.state?.exit();
-		this.state = this.states.get(name);
+		this.state = newState;
 		this.state?.enter();
 	}
 }
@@ -337,7 +350,7 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
-			console.log("keydown", e.code)
+			//console.log("keydown", e.code)
 
 			switch (e.code) {
 				case "KeyA":
@@ -360,7 +373,7 @@ class InputSystem extends ECS.System {
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
-			console.log("keyup", e.code)
+			//console.log("keyup", e.code)
 			switch (e.code) {
 				case "KeyA":
 					this.leftRight = Math.max(this.leftRight, 0);
@@ -477,9 +490,7 @@ class MovementSystem extends ECS.System {
 		const standing = (aabb.bottomCollision || position.y == GROUND_LEVEL)
 
 		input.timeBetweenJumps += params.dt;
-		if (input.jump && (standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.5)) && !aabb.topCollision) {
-			console.log({doubleJump: input.doubleJumpAllowed, jump: input.jump})
-			
+		if (input.jump && (standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.3)) && !aabb.topCollision) {
 			input.timeBetweenJumps = 0;
 			input.doubleJumpAllowed = standing;
 			velocity.y = jump_speed;
@@ -492,7 +503,7 @@ class MovementSystem extends ECS.System {
 			sprite.setState(direction.right ? "run-right" : "run-left");
 		}
 
-		if (!(aabb.bottomCollision || position.y == GROUND_LEVEL)) {
+		if (!standing) {
 			sprite.setState(direction.right ? "jump-right" : "jump-left");
 		}
 	}
@@ -515,7 +526,8 @@ class WeaponSystem extends ECS.System {
 		if ((grenade.firingRate -= params.dt) < 0 && input.grenade) {
 			grenade.firingRate = 0.5;
 
-			const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
+			//const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
+			const vector = new Vector(direction.right ? 1 : -1, 0);
 			vector.scalarMult(200);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
@@ -523,17 +535,17 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
-				.addComponent(new Gravity())
+				//.addComponent(new Gravity())
 				.addComponent(new Light(lightSprite2, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
 
 		if ((rifle.firingRate -= params.dt) < 0 && input.shoot) {
-			rifle.firingRate = 0.1;
+			rifle.firingRate = 0.3;
 
 			const vector = new Vector(direction.right ? 1 : -1, 0);
-			vector.scalarMult(700);
+			vector.scalarMult(100);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
@@ -700,10 +712,10 @@ class Collider extends ECS.Component {
 	left: number;
 	padding: number;
 
-	bottomCollision: boolean;
+	topCollision: boolean;
 	leftCollision: boolean;
 	rightCollision: boolean;
-	topCollision: boolean;
+	bottomCollision: boolean;
 
 	constructor(
 		top: number,
@@ -918,6 +930,13 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
+
+
+					if (possible.getComponent(Collectible)){
+						//possible.removeComponent(Collectible);
+						params.ecs.removeEntity(possible)
+					}
+
 					// spikes are dangerous!
 					if (health && possible.getComponent(Spikes)) {
 						console.log("spike");
@@ -1006,7 +1025,7 @@ class AiSystem extends ECS.System {
 	}
 }
 
-const sph = new SpatialHashGrid(16);
+const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
 ecs.addSystem(on_mobile ? new MobileInputSystem() : new InputSystem());
@@ -1032,9 +1051,9 @@ player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Health());
-player.addComponent(new Light(lightSprite, 128, 128, 12));
+player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
-player.addComponent(new Collider(16, 5, 0, 5, 3, true));
+player.addComponent(new Collider(16, 3, 0, 3, 3, true));
 player.addComponent(new Detectable());
 player.addComponent(
 	new Sprite(characterSprite, 16, 16, [
@@ -1047,6 +1066,10 @@ player.addComponent(
 	])
 );
 ecs.addEntity(player);
+
+
+// coin
+
 
 /*
 {
@@ -1070,6 +1093,31 @@ ecs.addEntity(player);
 			.addComponent(new Sprite(spikes, 16, 16))
 			.addComponent(new Spikes())
 	);
+}
+
+const coins = [
+	[10, 4],
+	[10, 5],
+	[10, 6],
+	[10, 7],
+	[10, 8],
+	[16, 5],
+	[17, 6],
+	[18, 6],
+	[19, 6],
+	[20, 5],
+]
+
+for (let [x,y] of coins){
+	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", 0, 6)])
+	sprite.flushBottom = false;
+	ecs.addEntity(
+		new ECS.Entity()
+		.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
+		.addComponent(sprite)
+		.addComponent(new Collectible())
+		.addComponent(new Collider(3, 3, 3, 3))
+)
 }
 
 const boxes = [
@@ -1098,6 +1146,15 @@ const boxes = [
 	[14, 8],
 ];
 
+for (let [x, y] of boxes) {
+	const box = new ECS.Entity()
+		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
+		.addComponent(new Sprite(BOX_SPRITE, 16, 16))
+		.addComponent(new Collider(16, 8, 0, 8, 0, false))
+		.addComponent(new Static());
+	ecs.addEntity(box);
+}
+
 const lights = [
 	[7, 4],
 	[18, 4],
@@ -1116,14 +1173,7 @@ for (let [x, y] of lights) {
 	);
 }
 
-for (let [x, y] of boxes) {
-	const box = new ECS.Entity()
-		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
-		.addComponent(new Sprite(boxSprite, 16, 16))
-		.addComponent(new Collider(16, 8, 0, 8, 0, false))
-		.addComponent(new Static());
-	ecs.addEntity(box);
-}
+
 
 let paused = false;
 document.addEventListener("keydown", (e) => {
