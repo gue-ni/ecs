@@ -1,6 +1,6 @@
 import { Entity } from "./entity";
 
-class Component {
+abstract class Component {
 	entity: Entity | undefined;
 
 	get name(): string {

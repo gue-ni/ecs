@@ -53,7 +53,6 @@ class ECS {
 	}
 
 	removeSystem(system: System): void {
-		system.destroy();
 		this.systems = this.systems.filter((s) => s != system);
 	}
 

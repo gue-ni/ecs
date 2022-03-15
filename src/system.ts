@@ -4,27 +4,25 @@ import { Component } from "./component";
 
 type entityCallback = (entities: Entity[], params?: UpdateParams) => Entity[];
 
-class System {
+abstract class System {
 	private requiredComponents: any[];
+
+	private updateFrequency: number;
+	private timeSinceLastUpdate: number = 0;
 
 	ecs?: ECS;
 	beforeUpdate: entityCallback | null = null;
 	afterUpdate: entityCallback | null = null;
 
-	constructor(requiredComponents: any[]) {
+	constructor(requiredComponents: any[], updatesPerSecond: number = 100) {
 		this.requiredComponents = requiredComponents;
-
-		if (this.constructor == System) throw new Error("System is a abstract class!");
-
-		if (!this.requiredComponents) throw new Error("A System must operate on some components!");
+		this.updateFrequency = 1 / updatesPerSecond;
+		if (!this.requiredComponents || this.requiredComponents.length === 0)
+			throw new Error("A System must operate on some components!");
 	}
 
 	get name(): string {
 		return this.constructor.name;
-	}
-
-	destroy() {
-		// TODO: can also be overidden
 	}
 
 	_componentMatch(entity: Entity): boolean {
@@ -34,21 +32,22 @@ class System {
 		return true;
 	}
 
-	updateEntity(entity: Entity, params: UpdateParams): void {
-		// TODO: implement your logic here
-	}
-
-	
+	abstract updateEntity(entity: Entity, params: UpdateParams): void;
 
 	updateSystem(entities: Entity[], params: UpdateParams): void {
-		if (this.beforeUpdate){
-			entities = this.beforeUpdate(entities, params)
-		}
-		for (let entity of entities) {
-			this.updateEntity(entity, params);
-		}
-		if (this.afterUpdate){
-			entities = this.afterUpdate(entities, params);
+		this.timeSinceLastUpdate += params.dt;
+		if (this.timeSinceLastUpdate > this.updateFrequency) {
+			this.timeSinceLastUpdate = 0;
+
+			if (this.beforeUpdate) {
+				entities = this.beforeUpdate(entities, params);
+			}
+			for (let entity of entities) {
+				this.updateEntity(entity, params);
+			}
+			if (this.afterUpdate) {
+				entities = this.afterUpdate(entities, params);
+			}
 		}
 	}
 }

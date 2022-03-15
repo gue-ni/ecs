@@ -30,6 +30,7 @@
 		<style>
 			:root {
 				--primary: rgba(255, 255, 255, 0.3);
+				--secondary: rgba(255, 255, 255, 1.0);
 			}
 
 			* {
@@ -73,6 +74,14 @@
 				justify-content: center;
 			}
 
+			.display {
+				color: var(--secondary);
+				position: absolute;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+			}
+
 			#left-control {
 				display: none;
 				left: 5%;
@@ -102,13 +111,20 @@
 				width: 15%;
 			}
 
-			#health {
-				left: 20%;
-				top: 10%
-			}
 
 			#hud {
 				display: none;
+			}
+
+			#health {
+				left: 5%;
+				top: 20%;
+			}
+
+
+			#coins {
+				left: 5%;
+				top: 30%;
 			}
 
 			#right-control {
@@ -139,14 +155,17 @@
 			<div class="centered" id="paused">Paused</div>
 		</div>
 		<div class="overlay">
+			<div class="centered" id="orientation">Please rotate your screen!</div>
+		</div>
+
+		<div class="overlay">
 			<div class="centered" id="dead">You are dead.</div>
 		</div>
 
-
-
 		<div id="hud">
-			<div class="input" id="fps">fps</div>
-			<div class="input" id="health">health</div>
+			<div class="display" id="fps">fps</div>
+			<div class="display" id="health">health</div>
+			<div class="display" id="coins">health</div>
 			<div class="input" id="left-control">
 				move
 				<span id="left-debug"></span>

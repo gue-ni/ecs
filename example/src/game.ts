@@ -16,10 +16,11 @@ gameState.addState(new ECS.HTMLState("pause", "#paused"));
 gameState.addState(new ECS.HTMLState("play", "#hud"));
 gameState.addState(new ECS.HTMLState("dead", "#dead"));
 gameState.addState(new ECS.HTMLState("title", "#title"));
+gameState.addState(new ECS.HTMLState("orientation", "#orientation"));
 gameState.setState("title");
 
-const characterSprite = new Image();
-characterSprite.src = "assets/sprites.png";
+const CHARACTER_SPRITE = new Image();
+CHARACTER_SPRITE.src = "assets/sprites.png";
 
 const spikes = new Image();
 spikes.src = "assets/bottom_spikes.png";
@@ -30,9 +31,8 @@ BIG_LIGHT_SPRITE.src = "assets/light.png";
 const COIN_SPRITE = new Image();
 COIN_SPRITE.src = "assets/coin.png";
 
-
-const lightSprite2 = new Image();
-lightSprite2.src = "assets/light2.png";
+const BRIGHT_LIGHT_SPRITE = new Image();
+BRIGHT_LIGHT_SPRITE.src = "assets/light2.png";
 
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
@@ -40,11 +40,11 @@ bulletSprite.src = "assets/bullet.png";
 const BOX_SPRITE = new Image();
 BOX_SPRITE.src = "assets/box.png";
 
-const pixelSprite = new Image();
-pixelSprite.src = "assets/pixel.png";
+const ONE_PIXEL = new Image();
+ONE_PIXEL.src = "assets/pixel.png";
 
-const smallLight = new Image();
-smallLight.src = "assets/small-light.png";
+const SMALL_LIGHT_SPRITE = new Image();
+SMALL_LIGHT_SPRITE.src = "assets/small-light.png";
 
 const cthulluSprite = new Image();
 cthulluSprite.src = "assets/cthullu.png";
@@ -95,7 +95,13 @@ class Spikes extends ECS.Component {}
 
 class Player extends ECS.Component {}
 
-class Collectible extends ECS.Component {}
+class Collectible extends ECS.Component {
+	type:string;
+	constructor(type: string = "default"){
+		super()
+		this.type = type
+	}
+}
 
 class Static extends ECS.Component {}
 
@@ -258,6 +264,19 @@ class Input extends ECS.Component {
 	timeBetweenJumps: number = 0;
 }
 
+class Inventory extends ECS.Component {
+	inventory: Map<string, number>
+	constructor(){
+		super()
+		this.inventory = new Map()
+	}
+
+	increment(type: string){
+		let num = this.inventory.get(type) || 0;
+		this.inventory.set(type, num + 1);
+	}
+}
+
 class Health extends ECS.Component {
 	value: number = 100;
 	constructor() {
@@ -268,7 +287,7 @@ class Health extends ECS.Component {
 class HealthSystem extends ECS.System {
 	healthDisplay: HTMLElement;
 	constructor() {
-		super([Health]);
+		super([Health], 2);
 		this.healthDisplay = document.querySelector("#health");
 		this.healthDisplay.style.display = "flex";
 	}
@@ -277,7 +296,7 @@ class HealthSystem extends ECS.System {
 		const health = entity.getComponent(Health) as Health;
 
 		if (entity.getComponent(Player)) {
-			this.healthDisplay.innerText = `${health.value}`;
+			this.healthDisplay.innerText = `Health: ${health.value}`;
 		}
 
 		if (health.value <= 0) {
@@ -547,7 +566,7 @@ class WeaponSystem extends ECS.System {
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
 				//.addComponent(new Gravity())
-				.addComponent(new Light(lightSprite2, 128, 128))
+				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
@@ -560,8 +579,8 @@ class WeaponSystem extends ECS.System {
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
-				.addComponent(new Sprite(pixelSprite, 1, 1))
-				.addComponent(new Light(smallLight, 16, 16))
+				.addComponent(new Sprite(ONE_PIXEL, 1, 1))
+				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
 				.addComponent(new Bullet(entity));
 			params.ecs.addEntity(projectile);
@@ -748,6 +767,10 @@ class Collider extends ECS.Component {
 		this.rightCollision = false;
 		this.leftCollision = false;
 	}
+
+	destroy(): void {
+			sph.remove(this.entity)
+	}
 }
 
 class AABB {
@@ -814,6 +837,7 @@ class SpatialHashGrid {
 	}
 
 	remove(entity: ECS.Entity): void {
+		//console.log("removed", entity.id)
 		if (!this._lastPos.has(entity.id)) return;
 
 		let [minX, minY, maxX, maxY] = this._lastPos.get(entity.id);
@@ -921,6 +945,7 @@ class CollisionSystem extends ECS.System {
 		let velocity = entity.getComponent(Velocity) as Velocity;
 		let health = entity.getComponent(Health) as Health;
 		let bullet = entity.getComponent(Bullet) as Bullet;
+		let inventory = entity.getComponent(Inventory) as Inventory;
 
 		let aabb = new AABB(collider, position);
 
@@ -942,10 +967,11 @@ class CollisionSystem extends ECS.System {
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
 
-
-					if (possible.getComponent(Collectible)){
-						//possible.removeComponent(Collectible);
+					const collectible = possible.getComponent(Collectible) as Collectible;
+					if (inventory && collectible){
+						inventory.increment(collectible.type)
 						params.ecs.removeEntity(possible)
+						continue;
 					}
 
 					// spikes are dangerous!
@@ -953,6 +979,7 @@ class CollisionSystem extends ECS.System {
 						console.log("spike");
 						velocity.y = -100;
 						health.value -= 1;
+						continue;
 					}
 
 					if (bullet && bullet.shotBy.id !== possible.id) {
@@ -961,6 +988,7 @@ class CollisionSystem extends ECS.System {
 						if (health) {
 							health.value -= bullet.damage;
 						}
+						continue;
 					}
 
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
@@ -1024,8 +1052,8 @@ class AiSystem extends ECS.System {
 					const projectile = new ECS.Entity(1)
 						.addComponent(new Position(position.x, position.y, false))
 						.addComponent(new Velocity(dir.x, dir.y))
-						.addComponent(new Sprite(pixelSprite, 1, 1))
-						.addComponent(new Light(smallLight, 16, 16))
+						.addComponent(new Sprite(ONE_PIXEL, 1, 1))
+						.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 						.addComponent(new Collider(1, 1, 1, 1, 0, true))
 						.addComponent(new Bullet(entity));
 					params.ecs.addEntity(projectile);
@@ -1033,6 +1061,21 @@ class AiSystem extends ECS.System {
 				}
 			}
 		}
+	}
+}
+
+
+
+class HudSystem extends ECS.System {
+	coins: HTMLElement;
+	constructor(){
+		super([Inventory, Health], 2)
+		this.coins = document.querySelector("#coins")!
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+			const inventory = entity.getComponent(Inventory) as Inventory;
+			this.coins.innerText = `Coins: ${inventory.inventory.get("coin") || 0}`;
 	}
 }
 
@@ -1050,6 +1093,7 @@ ecs.addSystem(new WeaponSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new LightSystem());
 ecs.addSystem(new HealthSystem());
+ecs.addSystem(new HudSystem());
 ecs.addSystem(new PositionChangeSystem());
 
 const player = new ECS.Entity();
@@ -1061,13 +1105,14 @@ player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
+player.addComponent(new Inventory())
 player.addComponent(new Health());
 player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
 player.addComponent(new Collider(16, 3, 0, 3, 3, true));
 player.addComponent(new Detectable());
 player.addComponent(
-	new Sprite(characterSprite, 16, 16, [
+	new Sprite(CHARACTER_SPRITE, 16, 16, [
 		new SpriteState("idle-right", 0, 1),
 		new SpriteState("jump-right", 1, 1),
 		new SpriteState("run-right", 2, 4),
@@ -1126,7 +1171,7 @@ for (let [x,y] of coins){
 		new ECS.Entity()
 		.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
 		.addComponent(sprite)
-		.addComponent(new Collectible())
+		.addComponent(new Collectible("coin"))
 		.addComponent(new Collider(3, 3, 3, 3))
 )
 }
@@ -1179,7 +1224,7 @@ for (let [x, y] of lights) {
 	ecs.addEntity(
 		new ECS.Entity()
 			.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-			.addComponent(new Light(lightSprite2, 128, 128))
+			.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 			.addComponent(sprite)
 	);
 }
@@ -1198,9 +1243,7 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-document.addEventListener(
-	"touchstart",
-	() => {
+document.addEventListener("touchstart",() => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
 				screen.orientation.lock("landscape");
@@ -1228,6 +1271,18 @@ let tmp = 0;
 
 let dt: number = 0;
 let then: number = 0;
+
+if (screen.orientation.type == "portrait-primary"){
+	gameState.setState("orientation");
+}
+
+window.addEventListener("orientationchange", () =>  {
+	if (screen.orientation.type == "landscape-primary"){
+		gameState.setPreviousState()
+	} else {
+		gameState.setState("orientation");
+	}
+})
 
 /**
  * Game Loop
