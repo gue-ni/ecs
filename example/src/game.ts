@@ -38,8 +38,8 @@ BRIGHT_LIGHT_SPRITE.src = "assets/light2.png";
 const bulletSprite = new Image();
 bulletSprite.src = "assets/bullet.png";
 
-const BOX_SPRITE = new Image();
-BOX_SPRITE.src = "assets/box.png";
+const TILE_SPRITE = new Image();
+TILE_SPRITE.src = "assets/tiles.png";
 
 const ONE_PIXEL = new Image();
 ONE_PIXEL.src = "assets/pixel.png";
@@ -175,18 +175,25 @@ class Position extends ECS.Component {
 	}
 }
 
+interface SpriteParams {
+	frameX?: number;
+	frameY: number;
+	frames?: number;
+	playOnce?: boolean;
+}
+
 class SpriteState extends ECS.State {
 	frameX: number;
 	frameY: number;
 	frames: number;
 	playOnce: boolean;
 
-	constructor(name: string, row: number, frames: number, playOnce: boolean = false) {
+	constructor(name: string, params: SpriteParams) {
 		super(name);
-		this.frameX = 0;
-		this.frameY = row;
-		this.frames = frames;
-		this.playOnce = playOnce;
+		this.frameX = params.frameX || 0;
+		this.frameY = params.frameY;
+		this.frames = params.frames || 1;
+		this.playOnce = params.playOnce || false;
 	}
 
 	enter(): void {
@@ -210,11 +217,6 @@ class Light extends ECS.Component {
 	}
 }
 
-interface SpriteConfig {
-	states?: SpriteState[];
-	flushBottom?: boolean;
-}
-
 class Sprite extends ECS.Component {
 	image: HTMLImageElement;
 	width: number;
@@ -234,7 +236,7 @@ class Sprite extends ECS.Component {
 		this.states = new Map();
 
 		if (states.length == 0) {
-			this.state = new SpriteState("idle", 0, 1);
+			this.state = new SpriteState("idle", { frameY: 0 });
 		} else {
 			this.state = states[0];
 			for (let s of states) {
@@ -335,7 +337,7 @@ class Health extends ECS.Component {
 class HealthSystem extends ECS.System {
 	healthDisplay: HTMLElement;
 	constructor() {
-		super([Health], 2);
+		super([Health], { updatesPerSecond: 2 });
 		this.healthDisplay = document.querySelector("#health");
 		this.healthDisplay.style.display = "flex";
 	}
@@ -1018,15 +1020,33 @@ class CollisionSystem extends ECS.System {
 			for (const possible of this.sph.possible_collisions(entity, aabb)) {
 				const possible_col = possible.getComponent(Collider) as Collider;
 				const possible_pos = possible.getComponent(Position) as Position;
+				const possible_aabb = new AABB(possible_col, possible_pos);
 
-				let possible_aabb = new AABB(possible_col, possible_pos);
-
-				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
+				const depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
 					const collectible = possible.getComponent(Collectible) as Collectible;
 					if (inventory && collectible) {
 						inventory.increment(collectible.type);
-						params.ecs.removeEntity(possible);
+
+						let emitter = new ParticleEmitter({
+							particlePerSecond: 10,
+							minTTL: 0.4,
+							maxTTL: 0.6,
+							minSize: 1,
+							maxSize: 2,
+							maxCount: 10,
+							alpha: 1.0,
+							gravity: -200,
+							speed: 0,
+							positionSpread: 5,
+							explosive: true,
+						});
+
+						possible.addComponent(emitter);
+						possible.removeComponent(Sprite);
+						possible.removeComponent(Collectible);
+						possible.ttl = 3;
+
 						continue;
 					}
 
@@ -1040,10 +1060,8 @@ class CollisionSystem extends ECS.System {
 
 					if (bullet && bullet.shotBy.id !== possible.id) {
 						params.ecs.removeEntity(entity);
-						let health = possible.getComponent(Health) as Health;
-						if (health) {
-							health.value -= bullet.damage;
-						}
+						const health = possible.getComponent(Health) as Health;
+						if (health) health.value -= bullet.damage;
 						continue;
 					}
 
@@ -1123,7 +1141,7 @@ class AiSystem extends ECS.System {
 class HudSystem extends ECS.System {
 	coins: HTMLElement;
 	constructor() {
-		super([Inventory, Health], 2);
+		super([Inventory, Health], { updatesPerSecond: 2 });
 		this.coins = document.querySelector("#coins")!;
 	}
 
@@ -1152,7 +1170,10 @@ interface ParticleConfig {
 	maxTTL: number;
 	alpha: number;
 	speed: number;
-	gravity: number;
+	positionSpread?: number;
+	gravity?: number;
+	explosive?: boolean;
+	emit?: boolean;
 }
 
 class ParticleEmitter extends ECS.Component {
@@ -1160,7 +1181,7 @@ class ParticleEmitter extends ECS.Component {
 	emit: boolean;
 	freq: number;
 	time: number = 0;
-	maxCount: number;
+	maxParticleCount: number;
 	minSize: number;
 	maxSize: number;
 	minTtl: number;
@@ -1168,25 +1189,31 @@ class ParticleEmitter extends ECS.Component {
 	speed: number;
 	alpha: number;
 	gravity: number;
+	positionSpread: number;
+	explosive: boolean;
+	has_exploded: boolean = false;
 
 	constructor(params: ParticleConfig) {
 		super();
 		this.freq = 1 / params.particlePerSecond;
-		this.maxCount = params.maxCount;
-		this.minSize = params.minSize;
-		this.maxSize = params.maxSize;
-		this.minTtl = params.minTTL;
-		this.maxTtl = params.maxTTL;
-		this.alpha = params.alpha;
-		this.speed = params.speed;
+		this.maxParticleCount = params.maxCount || 10;
+		this.minSize = params.minSize || 1;
+		this.maxSize = params.maxSize || 4;
+		this.minTtl = params.minTTL || 1;
+		this.maxTtl = params.maxTTL || 2;
+		this.alpha = params.alpha || 1;
+		this.speed = params.speed || 10;
+		this.explosive = params.explosive;
 		this.gravity = params.gravity;
+		this.emit = params.emit;
+		this.positionSpread = params.positionSpread !== undefined ? params.positionSpread : 0;
 		this.particles = [];
 	}
 }
 
 class ParticleSystem extends ECS.System {
 	constructor() {
-		super([ParticleEmitter, Position]);
+		super([Position, ParticleEmitter]);
 	}
 
 	static randomInt(min: number, max: number): number {
@@ -1197,23 +1224,35 @@ class ParticleSystem extends ECS.System {
 		return Math.random() * (max - min) + min;
 	}
 
+	createParticle(emitter: ParticleEmitter, position: Position): Particle {
+		const particle = new Particle();
+		particle.gravity = emitter.gravity;
+		particle.alpha = emitter.alpha;
+		particle.pos = position.vector.add(
+			new Vector(
+				ParticleSystem.randomFloat(-emitter.positionSpread, emitter.positionSpread),
+				ParticleSystem.randomFloat(-emitter.positionSpread, emitter.positionSpread)
+			)
+		);
+		particle.ttl = ParticleSystem.randomFloat(emitter.minTtl, emitter.maxTtl);
+		particle.size = ParticleSystem.randomInt(emitter.minSize, emitter.maxSize);
+		particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(emitter.speed);
+		return particle;
+	}
+
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(Position) as Position;
 		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 
-		emitter.time += params.dt;
-		if (emitter.emit && emitter.time > emitter.freq) {
+		if (emitter.explosive && !emitter.has_exploded) {
+			for (let i = 0; i < emitter.maxParticleCount; i++) {
+				emitter.particles.push(this.createParticle(emitter, position));
+			}
+			emitter.has_exploded = true;
+
+		} else if (!emitter.explosive && emitter.emit && (emitter.time += params.dt) > emitter.freq) {
 			emitter.time = 0;
-
-			const particle = new Particle();
-			particle.gravity = emitter.gravity;
-			particle.alpha = emitter.alpha;
-			particle.pos = position.vector;
-			particle.ttl = ParticleSystem.randomFloat(emitter.minTtl, emitter.maxTtl);
-			particle.size = ParticleSystem.randomInt(emitter.minSize, emitter.maxSize);
-			particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(emitter.speed);
-
-			emitter.particles.push(particle);
+			emitter.particles.push(this.createParticle(emitter, position));
 		}
 
 		for (const particle of emitter.particles) {
@@ -1234,7 +1273,7 @@ class ParticleSystem extends ECS.System {
 			);
 		}
 
-		if (emitter.particles.length > emitter.maxCount) {
+		if (emitter.particles.length > emitter.maxParticleCount) {
 			emitter.particles.shift();
 		}
 	}
@@ -1266,12 +1305,17 @@ player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Inventory());
+player.addComponent(new Health());
+player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
+player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
+player.addComponent(new Collider(13, 2, 0, 2, 3, true));
+player.addComponent(new Detectable());
 player.addComponent(
 	new ParticleEmitter({
 		particlePerSecond: 15,
 		minTTL: 0.1,
 		maxTTL: 0.4,
-		minSize: 1,
+		minSize: 2,
 		maxSize: 3,
 		maxCount: 20,
 		alpha: 0.6,
@@ -1279,21 +1323,16 @@ player.addComponent(
 		gravity: 0,
 	})
 );
-player.addComponent(new Health());
-player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
-player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
-player.addComponent(new Collider(16, 2, 0, 2, 3, true));
-player.addComponent(new Detectable());
 player.addComponent(
 	new Sprite(CHARACTER_SPRITE, 16, 16, [
-		new SpriteState("idle-right", 0, 1),
-		new SpriteState("jump-right", 1, 1),
-		new SpriteState("run-right", 2, 4),
-		new SpriteState("run-left", 3, 4),
-		new SpriteState("idle-left", 4, 1),
-		new SpriteState("jump-left", 5, 1),
-		new SpriteState("melee-right", 6, 4, true),
-		new SpriteState("melee-left", 7, 4, true),
+		new SpriteState("idle-right", { frameY: 0, frames: 1 }),
+		new SpriteState("idle-left", { frameY: 1, frames: 1 }),
+		new SpriteState("jump-right", { frameY: 2, frames: 1 }),
+		new SpriteState("jump-left", { frameY: 3, frames: 1 }),
+		new SpriteState("run-right", { frameY: 4, frames: 4 }),
+		new SpriteState("run-left", { frameY: 5, frames: 4 }),
+		new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
+		new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
 	])
 );
 ecs.addEntity(player);
@@ -1336,7 +1375,7 @@ const coins = [
 ];
 
 for (let [x, y] of coins) {
-	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", 0, 6)]);
+	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })]);
 	sprite.flushBottom = false;
 	ecs.addEntity(
 		new ECS.Entity()
@@ -1376,7 +1415,7 @@ const boxes = [
 for (let [x, y] of boxes) {
 	const box = new ECS.Entity()
 		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
-		.addComponent(new Sprite(BOX_SPRITE, 16, 16))
+		.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
 		.addComponent(new Collider(16, 8, 0, 8, 0, false))
 		.addComponent(new Static());
 	ecs.addEntity(box);
@@ -1438,6 +1477,7 @@ document.addEventListener("click", () => {
 });
 
 const fps_display = document.querySelector("#fps") as HTMLElement;
+console.log(fps_display)
 let tmp = 0;
 
 let dt: number = 0;
@@ -1462,7 +1502,9 @@ function animate(now: number) {
 
 	if ((tmp += dt) > 1) {
 		tmp = 0;
-		fps_display.innerText = `${(1 / dt).toFixed(2)} fps`;
+		let fps = `${(1 / dt).toFixed(2)} fps`
+		//console.log(fps)
+		fps_display.innerText = fps;
 	}
 
 	{

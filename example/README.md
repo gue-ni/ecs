@@ -1,5 +1,11 @@
 # Example Game
 
+## TODO
+
+- Enemies
+- Fire / spikes
+- levels
+
 ## Promotion
 
 -   [r/WebGames](https://www.reddit.com/r/WebGames/)
