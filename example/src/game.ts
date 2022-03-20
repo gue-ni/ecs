@@ -10,6 +10,7 @@ let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
+const GRAVITY = 500;
 
 const gameState = new ECS.FiniteStateMachine();
 gameState.addState(new ECS.HTMLState("pause", "#paused"));
@@ -52,14 +53,16 @@ cthulluSprite.src = "assets/cthullu.png";
 class Vector {
 	x: number;
 	y: number;
+
 	constructor(x: number, y: number) {
 		this.x = x;
 		this.y = y;
 	}
 
-	scalarMult(scalar: number): void {
+	scalarMult(scalar: number): Vector {
 		this.x *= scalar;
 		this.y *= scalar;
+		return this;
 	}
 
 	add(vector: Vector): Vector {
@@ -74,22 +77,21 @@ class Vector {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
-	normalize(): void {
+	round(): Vector {
+		this.x = Math.round(this.x);
+		this.y = Math.round(this.y);
+		return this;
+	}
+
+	normalize(): Vector {
 		let mag = this.magnitude();
 		this.x /= mag;
 		this.y /= mag;
+		return this;
 	}
 }
 
 class Detectable extends ECS.Component {}
-
-class Gun extends ECS.Component {
-	firingRate: number = 0;
-}
-
-class Rifle extends Gun {}
-
-class LightLauncher extends Gun {}
 
 class Spikes extends ECS.Component {}
 
@@ -552,6 +554,7 @@ class MovementSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
 		const sprite = entity.getComponent(Sprite) as Sprite;
+		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 
 		const speed = 50;
 		const jump_speed = -150;
@@ -586,6 +589,7 @@ class MovementSystem extends ECS.System {
 		}
 
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
+		if (emitter) emitter.emit = false;
 
 		if (Math.abs(input.leftRight) > 0) {
 			sprite.setState(direction.right ? "run-right" : "run-left");
@@ -593,6 +597,7 @@ class MovementSystem extends ECS.System {
 
 		if (!standing) {
 			sprite.setState(direction.right ? "jump-right" : "jump-left");
+			if (emitter) emitter.emit = true;
 		}
 	}
 }
@@ -608,7 +613,7 @@ class CombatSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
-		let gunPosOffset = 8;
+		let gunPosOffset = 10;
 		let mouseDir = new Vector(
 			input.mouseX - (position.x - WINDOW_OFFSET_X),
 			input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset)
@@ -616,7 +621,7 @@ class CombatSystem extends ECS.System {
 		mouseDir.normalize();
 
 		if (input.is_key_pressed("KeyF", 250)) {
-			// TODO 
+			// TODO
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
 		}
 
@@ -679,7 +684,7 @@ class PhysicsSystem extends ECS.System {
 		position.y += dt * velocity.y;
 
 		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision) && entity.getComponent(Gravity)) {
-			velocity.y += dt * 500;
+			velocity.y += dt * GRAVITY;
 		}
 
 		if (position.clamp) {
@@ -1128,6 +1133,90 @@ class HudSystem extends ECS.System {
 	}
 }
 
+class Particle {
+	pos: Vector;
+	vel: Vector;
+	ttl: number = 1;
+	size: number = 1;
+	gravity: number = GRAVITY;
+	active: boolean = true;
+	alpha: number = 1;
+}
+
+class ParticleEmitter extends ECS.Component {
+	particles: Particle[];
+	emit: boolean;
+	freq: number;
+	time: number = 0;
+	maxCount: number;
+	minSize: number;
+	maxSize: number;
+	
+	minTtl: number;
+	maxTtl: number;
+
+	constructor(params: any) {
+		super();
+		this.freq = 1 / (params.particlePerSecond || 1);
+		this.maxCount = params.maxCount || 20;
+		this.minSize = params.minSize || 1;
+		this.maxSize = params.maxSize || 3;
+		this.minTtl = params.minTtl || 1;
+		this.maxTtl = params.maxTtl || 1;
+		this.particles = [];
+	}
+}
+
+class ParticleSystem extends ECS.System {
+	constructor() {
+		super([ParticleEmitter, Position]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(Position) as Position;
+		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+
+		emitter.time += params.dt;
+		if (emitter.emit && emitter.time > emitter.freq) {
+			emitter.time = 0;
+
+			const particle = new Particle();
+			particle.ttl = 0.3;
+			particle.gravity = 0;
+
+			particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(10);
+			particle.pos = position.vector;
+			particle.size = Math.floor(Math.random() * (emitter.maxSize - emitter.minSize + 1)) + emitter.minSize;
+
+			emitter.particles.push(particle);
+		}
+
+		for (let particle of emitter.particles) {
+			if ((particle.ttl -= params.dt) < 0) continue;
+
+			particle.pos.x += particle.vel.x * params.dt;
+			particle.pos.y += particle.vel.y * params.dt;
+			particle.vel.y += particle.gravity * params.dt;
+
+			particle.pos.round();
+
+			//particle.size += 1;
+
+			params.context.fillStyle = `rgba(255,255,255,${particle.alpha})`;
+			params.context.fillRect(
+				particle.pos.x - WINDOW_OFFSET_X - Math.round(particle.size / 2),
+				particle.pos.y + WINDOW_OFFSET_Y - Math.round(particle.size / 2),
+				particle.size,
+				particle.size
+			);
+		}
+
+		if (emitter.particles.length > emitter.maxCount) {
+			emitter.particles.shift();
+		}
+	}
+}
+
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
@@ -1140,6 +1229,7 @@ ecs.addSystem(new AiSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new CombatSystem());
 ecs.addSystem(new SpriteSystem());
+ecs.addSystem(new ParticleSystem());
 ecs.addSystem(new LightSystem());
 ecs.addSystem(new HealthSystem());
 ecs.addSystem(new HudSystem());
@@ -1153,6 +1243,7 @@ player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Inventory());
+player.addComponent(new ParticleEmitter({ particlePerSecond: 10 }));
 player.addComponent(new Health());
 player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
@@ -1331,9 +1422,6 @@ window.addEventListener("orientationchange", () =>  {
 })
 */
 
-/**
- * Game Loop
- */
 function animate(now: number) {
 	(now *= 0.001), (dt = now - then), (then = now);
 
@@ -1347,9 +1435,6 @@ function animate(now: number) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
 		context.fillStyle = "rgb(0,0,0)";
 		context.fillRect(0, 0, canvas.width, canvas.height);
-	}
-	{
-		// draw ground level line
 	}
 	if (gameState.current.name == "play") {
 		// update game
