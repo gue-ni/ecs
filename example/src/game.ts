@@ -8,7 +8,7 @@ const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
-const BOTTOM_BORDER = (ON_MOBILE ? 40 : 30)
+const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const gameState = new ECS.FiniteStateMachine();
@@ -96,10 +96,10 @@ class Spikes extends ECS.Component {}
 class Player extends ECS.Component {}
 
 class Collectible extends ECS.Component {
-	type:string;
-	constructor(type: string = "default"){
-		super()
-		this.type = type
+	type: string;
+	constructor(type: string = "default") {
+		super();
+		this.type = type;
 	}
 }
 
@@ -177,22 +177,21 @@ class SpriteState extends ECS.State {
 	frameX: number;
 	frameY: number;
 	frames: number;
-	duration: number;
-	timeLeft: number;
+	playOnce: boolean;
 
-	constructor(name: string, row: number, frames: number, duration: number = -1) {
+	constructor(name: string, row: number, frames: number, playOnce: boolean = false) {
 		super(name);
-		//this.name = name;
 		this.frameX = 0;
 		this.frameY = row;
 		this.frames = frames;
-		this.duration = duration;
-		this.timeLeft = 0;
+		this.playOnce = playOnce;
 	}
 
 	enter(): void {
-		this.timeLeft = 0;
+		if (this.playOnce) this.frameX = 0;
 	}
+
+	exit(): void {}
 }
 
 class Light extends ECS.Component {
@@ -247,36 +246,46 @@ class Sprite extends ECS.Component {
 	}
 
 	setState(name: string) {
-		let newState =this.states.get(name);
-		if (!newState) throw new Error("state does not exist")
-		this.state?.exit();
-		this.state = newState;
-		this.state?.enter();
+		if (name == this.state?.name) return;
+		const previous = this.state;
+		previous?.exit();
+		const state = this.states.get(name);
+		if (!state) throw new Error(`State "${name}" does not exist!`);
+		this.state = state;
+		this.state.previous = previous;
+		this.state.enter();
+	}
+
+	setPreviousState() {
+		let current = this.state;
+		if (!current) throw new Error("No current state!");
+		let previous = current.previous;
+		if (!previous) throw new Error("No previous state!");
+		this.setState(previous.name);
 	}
 }
 
 class Input extends ECS.Component {
 	leftRight: number = 0;
-	jump: boolean = false;
-	shoot: boolean = false;
-	grenade: boolean = false;
 	doubleJumpAllowed: boolean = false;
 	timeBetweenJumps: number = 0;
 
 	pressed: any;
 	last_pressed: any;
 
+	mouse: any;
+	mouse_last_pressed: any;
+
 	mouseY: number;
 	mouseX: number;
-	leftMousedown: boolean;
-	rightMousedown: boolean;
-	lastLeftMousedown: number = 0;
-	lastRightMousedown: number = 0;
 
 	constructor() {
 		super();
 		this.pressed = {};
 		this.last_pressed = {};
+
+		this.mouse = {};
+		this.mouse_last_pressed = {};
 	}
 
 	is_key_pressed(key: string, delay?: number): boolean {
@@ -289,39 +298,26 @@ class Input extends ECS.Component {
 		return false;
 	}
 
-	// returns true if mouse is down and there has been a delay since last mousedown
-	is_left_mouse_down(delay?: number): boolean {
-		if (this.leftMousedown) {
-			if (!delay || Date.now() - this.lastLeftMousedown > delay) {
-				this.lastLeftMousedown = Date.now();
+	is_mouse_pressed(side: string, delay?: number): boolean {
+		if (this.mouse[side]) {
+			if (!delay || !this.mouse_last_pressed[side] || Date.now() - this.mouse_last_pressed[side] > delay) {
+				this.mouse_last_pressed[side] = Date.now();
 				return true;
 			}
 		} else {
 			return false;
 		}
 	}
-
-	is_right_mouse_down(delay?: number): boolean {
-		if (this.rightMousedown) {
-			if (!delay || Date.now() - this.lastRightMousedown > delay) {
-				this.lastRightMousedown = Date.now();
-				return true;
-			}
-		} else {
-			return false;
-		}
-	}
-
 }
 
 class Inventory extends ECS.Component {
-	inventory: Map<string, number>
-	constructor(){
-		super()
-		this.inventory = new Map()
+	inventory: Map<string, number>;
+	constructor() {
+		super();
+		this.inventory = new Map();
 	}
 
-	increment(type: string){
+	increment(type: string) {
 		let num = this.inventory.get(type) || 0;
 		this.inventory.set(type, num + 1);
 	}
@@ -377,13 +373,13 @@ class CameraSystem extends ECS.System {
 
 		let delta = 0;
 		if (diffY > maxDiffY) {
-			delta = diffY - maxDiffY
+			delta = diffY - maxDiffY;
 			WINDOW_OFFSET_Y += delta;
-		} else if (diffY < minDiffY){
+		} else if (diffY < minDiffY) {
 			delta = diffY - minDiffY;
 			WINDOW_OFFSET_Y += delta;
 		}
-		
+
 		if (diffX > maxDiffX) {
 			let delta = diffX - maxDiffX;
 			WINDOW_OFFSET_X += delta;
@@ -398,82 +394,40 @@ class CameraSystem extends ECS.System {
 	}
 }
 
-class DesktopInputSystem extends ECS.System {
+class InputSystem extends ECS.System {
 	keys: any;
-	
+	mouse: any;
+
 	mouseX: number;
 	mouseY: number;
-	leftMousedown: boolean = false;
-	rightMousedown: boolean = false;
-
-	leftRight: number = 0;
-	jump: boolean = false;
-	shoot: boolean = false;
-	grenade: boolean = false;
 
 	constructor() {
 		super([Input]);
 
 		this.keys = {};
+		this.mouse = {};
 
 		window.addEventListener("keydown", (e) => {
 			this.keys[e.code] = true;
-			//console.log("keydown", e.code)
-
-			switch (e.code) {
-				case "KeyA":
-					this.leftRight = -1;
-					break;
-				case "KeyD":
-					this.leftRight = 1;
-					break;
-				case "KeyW":
-					this.jump = true;
-					break;
-				case "Space":
-					this.shoot = true;
-					break;
-				case "KeyF":
-					this.grenade = true;
-					break;
-			}
 		});
 
 		window.addEventListener("keyup", (e) => {
 			delete this.keys[e.code];
-			//console.log("keyup", e.code)
-			switch (e.code) {
-				case "KeyA":
-					this.leftRight = Math.max(this.leftRight, 0);
-					break;
-				case "KeyD":
-					this.leftRight = Math.min(this.leftRight, 0);
-					break;
-				case "KeyW":
-					this.jump = false;
-					break;
-				case "Space":
-					this.shoot = false;
-					break;
-				case "KeyF":
-					this.grenade = false;
-					break;
-			}
 		});
 
 		canvas.addEventListener("mousedown", (e) => {
 			if (e.button == 0) {
-				this.leftMousedown = true;
+				this.mouse["left"] = true;
 			} else if (e.button == 2) {
-				this.rightMousedown = true;
+				this.mouse["right"] = true;
 			}
 		});
 
 		canvas.addEventListener("mouseup", (e) => {
 			if (e.button == 0) {
-				this.leftMousedown = false;
+				this.mouse["left"] = false;
 			} else if (e.button == 2) {
-				this.rightMousedown = false;
+				this.mouse["right"] = false;
 			}
 		});
 
@@ -490,18 +444,16 @@ class DesktopInputSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
-		input.jump = this.jump;
-		input.shoot = this.shoot;
-		input.grenade = this.grenade;
-		input.leftRight = this.leftRight;
+
+		input.pressed = { ...this.keys };
+		input.mouse = { ...this.mouse };
 
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
-		input.leftMousedown = this.leftMousedown;
-		input.rightMousedown = this.rightMousedown;
 	}
 }
 
+/*
 class MobileInputSystem extends ECS.System {
 	leftRight: number = 0;
 	topDown: number = 0;
@@ -586,6 +538,7 @@ class MobileInputSystem extends ECS.System {
 		input.leftRight = this.leftRight;
 	}
 }
+*/
 
 class MovementSystem extends ECS.System {
 	constructor() {
@@ -602,27 +555,37 @@ class MovementSystem extends ECS.System {
 
 		const speed = 50;
 		const jump_speed = -150;
-		velocity.x = speed * input.leftRight;
-		
-		direction.right = (input.mouseX - (position.x - WINDOW_OFFSET_X)) > 0;
 
-		const standing = (aabb.bottomCollision || position.y == GROUND_LEVEL)
+		if (input.is_key_pressed("KeyA")) {
+			input.leftRight = -1;
+		} else if (input.is_key_pressed("KeyD")) {
+			input.leftRight = 1;
+		} else {
+			input.leftRight = 0;
+		}
+
+		velocity.x = speed * input.leftRight;
+
+		direction.right = input.mouseX - (position.x - WINDOW_OFFSET_X) > 0;
+
+		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
 		input.timeBetweenJumps += params.dt;
-		if (input.jump && (standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.3)) && !aabb.topCollision) {
+		if (
+			input.is_key_pressed("KeyW") &&
+			(standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.3)) &&
+			!aabb.topCollision
+		) {
 			input.timeBetweenJumps = 0;
 			input.doubleJumpAllowed = standing;
 			velocity.y = jump_speed;
 		}
 
-		sprite.setState(direction.right ? "idle-right" : "idle-left");
-
-		/*
-		if (Math.abs(input.leftRight) > 0) {
-			direction.right = input.leftRight >= 0;
-			sprite.setState(direction.right ? "run-right" : "run-left");
+		if (sprite.state.playOnce) {
+			return;
 		}
-		*/
+
+		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
 		if (Math.abs(input.leftRight) > 0) {
 			sprite.setState(direction.right ? "run-right" : "run-left");
@@ -634,50 +597,49 @@ class MovementSystem extends ECS.System {
 	}
 }
 
-class WeaponSystem extends ECS.System {
+class CombatSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Rifle, Direction, LightLauncher]);
+		super([Input, Position, Direction, Sprite]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
-		const rifle = entity.getComponent(Rifle) as Rifle;
-		const grenade = entity.getComponent(LightLauncher) as LightLauncher;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
+		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		let gunPosOffset = 8;
-		let mouseDir = new Vector(input.mouseX - (position.x - WINDOW_OFFSET_X), input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset));
+		let mouseDir = new Vector(
+			input.mouseX - (position.x - WINDOW_OFFSET_X),
+			input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset)
+		);
 		mouseDir.normalize();
 
+		if (input.is_key_pressed("KeyF", 250)) {
+			// TODO 
+			sprite.setState(direction.right ? "melee-right" : "melee-left");
+		}
 
-		if ((grenade.firingRate -= params.dt) < 0 && (input.grenade || input.rightMousedown)) {
-			grenade.firingRate = 0.5;
+		if (input.is_mouse_pressed("right", 500)) {
+			mouseDir.scalarMult(200);
 
-			//const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
-			//const vector = new Vector(direction.right ? 1 : -1, 0);
-			const vector = mouseDir;
-			vector.scalarMult(200);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
 
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(vector.x, vector.y))
+				.addComponent(new Velocity(mouseDir.x, mouseDir.y))
 				.addComponent(new Gravity())
 				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
 
-		if ((rifle.firingRate -= params.dt) < 0 && (input.shoot || input.leftMousedown)) {
-			rifle.firingRate = 0.1;
-
-			const vector = mouseDir;
-			vector.scalarMult(400);
+		if (input.is_mouse_pressed("left", 100)) {
+			mouseDir.scalarMult(400);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(vector.x, vector.y))
+				.addComponent(new Velocity(mouseDir.x, mouseDir.y))
 				.addComponent(new Sprite(ONE_PIXEL, 1, 1))
 				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
@@ -791,30 +753,19 @@ class SpriteSystem extends ECS.System {
 		const coords = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
 
+		if (sprite.state.playOnce && sprite.state.frameX == sprite.state.frames - 1) {
+			sprite.setPreviousState();
+		}
+
+		const FRAME_RATE = 0.1;
+
 		if (sprite.state.frames > 1) {
 			sprite.time += params.dt;
-			if (sprite.time > 0.1) {
+			if (sprite.time > FRAME_RATE) {
 				sprite.time = 0;
 				sprite.state.frameX = (sprite.state.frameX + 1) % sprite.state.frames;
 			}
 		}
-
-		if (sprite.state.duration != -1) {
-			sprite.state.timeLeft += params.dt;
-			if (sprite.state.timeLeft > sprite.state.duration) {
-				sprite.state.timeLeft = 0;
-				sprite.setState(sprite.state.previous.name);
-				/*
-				if (direction) {
-					sprite.setState(direction.right ? "idle-right" : "idle-left");
-				} else {
-					sprite.setState("idle");
-				}
-				*/
-			}
-		}
-
-		//console.log(sprite.state.name, sprite.state.frameX, sprite.state.frameY);
 
 		params.context.drawImage(
 			sprite.image,
@@ -823,7 +774,9 @@ class SpriteSystem extends ECS.System {
 			sprite.width,
 			sprite.height,
 			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X,
-			coords.y - (sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) + WINDOW_OFFSET_Y,
+			coords.y -
+				(sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) +
+				WINDOW_OFFSET_Y,
 			sprite.width,
 			sprite.height
 		);
@@ -868,7 +821,7 @@ class Collider extends ECS.Component {
 	}
 
 	destroy(): void {
-			sph.remove(this.entity)
+		sph.remove(this.entity);
 	}
 }
 
@@ -1065,11 +1018,10 @@ class CollisionSystem extends ECS.System {
 
 				let depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
-
 					const collectible = possible.getComponent(Collectible) as Collectible;
-					if (inventory && collectible){
-						inventory.increment(collectible.type)
-						params.ecs.removeEntity(possible)
+					if (inventory && collectible) {
+						inventory.increment(collectible.type);
+						params.ecs.removeEntity(possible);
 						continue;
 					}
 
@@ -1165,28 +1117,28 @@ class AiSystem extends ECS.System {
 
 class HudSystem extends ECS.System {
 	coins: HTMLElement;
-	constructor(){
-		super([Inventory, Health], 2)
-		this.coins = document.querySelector("#coins")!
+	constructor() {
+		super([Inventory, Health], 2);
+		this.coins = document.querySelector("#coins")!;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-			const inventory = entity.getComponent(Inventory) as Inventory;
-			this.coins.innerText = `Coins: ${inventory.inventory.get("coin") || 0}`;
+		const inventory = entity.getComponent(Inventory) as Inventory;
+		this.coins.innerText = `Coins: ${inventory.inventory.get("coin") || 0}`;
 	}
 }
 
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
-ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new DesktopInputSystem());
+ecs.addSystem(new InputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new WeaponSystem());
+ecs.addSystem(new CombatSystem());
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new LightSystem());
 ecs.addSystem(new HealthSystem());
@@ -1195,14 +1147,12 @@ ecs.addSystem(new PositionChangeSystem());
 
 const player = new ECS.Entity();
 player.addComponent(new Velocity(0, 0));
-player.addComponent(new Rifle());
-player.addComponent(new LightLauncher());
 player.addComponent(new Gravity());
 player.addComponent(new Direction());
 player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
-player.addComponent(new Inventory())
+player.addComponent(new Inventory());
 player.addComponent(new Health());
 player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
@@ -1216,6 +1166,8 @@ player.addComponent(
 		new SpriteState("run-left", 3, 4),
 		new SpriteState("idle-left", 4, 1),
 		new SpriteState("jump-left", 5, 1),
+		new SpriteState("melee-right", 6, 4, true),
+		new SpriteState("melee-left", 7, 4, true),
 	])
 );
 ecs.addEntity(player);
@@ -1255,18 +1207,18 @@ const coins = [
 	[18, 6],
 	[19, 6],
 	[20, 5],
-]
+];
 
-for (let [x,y] of coins){
-	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", 0, 6)])
+for (let [x, y] of coins) {
+	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", 0, 6)]);
 	sprite.flushBottom = false;
 	ecs.addEntity(
 		new ECS.Entity()
-		.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-		.addComponent(sprite)
-		.addComponent(new Collectible("coin"))
-		.addComponent(new Collider(3, 3, 3, 3))
-)
+			.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
+			.addComponent(sprite)
+			.addComponent(new Collectible("coin"))
+			.addComponent(new Collider(3, 3, 3, 3))
+	);
 }
 
 const boxes = [
@@ -1321,8 +1273,6 @@ for (let [x, y] of lights) {
 			.addComponent(sprite)
 	);
 }
-
-
 
 let paused = false;
 document.addEventListener("keydown", (e) => {
