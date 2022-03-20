@@ -262,6 +262,56 @@ class Input extends ECS.Component {
 	grenade: boolean = false;
 	doubleJumpAllowed: boolean = false;
 	timeBetweenJumps: number = 0;
+
+	pressed: any;
+	last_pressed: any;
+
+	mouseY: number;
+	mouseX: number;
+	leftMousedown: boolean;
+	rightMousedown: boolean;
+	lastLeftMousedown: number = 0;
+	lastRightMousedown: number = 0;
+
+	constructor() {
+		super();
+		this.pressed = {};
+		this.last_pressed = {};
+	}
+
+	is_key_pressed(key: string, delay?: number): boolean {
+		if (this.pressed[key]) {
+			if (!delay || !this.last_pressed[key] || Date.now() - this.last_pressed[key] > delay) {
+				this.last_pressed[key] = Date.now();
+				return true;
+			}
+		}
+		return false;
+	}
+
+	// returns true if mouse is down and there has been a delay since last mousedown
+	is_left_mouse_down(delay?: number): boolean {
+		if (this.leftMousedown) {
+			if (!delay || Date.now() - this.lastLeftMousedown > delay) {
+				this.lastLeftMousedown = Date.now();
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+
+	is_right_mouse_down(delay?: number): boolean {
+		if (this.rightMousedown) {
+			if (!delay || Date.now() - this.lastRightMousedown > delay) {
+				this.lastRightMousedown = Date.now();
+				return true;
+			}
+		} else {
+			return false;
+		}
+	}
+
 }
 
 class Inventory extends ECS.Component {
@@ -350,12 +400,11 @@ class CameraSystem extends ECS.System {
 
 class DesktopInputSystem extends ECS.System {
 	keys: any;
-	/*
+	
 	mouseX: number;
 	mouseY: number;
 	leftMousedown: boolean = false;
 	rightMousedown: boolean = false;
-	*/
 
 	leftRight: number = 0;
 	jump: boolean = false;
@@ -411,6 +460,32 @@ class DesktopInputSystem extends ECS.System {
 					break;
 			}
 		});
+
+		canvas.addEventListener("mousedown", (e) => {
+			if (e.button == 0) {
+				this.leftMousedown = true;
+			} else if (e.button == 2) {
+				this.rightMousedown = true;
+			}
+		});
+
+		canvas.addEventListener("mouseup", (e) => {
+			if (e.button == 0) {
+				this.leftMousedown = false;
+			} else if (e.button == 2) {
+				this.rightMousedown = false;
+			}
+		});
+
+		canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+		canvas.addEventListener("mousemove", (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const scaleX = canvas.width / rect.width;
+			const scaleY = canvas.height / rect.height;
+			this.mouseX = Math.round((e.clientX - rect.left) * scaleX);
+			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
+		});
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -419,6 +494,11 @@ class DesktopInputSystem extends ECS.System {
 		input.shoot = this.shoot;
 		input.grenade = this.grenade;
 		input.leftRight = this.leftRight;
+
+		input.mouseX = this.mouseX;
+		input.mouseY = this.mouseY;
+		input.leftMousedown = this.leftMousedown;
+		input.rightMousedown = this.rightMousedown;
 	}
 }
 
@@ -523,6 +603,8 @@ class MovementSystem extends ECS.System {
 		const speed = 50;
 		const jump_speed = -150;
 		velocity.x = speed * input.leftRight;
+		
+		direction.right = (input.mouseX - (position.x - WINDOW_OFFSET_X)) > 0;
 
 		const standing = (aabb.bottomCollision || position.y == GROUND_LEVEL)
 
@@ -535,8 +617,14 @@ class MovementSystem extends ECS.System {
 
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
 
+		/*
 		if (Math.abs(input.leftRight) > 0) {
 			direction.right = input.leftRight >= 0;
+			sprite.setState(direction.right ? "run-right" : "run-left");
+		}
+		*/
+
+		if (Math.abs(input.leftRight) > 0) {
 			sprite.setState(direction.right ? "run-right" : "run-left");
 		}
 
@@ -559,30 +647,34 @@ class WeaponSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 
 		let gunPosOffset = 8;
+		let mouseDir = new Vector(input.mouseX - (position.x - WINDOW_OFFSET_X), input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset));
+		mouseDir.normalize();
 
-		if ((grenade.firingRate -= params.dt) < 0 && input.grenade) {
+
+		if ((grenade.firingRate -= params.dt) < 0 && (input.grenade || input.rightMousedown)) {
 			grenade.firingRate = 0.5;
 
 			//const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
-			const vector = new Vector(direction.right ? 1 : -1, 0);
-			vector.scalarMult(100);
+			//const vector = new Vector(direction.right ? 1 : -1, 0);
+			const vector = mouseDir;
+			vector.scalarMult(200);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
 
 			const projectile = new ECS.Entity(2)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
-				//.addComponent(new Gravity())
+				.addComponent(new Gravity())
 				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite);
 			params.ecs.addEntity(projectile);
 		}
 
-		if ((rifle.firingRate -= params.dt) < 0 && input.shoot) {
-			rifle.firingRate = 0.3;
+		if ((rifle.firingRate -= params.dt) < 0 && (input.shoot || input.leftMousedown)) {
+			rifle.firingRate = 0.1;
 
-			const vector = new Vector(direction.right ? 1 : -1, 0);
-			vector.scalarMult(200);
+			const vector = mouseDir;
+			vector.scalarMult(400);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
@@ -1244,6 +1336,7 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
+/*
 document.addEventListener("touchstart",() => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
@@ -1254,6 +1347,7 @@ document.addEventListener("touchstart",() => {
 	},
 	false
 );
+*/
 
 document.addEventListener("click", () => {
 	switch (gameState.current.name) {
@@ -1273,6 +1367,7 @@ let tmp = 0;
 let dt: number = 0;
 let then: number = 0;
 
+/*
 if (screen.orientation.type == "portrait-primary"){
 	gameState.setState("orientation");
 }
@@ -1284,6 +1379,7 @@ window.addEventListener("orientationchange", () =>  {
 		gameState.setState("orientation");
 	}
 })
+*/
 
 /**
  * Game Loop
