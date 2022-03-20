@@ -40,6 +40,7 @@ export class FiniteStateMachine {
 	}
 
 	setState(name: string) {
+		if (name == this.current?.name) return;
 		const previous = this.current;
 		previous?.exit();
 		const state = this.states.get(name);
