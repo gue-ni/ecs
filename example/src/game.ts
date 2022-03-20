@@ -1143,6 +1143,18 @@ class Particle {
 	alpha: number = 1;
 }
 
+interface ParticleConfig {
+	particlePerSecond: number;
+	maxCount: number;
+	minSize: number;
+	maxSize: number;
+	minTTL: number;
+	maxTTL: number;
+	alpha: number;
+	speed: number;
+	gravity: number;
+}
+
 class ParticleEmitter extends ECS.Component {
 	particles: Particle[];
 	emit: boolean;
@@ -1151,18 +1163,23 @@ class ParticleEmitter extends ECS.Component {
 	maxCount: number;
 	minSize: number;
 	maxSize: number;
-	
 	minTtl: number;
 	maxTtl: number;
+	speed: number;
+	alpha: number;
+	gravity: number;
 
-	constructor(params: any) {
+	constructor(params: ParticleConfig) {
 		super();
-		this.freq = 1 / (params.particlePerSecond || 1);
-		this.maxCount = params.maxCount || 20;
-		this.minSize = params.minSize || 1;
-		this.maxSize = params.maxSize || 3;
-		this.minTtl = params.minTtl || 1;
-		this.maxTtl = params.maxTtl || 1;
+		this.freq = 1 / params.particlePerSecond;
+		this.maxCount = params.maxCount;
+		this.minSize = params.minSize;
+		this.maxSize = params.maxSize;
+		this.minTtl = params.minTTL;
+		this.maxTtl = params.maxTTL;
+		this.alpha = params.alpha;
+		this.speed = params.speed;
+		this.gravity = params.gravity;
 		this.particles = [];
 	}
 }
@@ -1170,6 +1187,14 @@ class ParticleEmitter extends ECS.Component {
 class ParticleSystem extends ECS.System {
 	constructor() {
 		super([ParticleEmitter, Position]);
+	}
+
+	static randomInt(min: number, max: number): number {
+		return Math.floor(Math.random() * (max - min + 1)) + min;
+	}
+
+	static randomFloat(min: number, max: number): number {
+		return Math.random() * (max - min) + min;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -1181,17 +1206,17 @@ class ParticleSystem extends ECS.System {
 			emitter.time = 0;
 
 			const particle = new Particle();
-			particle.ttl = 0.3;
-			particle.gravity = 0;
-
-			particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(10);
+			particle.gravity = emitter.gravity;
+			particle.alpha = emitter.alpha;
 			particle.pos = position.vector;
-			particle.size = Math.floor(Math.random() * (emitter.maxSize - emitter.minSize + 1)) + emitter.minSize;
+			particle.ttl = ParticleSystem.randomFloat(emitter.minTtl, emitter.maxTtl);
+			particle.size = ParticleSystem.randomInt(emitter.minSize, emitter.maxSize);
+			particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(emitter.speed);
 
 			emitter.particles.push(particle);
 		}
 
-		for (let particle of emitter.particles) {
+		for (const particle of emitter.particles) {
 			if ((particle.ttl -= params.dt) < 0) continue;
 
 			particle.pos.x += particle.vel.x * params.dt;
@@ -1199,8 +1224,6 @@ class ParticleSystem extends ECS.System {
 			particle.vel.y += particle.gravity * params.dt;
 
 			particle.pos.round();
-
-			//particle.size += 1;
 
 			params.context.fillStyle = `rgba(255,255,255,${particle.alpha})`;
 			params.context.fillRect(
@@ -1243,11 +1266,23 @@ player.addComponent(new Dynamic());
 player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Inventory());
-player.addComponent(new ParticleEmitter({ particlePerSecond: 10 }));
+player.addComponent(
+	new ParticleEmitter({
+		particlePerSecond: 15,
+		minTTL: 0.1,
+		maxTTL: 0.4,
+		minSize: 1,
+		maxSize: 3,
+		maxCount: 20,
+		alpha: 0.6,
+		speed: 20,
+		gravity: 0,
+	})
+);
 player.addComponent(new Health());
 player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
-player.addComponent(new Collider(16, 3, 0, 3, 3, true));
+player.addComponent(new Collider(16, 2, 0, 2, 3, true));
 player.addComponent(new Detectable());
 player.addComponent(
 	new Sprite(CHARACTER_SPRITE, 16, 16, [
