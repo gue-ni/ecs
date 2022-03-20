@@ -1345,8 +1345,6 @@ ecs.addEntity(player);
 			.addComponent(new Sprite(cthulluSprite, 16, 16, [new SpriteState("idle", 0, 4)]))
 	);
 }
-*/
-
 {
 	ecs.addEntity(
 		new ECS.Entity()
@@ -1356,83 +1354,53 @@ ecs.addEntity(player);
 			.addComponent(new Spikes())
 	);
 }
+*/
 
-const coins = [
-	[10, 4],
-	[10, 5],
-	[10, 6],
-	[10, 7],
-	[10, 8],
-	[16, 5],
-	[17, 6],
-	[18, 6],
-	[19, 6],
-	[20, 5],
-];
+async function createMap() {
+	let res = await fetch("assets/objects.json")
+	let json = await res.json()
 
-for (let [x, y] of coins) {
-	let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })]);
-	sprite.flushBottom = false;
-	ecs.addEntity(
-		new ECS.Entity()
-			.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-			.addComponent(sprite)
-			.addComponent(new Collectible("coin"))
-			.addComponent(new Collider(3, 3, 3, 3))
-	);
-}
+	for (let { type, x, y } of json) {
+		switch (type) {
+			case "tile-1": {
+				const box = new ECS.Entity()
+					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
+					.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
+					.addComponent(new Collider(16, 8, 0, 8, 0, false))
+					.addComponent(new Static());
+				ecs.addEntity(box);
+				break;
+			}
 
-const boxes = [
-	[7, 0],
-	[8, 2],
-	[9, 3],
-	[10, 3],
-	[11, 3],
-	[12, 4],
-	[13, 4],
-	[15, 2],
-	[13, 7],
-	[16, 2],
-	[18, 1],
-	[20, 2],
-	[21, 2],
-	[25, 2],
-	[26, 2],
-	[28, 4],
-	[26, 6],
-	[23, 7],
-	[22, 7],
-	[19, 8],
-	[16, 8],
-	[15, 8],
-	[14, 8],
-];
+			case "coin": {
+				let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })]);
+				sprite.flushBottom = false;
+				ecs.addEntity(
+					new ECS.Entity()
+						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
+						.addComponent(sprite)
+						.addComponent(new Collectible("coin"))
+						.addComponent(new Collider(3, 3, 3, 3))
+				);
+				break;
+			}
 
-for (let [x, y] of boxes) {
-	const box = new ECS.Entity()
-		.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
-		.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
-		.addComponent(new Collider(16, 8, 0, 8, 0, false))
-		.addComponent(new Static());
-	ecs.addEntity(box);
-}
+			case "light": {
+				let sprite = new Sprite(bulletSprite, 4, 4);
+				sprite.flushBottom = false;
+				ecs.addEntity(
+					new ECS.Entity()
+						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
+						.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
+						.addComponent(sprite)
+				);
+				break;
+			}
 
-const lights = [
-	[7, 4],
-	[18, 4],
-	[19, 10],
-	[23, 4],
-];
-
-for (let [x, y] of lights) {
-	let sprite = new Sprite(bulletSprite, 4, 4);
-	sprite.flushBottom = false;
-	ecs.addEntity(
-		new ECS.Entity()
-			.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-			.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
-			.addComponent(sprite)
-	);
+			default:
+				console.log("unkown")
+		}
+	}
 }
 
 let paused = false;
@@ -1447,18 +1415,6 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-/*
-document.addEventListener("touchstart",() => {
-		if (!document.fullscreenElement) {
-			document.documentElement.requestFullscreen().then(() => {
-				screen.orientation.lock("landscape");
-				if (gameState.current.name === "title") gameState.setState("play");
-			});
-		}
-	},
-	false
-);
-*/
 
 document.addEventListener("click", () => {
 	switch (gameState.current.name) {
@@ -1472,6 +1428,7 @@ document.addEventListener("click", () => {
 	}
 });
 
+
 const fps_display = document.querySelector("#fps") as HTMLElement;
 console.log(fps_display);
 let tmp = 0;
@@ -1479,19 +1436,7 @@ let tmp = 0;
 let dt: number = 0;
 let then: number = 0;
 
-/*
-if (screen.orientation.type == "portrait-primary"){
-	gameState.setState("orientation");
-}
-
-window.addEventListener("orientationchange", () =>  {
-	if (screen.orientation.type == "landscape-primary"){
-		gameState.setPreviousState()
-	} else {
-		gameState.setState("orientation");
-	}
-})
-*/
+createMap();
 
 function animate(now: number) {
 	(now *= 0.001), (dt = now - then), (then = now);
@@ -1522,8 +1467,8 @@ function animate(now: number) {
 
 		ecs.update({ dt, canvas: canvas, context: context, ecs });
 	}
-
 	requestAnimationFrame(animate);
+
 }
 
 animate(0);
