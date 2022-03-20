@@ -1028,7 +1028,7 @@ class CollisionSystem extends ECS.System {
 					if (inventory && collectible) {
 						inventory.increment(collectible.type);
 
-						let emitter = new ParticleEmitter({
+						const explosion = new ParticleEmitter({
 							particlePerSecond: 10,
 							minTTL: 0.4,
 							maxTTL: 0.6,
@@ -1042,11 +1042,10 @@ class CollisionSystem extends ECS.System {
 							explosive: true,
 						});
 
-						possible.addComponent(emitter);
+						possible.addComponent(explosion);
 						possible.removeComponent(Sprite);
 						possible.removeComponent(Collectible);
 						possible.ttl = 3;
-
 						continue;
 					}
 
