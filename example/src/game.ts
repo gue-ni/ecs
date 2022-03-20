@@ -612,9 +612,9 @@ class CombatSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
+		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
-		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		let gunPosOffset = 10;
 		let mouseDir = new Vector(
