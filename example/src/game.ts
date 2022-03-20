@@ -348,7 +348,7 @@ class CameraSystem extends ECS.System {
 	}
 }
 
-class InputSystem extends ECS.System {
+class DesktopInputSystem extends ECS.System {
 	keys: any;
 	/*
 	mouseX: number;
@@ -442,7 +442,14 @@ class MobileInputSystem extends ECS.System {
 			let touch = e.touches[0];
 			let x = touch.clientX - bbox.left;
 			let width = left_control.offsetWidth;
-			this.leftRight = x < width / 2 ? -1 : 1;
+			this.leftRight = 0;
+			let tolerance = width * 0.1;
+			if (x < width / 2 - tolerance){
+				this.leftRight = -1;
+			} else if (x > width / 2 + tolerance){
+				this.leftRight = 1;
+			}
+			//this.leftRight = x < width / 2 ? -1 : 1;
 			//left_debug.innerText = `${this.leftRight}, x=${x}, width=${width}`;
 		};
 
@@ -558,7 +565,7 @@ class WeaponSystem extends ECS.System {
 
 			//const vector = new Vector(direction.right ? 0.3 : -0.3, -1);
 			const vector = new Vector(direction.right ? 1 : -1, 0);
-			vector.scalarMult(200);
+			vector.scalarMult(100);
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
 
@@ -575,7 +582,7 @@ class WeaponSystem extends ECS.System {
 			rifle.firingRate = 0.3;
 
 			const vector = new Vector(direction.right ? 1 : -1, 0);
-			vector.scalarMult(100);
+			vector.scalarMult(200);
 			const projectile = new ECS.Entity(1)
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(vector.x, vector.y))
@@ -1064,8 +1071,6 @@ class AiSystem extends ECS.System {
 	}
 }
 
-
-
 class HudSystem extends ECS.System {
 	coins: HTMLElement;
 	constructor(){
@@ -1082,7 +1087,7 @@ class HudSystem extends ECS.System {
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
-ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new InputSystem());
+ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new DesktopInputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
@@ -1122,10 +1127,6 @@ player.addComponent(
 	])
 );
 ecs.addEntity(player);
-
-
-// coin
-
 
 /*
 {
@@ -1193,7 +1194,7 @@ const boxes = [
 	[25, 2],
 	[26, 2],
 	[28, 4],
-	[25, 6],
+	[26, 6],
 	[23, 7],
 	[22, 7],
 	[19, 8],
