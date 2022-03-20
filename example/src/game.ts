@@ -1,4 +1,5 @@
 import * as ECS from "../../lib";
+import { randomInteger, randomFloat } from "./util";
 
 let canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 let context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -1177,9 +1178,10 @@ interface ParticleConfig {
 
 class ParticleEmitter extends ECS.Component {
 	particles: Particle[];
+	time: number = 0;
+	has_exploded: boolean = false;
 	emit: boolean;
 	freq: number;
-	time: number = 0;
 	maxParticleCount: number;
 	minSize: number;
 	maxSize: number;
@@ -1190,7 +1192,6 @@ class ParticleEmitter extends ECS.Component {
 	gravity: number;
 	positionSpread: number;
 	explosive: boolean;
-	has_exploded: boolean = false;
 
 	constructor(params: ParticleConfig) {
 		super();
@@ -1210,48 +1211,32 @@ class ParticleEmitter extends ECS.Component {
 	}
 }
 
-class ParticleSystem extends ECS.System {
-	constructor() {
-		super([Position, ParticleEmitter]);
-	}
-
-	static randomInt(min: number, max: number): number {
-		return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
-
-	static randomFloat(min: number, max: number): number {
-		return Math.random() * (max - min) + min;
-	}
-
-	createParticle(emitter: ParticleEmitter, position: Position): Particle {
+class Particles {
+	static createParticle(emitter: ParticleEmitter, position: Position): Particle {
 		const particle = new Particle();
-		particle.gravity = emitter.gravity;
 		particle.alpha = emitter.alpha;
+		particle.gravity = emitter.gravity;
 		particle.pos = position.vector.add(
 			new Vector(
-				ParticleSystem.randomFloat(-emitter.positionSpread, emitter.positionSpread),
-				ParticleSystem.randomFloat(-emitter.positionSpread, emitter.positionSpread)
+				randomFloat(-emitter.positionSpread, emitter.positionSpread),
+				randomFloat(-emitter.positionSpread, emitter.positionSpread)
 			)
 		);
-		particle.ttl = ParticleSystem.randomFloat(emitter.minTtl, emitter.maxTtl);
-		particle.size = ParticleSystem.randomInt(emitter.minSize, emitter.maxSize);
+		particle.ttl = randomFloat(emitter.minTtl, emitter.maxTtl);
+		particle.size = randomInteger(emitter.minSize, emitter.maxSize);
 		particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(emitter.speed);
 		return particle;
 	}
 
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(Position) as Position;
-		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
-
+	static updateParticles(emitter: ParticleEmitter, position: Position, params: ECS.UpdateParams): void {
 		if (emitter.explosive && !emitter.has_exploded) {
 			for (let i = 0; i < emitter.maxParticleCount; i++) {
-				emitter.particles.push(this.createParticle(emitter, position));
+				emitter.particles.push(Particles.createParticle(emitter, position));
 			}
 			emitter.has_exploded = true;
-
 		} else if (!emitter.explosive && emitter.emit && (emitter.time += params.dt) > emitter.freq) {
 			emitter.time = 0;
-			emitter.particles.push(this.createParticle(emitter, position));
+			emitter.particles.push(Particles.createParticle(emitter, position));
 		}
 
 		for (const particle of emitter.particles) {
@@ -1275,6 +1260,18 @@ class ParticleSystem extends ECS.System {
 		if (emitter.particles.length > emitter.maxParticleCount) {
 			emitter.particles.shift();
 		}
+	}
+}
+
+class ParticleSystem extends ECS.System {
+	constructor() {
+		super([Position, ParticleEmitter]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(Position) as Position;
+		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+		Particles.updateParticles(emitter, position, params);
 	}
 }
 
@@ -1476,7 +1473,7 @@ document.addEventListener("click", () => {
 });
 
 const fps_display = document.querySelector("#fps") as HTMLElement;
-console.log(fps_display)
+console.log(fps_display);
 let tmp = 0;
 
 let dt: number = 0;
@@ -1501,7 +1498,7 @@ function animate(now: number) {
 
 	if ((tmp += dt) > 1) {
 		tmp = 0;
-		let fps = `${(1 / dt).toFixed(2)} fps`
+		let fps = `${(1 / dt).toFixed(2)} fps`;
 		//console.log(fps)
 		fps_display.innerText = fps;
 	}
