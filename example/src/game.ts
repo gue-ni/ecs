@@ -104,6 +104,7 @@ class Vector {
 class Detectable extends ECS.Component {}
 
 class Spikes extends ECS.Component {}
+
 class Speed extends ECS.Component {
 	value: number;
 	constructor(value: number = 50) {
@@ -128,13 +129,13 @@ class Gravity extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
-class Bullet extends ECS.Component {
-	damage: number;
-	shotBy: ECS.Entity;
-	constructor(shotBy: ECS.Entity, damage: number = 10) {
+class Damage extends ECS.Component {
+	value: number;
+	dealtBy: ECS.Entity;
+	constructor(dealtBy: ECS.Entity, damage: number = 10) {
 		super();
-		this.damage = damage;
-		this.shotBy = shotBy;
+		this.value = damage;
+		this.dealtBy = dealtBy;
 	}
 }
 
@@ -215,9 +216,12 @@ class SpriteState extends ECS.State {
 
 	enter(): void {
 		if (this.playOnce) this.frameX = 0;
+		//console.log("enter", this.name)
 	}
 
-	exit(): void {}
+	exit(): void {
+		//console.log("exit", this.name)
+	}
 }
 
 class Light extends ECS.Component {
@@ -372,6 +376,7 @@ class HealthSystem extends ECS.System {
 				console.log("you died!");
 				gameState.setState("dead");
 			} else {
+				console.log("removing entity", health.value)
 				params.ecs.removeEntity(entity);
 			}
 		}
@@ -590,9 +595,9 @@ class MovementSystem extends ECS.System {
 
 		velocity.x = speedVal * input.leftRight;
 
-		if (entity.getComponent(Player)){
+		if (entity.getComponent(Player)) {
 			direction.right = input.mouseX - (position.x - WINDOW_OFFSET_X) > 0;
-		} 
+		}
 
 		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
@@ -643,8 +648,9 @@ class CombatSystem extends ECS.System {
 		);
 		mouseDir.normalize();
 
-		if (input.is_key_pressed("KeyF", 250)) {
+		if (input.is_key_pressed("KeyF", 500)) {
 			// TODO
+			//console.log("melee");
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
 		}
 
@@ -675,7 +681,7 @@ class CombatSystem extends ECS.System {
 				.addComponent(sprite)
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
 				.addComponent(new ParticleEmitter(explosion))
-				.addComponent(new Bullet(entity));
+				.addComponent(new Damage(entity));
 			params.ecs.addEntity(projectile);
 		}
 
@@ -687,7 +693,7 @@ class CombatSystem extends ECS.System {
 				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
 				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
-				.addComponent(new Bullet(entity))
+				.addComponent(new Damage(entity))
 				.addComponent(new ParticleEmitter(explosion));
 
 			params.ecs.addEntity(projectile);
@@ -1042,7 +1048,7 @@ class CollisionSystem extends ECS.System {
 		let position = entity.getComponent(Position) as Position;
 		let velocity = entity.getComponent(Velocity) as Velocity;
 		let health = entity.getComponent(Health) as Health;
-		let bullet = entity.getComponent(Bullet) as Bullet;
+		let damage = entity.getComponent(Damage) as Damage;
 		let inventory = entity.getComponent(Inventory) as Inventory;
 
 		let aabb = new AABB(collider, position);
@@ -1063,6 +1069,8 @@ class CollisionSystem extends ECS.System {
 
 				const depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
 				if (depth) {
+
+					
 					const collectible = possible.getComponent(Collectible) as Collectible;
 					if (inventory && collectible) {
 						inventory.increment(collectible.type);
@@ -1077,16 +1085,17 @@ class CollisionSystem extends ECS.System {
 						continue;
 					}
 
-					// spikes are dangerous!
-					if (health && possible.getComponent(Spikes)) {
-						console.log("spike");
-						velocity.y = -100;
-						health.value -= 1;
-						continue;
+				
+
+					let damage;
+					if (health && (damage = possible.getComponent(Damage)) && damage.dealtBy.id != entity.id){
+						let damage = (possible.getComponent(Damage) as Damage).value;
+						health.value -= damage;
+						console.log("taking damage", health.value, damage)
 					}
 
-					if (bullet && bullet.shotBy.id !== possible.id) {
-						let emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+					if (damage && damage.dealtBy.id !== possible.id) {
+						const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 						if (emitter && emitter.explosive) {
 							emitter.emit = true;
 							entity.removeComponent(Collider);
@@ -1094,11 +1103,11 @@ class CollisionSystem extends ECS.System {
 							entity.removeComponent(Light);
 							entity.ttl = 0.8;
 						} else {
-							params.ecs.removeEntity(entity);
+							//params.ecs.removeEntity(entity);
 						}
 
-						const health = possible.getComponent(Health) as Health;
-						if (health) health.value -= bullet.damage;
+						//const health = possible.getComponent(Health) as Health;
+						//if (health) health.value -= damage.damage;
 						continue;
 					}
 
@@ -1140,13 +1149,13 @@ class CollisionSystem extends ECS.System {
 	}
 }
 
-type AiType = "walkTowards"
+type AiType = "walkTowards";
 
 class Ai extends ECS.Component {
 	time: number = 0;
 	type: AiType;
-	constructor(type: AiType = "walkTowards"){
-		super()
+	constructor(type: AiType = "walkTowards") {
+		super();
 		this.type = type;
 	}
 }
@@ -1166,19 +1175,23 @@ class AiSystem extends ECS.System {
 
 		for (const detected_entity of detection.detected) {
 			if (detected_entity.getComponent(Player)) {
-				const target_position = (detected_entity.getComponent(Position) as Position).vector;
-				const target_dir = target_position.sub(position);
+				const target_pos = (detected_entity.getComponent(Position) as Position).vector;
+				const target_dir = target_pos.sub(position);
+
+				const meleeRange = 7;
 
 				if (Math.abs(target_dir.y) > 16) continue;
 
-				if (target_dir.x > 5){
+				if (target_dir.x > 5) {
 					direction.right = true;
-				} else if (target_dir.x < -5){
+				} else if (target_dir.x < -5) {
 					direction.right = false;
 				}
 
-				if (target_dir.magnitude() > 5) {
+				if (target_dir.magnitude() > meleeRange) {
 					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
+				} else {
+					input.pressed["KeyF"] = true;
 				}
 
 				/*
@@ -1371,21 +1384,21 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 	WINDOW_OFFSET_Y = 0;
 	WINDOW_CENTER_X = canvas.width / 2;
 
-	player.addComponent(new Velocity(0, 0));
-	player.addComponent(new Gravity());
-	player.addComponent(new Direction());
-	player.addComponent(new Dynamic());
-	player.addComponent(new Player());
-	player.addComponent(new Input());
-	player.addComponent(new Inventory());
-	player.addComponent(new Health());
-	//player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
-	//player.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8));
-	player.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y));
-	player.addComponent(new Collider(16, 2, 0, 2, 3, true));
-	player.addComponent(new Detectable());
-	player.addComponent(new Speed());
-	player.addComponent(
+	player.addComponent(new Velocity(0, 0))
+	.addComponent(new Gravity())
+	.addComponent(new Direction())
+	.addComponent(new Dynamic())
+	.addComponent(new Player())
+	.addComponent(new Input())
+	.addComponent(new Inventory())
+	.addComponent(new Health())
+	//.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
+	//.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8))
+	.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
+	.addComponent(new Collider(16, 2, 0, 2, 3, true))
+	.addComponent(new Detectable())
+	.addComponent(new Speed())
+	.addComponent(
 		new ParticleEmitter({
 			particlePerSecond: 15,
 			minTTL: 0.1,
@@ -1397,8 +1410,8 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 			speed: 20,
 			gravity: 0,
 		})
-	);
-	player.addComponent(
+	)
+	.addComponent(
 		new Sprite(CHARACTER_SPRITE, 16, 16, [
 			new SpriteState("idle-right", { frameY: 0, frames: 1 }),
 			new SpriteState("idle-left", { frameY: 1, frames: 1 }),
@@ -1425,7 +1438,11 @@ async function spawnMap() {
 					.addComponent(
 						new Sprite(VILLAIN_SPRITE, 16, 16, [
 							new SpriteState("idle-left", { frameY: 0, frames: 4 }),
-							new SpriteState("idle-right", { frameY: 1, frames: 4 })
+							new SpriteState("idle-right", { frameY: 1, frames: 4 }),
+							new SpriteState("run-left", { frameY: 0, frames: 4 }),
+							new SpriteState("run-right", { frameY: 1, frames: 4 }),
+							new SpriteState("melee-left", { frameY: 3, frames: 3, playOnce: true }),
+							new SpriteState("melee-right", { frameY: 2, frames: 3, playOnce: true }),
 						])
 					)
 					.addComponent(new Ai())
@@ -1434,9 +1451,10 @@ async function spawnMap() {
 					.addComponent(new Input())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(30))
+					.addComponent(new Health())
 					.addComponent(new Collider(16, 3, 0, 3, 3, true))
 					.addComponent(new Velocity(0, 0))
-					.addComponent(new DetectionRadius(randomInteger(30,50)));
+					.addComponent(new DetectionRadius(randomInteger(32, 64)));
 
 				ecs.addEntity(entity);
 
