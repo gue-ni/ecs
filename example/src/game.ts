@@ -1066,21 +1066,28 @@ class CollisionSystem extends ECS.System {
 					}
 
 					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
-						const [x, y] = depth;
+						let [x, y] = depth;
+
+
+						//const player = entity.getComponent(Player);
+						//if (player)console.log({x,y})
 
 						if (Math.abs(x) < Math.abs(y) - collider.padding * 2) {
 							position.x -= x;
 						} else {
 							if (y > 0) {
-								if (y > collider.padding) {
+								if (y > collider.padding && x != 0) {
 									velocity.y = Math.min(0, velocity.y);
 									position.y -= y - collider.padding;
-								} else if (collider.padding == y) {
+									//if (player) console.log("collision")
+
+								} else if (y == collider.padding && x != 0) {
 									velocity.y = Math.min(0, velocity.y);
 									collider.bottomCollision = true;
+									//if (player) console.log("touching at bottom")
 								}
 							} else if (y < 0) {
-								if (Math.abs(y) > collider.padding) {
+								if (Math.abs(y) > collider.padding && x != 0) {
 									position.y -= y + collider.padding;
 									velocity.y = Math.max(0, velocity.y);
 								} else {
@@ -1303,8 +1310,8 @@ player.addComponent(new Input());
 player.addComponent(new Inventory());
 player.addComponent(new Health());
 player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
-player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL));
-player.addComponent(new Collider(13, 2, 0, 2, 3, true));
+player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL - 16 * 1));
+player.addComponent(new Collider(16, 2, 0, 2, 3, true));
 player.addComponent(new Detectable());
 player.addComponent(
 	new ParticleEmitter({
