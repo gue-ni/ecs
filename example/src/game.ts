@@ -42,6 +42,10 @@ bulletSprite.src = "assets/bullet.png";
 const TILE_SPRITE = new Image();
 TILE_SPRITE.src = "assets/tiles.png";
 
+const CHARACTER_LIGHT = new Image();
+CHARACTER_LIGHT.src = "assets/characterlight.png";
+
+
 const ONE_PIXEL = new Image();
 ONE_PIXEL.src = "assets/pixel.png";
 
@@ -717,7 +721,7 @@ class LightSystem extends ECS.System {
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.context.fillStyle = "rgba(0, 0, 0, 0.99)";
+			this.context.fillStyle = "rgba(0, 0, 0, 0.85)";
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 			return entities;
 		};
@@ -1072,26 +1076,28 @@ class CollisionSystem extends ECS.System {
 						//const player = entity.getComponent(Player);
 						//if (player)console.log({x,y})
 
-						if (Math.abs(x) < Math.abs(y) - collider.padding * 2) {
+						if (Math.abs(x) < Math.abs(y) - collider.padding) { // removed collider.padding * 2
 							position.x -= x;
 						} else {
-							if (y > 0) {
-								if (y > collider.padding && x != 0) {
+							if (y > 0 && x != 0) {
+								if (y > collider.padding) {
 									velocity.y = Math.min(0, velocity.y);
 									position.y -= y - collider.padding;
-									//if (player) console.log("collision")
+									//if (player) console.log("collision bottom")
 
-								} else if (y == collider.padding && x != 0) {
+								} else if (y == collider.padding) {
 									velocity.y = Math.min(0, velocity.y);
 									collider.bottomCollision = true;
-									//if (player) console.log("touching at bottom")
+									//if (player) console.log("touching bottom")
 								}
-							} else if (y < 0) {
-								if (Math.abs(y) > collider.padding && x != 0) {
+							} else if (y < 0 && x != 0) {
+								if (Math.abs(y) > collider.padding) {
 									position.y -= y + collider.padding;
 									velocity.y = Math.max(0, velocity.y);
+									//if (player) console.log("collision top")
 								} else {
 									collider.topCollision = true;
+									//if (player) console.log("touching top")
 								}
 							}
 						}
@@ -1309,7 +1315,8 @@ player.addComponent(new Player());
 player.addComponent(new Input());
 player.addComponent(new Inventory());
 player.addComponent(new Health());
-player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
+//player.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12));
+player.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8));
 player.addComponent(new Position(WINDOW_CENTER_X - 16 * 3, GROUND_LEVEL - 16 * 1));
 player.addComponent(new Collider(16, 2, 0, 2, 3, true));
 player.addComponent(new Detectable());
