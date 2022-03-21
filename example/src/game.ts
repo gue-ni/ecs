@@ -376,7 +376,7 @@ class HealthSystem extends ECS.System {
 				console.log("you died!");
 				gameState.setState("dead");
 			} else {
-				console.log("removing entity", health.value)
+				//console.log("removing entity", health.value)
 				params.ecs.removeEntity(entity);
 			}
 		}
@@ -631,8 +631,10 @@ class MovementSystem extends ECS.System {
 }
 
 class CombatSystem extends ECS.System {
-	constructor() {
+	sph: SpatialHashGrid;
+	constructor(sph: SpatialHashGrid) {
 		super([Input, Position, Direction, Sprite]);
+		this.sph = sph;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -648,9 +650,22 @@ class CombatSystem extends ECS.System {
 		);
 		mouseDir.normalize();
 
-		if (input.is_key_pressed("KeyF", 500)) {
-			// TODO
-			//console.log("melee");
+		if (input.is_key_pressed("KeyF", 250)) {
+			const aabb_a = new AABB(new Collider(16, 8, 0, 8), position);
+
+			for (const possible of this.sph.possible_collisions(entity, aabb_a)) {
+				const aabb_b = new AABB(
+					possible.getComponent(Collider) as Collider,
+					possible.getComponent(Position) as Position
+				);
+
+				const health = possible.getComponent(Health) as Health;
+
+				if (SpatialHashGrid.check_collision(aabb_a, aabb_b) && health) {
+					health.value -= 20;
+				}
+			}
+
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
 		}
 
@@ -681,7 +696,7 @@ class CombatSystem extends ECS.System {
 				.addComponent(sprite)
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
 				.addComponent(new ParticleEmitter(explosion))
-				.addComponent(new Damage(entity));
+				.addComponent(new Damage(entity, 150));
 			params.ecs.addEntity(projectile);
 		}
 
@@ -693,7 +708,7 @@ class CombatSystem extends ECS.System {
 				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
 				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true))
-				.addComponent(new Damage(entity))
+				.addComponent(new Damage(entity, 30))
 				.addComponent(new ParticleEmitter(explosion));
 
 			params.ecs.addEntity(projectile);
@@ -910,6 +925,11 @@ class DetectionRadius extends Collider {
 	}
 }
 
+interface Collision {
+	depth: number[];
+	entity: ECS.Entity;
+}
+
 class SpatialHashGrid {
 	_gridsize: number;
 	_lastPos: Map<string, number[]>;
@@ -934,6 +954,18 @@ class SpatialHashGrid {
 		} else {
 			return null;
 		}
+	}
+
+	collisions(entity: ECS.Entity, aabb: AABB): Collision[] {
+		let collisions = [];
+		for (const other of this.possible_collisions(entity, aabb)) {
+			const aabb_b = new AABB(other.getComponent(Collider) as Collider, other.getComponent(Position) as Position);
+
+			let depth = SpatialHashGrid.check_collision(aabb, aabb_b);
+			if (depth) collisions.push({ depth: depth, entity: other });
+		}
+
+		return collisions;
 	}
 
 	hash(x: number, y: number): number[] {
@@ -1044,14 +1076,14 @@ class CollisionSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		let collider = entity.getComponent(Collider) as Collider;
-		let position = entity.getComponent(Position) as Position;
-		let velocity = entity.getComponent(Velocity) as Velocity;
-		let health = entity.getComponent(Health) as Health;
-		let damage = entity.getComponent(Damage) as Damage;
-		let inventory = entity.getComponent(Inventory) as Inventory;
+		const health = entity.getComponent(Health) as Health;
+		const damage = entity.getComponent(Damage) as Damage;
+		const collider = entity.getComponent(Collider) as Collider;
+		const position = entity.getComponent(Position) as Position;
+		const velocity = entity.getComponent(Velocity) as Velocity;
+		const inventory = entity.getComponent(Inventory) as Inventory;
 
-		let aabb = new AABB(collider, position);
+		const aabb = new AABB(collider, position);
 
 		if (position.changed) {
 			this.sph.remove(entity);
@@ -1062,84 +1094,63 @@ class CollisionSystem extends ECS.System {
 		collider.bottomCollision = false;
 
 		if (collider.active) {
-			for (const possible of this.sph.possible_collisions(entity, aabb)) {
-				const possible_col = possible.getComponent(Collider) as Collider;
-				const possible_pos = possible.getComponent(Position) as Position;
-				const possible_aabb = new AABB(possible_col, possible_pos);
+			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
+				// if its collectible, collect it
+				const collectible = other.getComponent(Collectible) as Collectible;
+				if (inventory && collectible) {
+					inventory.increment(collectible.type);
 
-				const depth = SpatialHashGrid.check_collision(aabb, possible_aabb);
-				if (depth) {
+					const emitter = other.getComponent(ParticleEmitter) as ParticleEmitter;
+					if (emitter && emitter.explosive) emitter.emit = true;
 
-					
-					const collectible = possible.getComponent(Collectible) as Collectible;
-					if (inventory && collectible) {
-						inventory.increment(collectible.type);
+					other.removeComponent(Collectible);
+					other.removeComponent(Sprite);
+					other.ttl = 0.5;
+				}
 
-						let emitter = possible.getComponent(ParticleEmitter) as ParticleEmitter;
-						if (emitter && emitter.explosive) {
-							emitter.emit = true;
-						}
-						possible.removeComponent(Sprite);
-						possible.removeComponent(Collectible);
-						possible.ttl = 1;
-						continue;
-					}
+				// if it does damage, take the damage
+				const otherDamage = other.getComponent(Damage) as Damage;
+				if (health && otherDamage && otherDamage.dealtBy.id != entity.id) {
+					health.value -= otherDamage.value;
+				}
 
-				
+				// if you do damage, deal the damage
+				const otherHealth = other.getComponent(Health) as Health;
+				if (damage && otherHealth && damage.dealtBy.id != other.id) {
+					otherHealth.value -= damage.value;
+				}
 
-					let damage;
-					if (health && (damage = possible.getComponent(Damage)) && damage.dealtBy.id != entity.id){
-						let damage = (possible.getComponent(Damage) as Damage).value;
-						health.value -= damage;
-						console.log("taking damage", health.value, damage)
-					}
+				// if you can explode, explode
+				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+				if (emitter && emitter.explosive && damage.dealtBy.id != other.id) {
+					emitter.emit = true;
+					entity.removeComponent(Collider);
+					entity.removeComponent(Sprite);
+					entity.removeComponent(Light);
+					entity.ttl = 1.0;
+				}
 
-					if (damage && damage.dealtBy.id !== possible.id) {
-						const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
-						if (emitter && emitter.explosive) {
-							emitter.emit = true;
-							entity.removeComponent(Collider);
-							entity.removeComponent(Sprite);
-							entity.removeComponent(Light);
-							entity.ttl = 0.8;
-						} else {
-							//params.ecs.removeEntity(entity);
-						}
+				// do collision physics
+				if (velocity && other.getComponent(Static)) {
+					let [x, y] = depth;
 
-						//const health = possible.getComponent(Health) as Health;
-						//if (health) health.value -= damage.damage;
-						continue;
-					}
-
-					if (entity.getComponent(Dynamic) && possible.getComponent(Static)) {
-						let [x, y] = depth;
-
-						//const player = entity.getComponent(Player);
-						//if (player)console.log({x,y})
-
-						if (Math.abs(x) < Math.abs(y) - collider.padding) {
-							// removed collider.padding * 2
-							position.x -= x;
-						} else {
-							if (y > 0 && x != 0) {
-								if (y > collider.padding) {
-									velocity.y = Math.min(0, velocity.y);
-									position.y -= y - collider.padding;
-									//if (player) console.log("collision bottom")
-								} else if (y == collider.padding) {
-									velocity.y = Math.min(0, velocity.y);
-									collider.bottomCollision = true;
-									//if (player) console.log("touching bottom")
-								}
-							} else if (y < 0 && x != 0) {
-								if (Math.abs(y) > collider.padding) {
-									position.y -= y + collider.padding;
-									velocity.y = Math.max(0, velocity.y);
-									//if (player) console.log("collision top")
-								} else {
-									collider.topCollision = true;
-									//if (player) console.log("touching top")
-								}
+					if (Math.abs(x) < Math.abs(y) - collider.padding) {
+						position.x -= x;
+					} else {
+						if (y > 0 && x != 0) {
+							if (y > collider.padding) {
+								velocity.y = Math.min(0, velocity.y);
+								position.y -= y - collider.padding;
+							} else if (y == collider.padding) {
+								velocity.y = Math.min(0, velocity.y);
+								collider.bottomCollision = true;
+							}
+						} else if (y < 0 && x != 0) {
+							if (Math.abs(y) > collider.padding) {
+								position.y -= y + collider.padding;
+								velocity.y = Math.max(0, velocity.y);
+							} else {
+								collider.topCollision = true;
 							}
 						}
 					}
@@ -1368,7 +1379,7 @@ ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new CombatSystem());
+ecs.addSystem(new CombatSystem(sph));
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new ParticleSystem());
 ecs.addSystem(new LightSystem());
@@ -1384,45 +1395,46 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 	WINDOW_OFFSET_Y = 0;
 	WINDOW_CENTER_X = canvas.width / 2;
 
-	player.addComponent(new Velocity(0, 0))
-	.addComponent(new Gravity())
-	.addComponent(new Direction())
-	.addComponent(new Dynamic())
-	.addComponent(new Player())
-	.addComponent(new Input())
-	.addComponent(new Inventory())
-	.addComponent(new Health())
-	//.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
-	//.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8))
-	.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
-	.addComponent(new Collider(16, 2, 0, 2, 3, true))
-	.addComponent(new Detectable())
-	.addComponent(new Speed())
-	.addComponent(
-		new ParticleEmitter({
-			particlePerSecond: 15,
-			minTTL: 0.1,
-			maxTTL: 0.4,
-			minSize: 2,
-			maxSize: 3,
-			maxCount: 20,
-			alpha: 0.6,
-			speed: 20,
-			gravity: 0,
-		})
-	)
-	.addComponent(
-		new Sprite(CHARACTER_SPRITE, 16, 16, [
-			new SpriteState("idle-right", { frameY: 0, frames: 1 }),
-			new SpriteState("idle-left", { frameY: 1, frames: 1 }),
-			new SpriteState("jump-right", { frameY: 2, frames: 1 }),
-			new SpriteState("jump-left", { frameY: 3, frames: 1 }),
-			new SpriteState("run-right", { frameY: 4, frames: 4 }),
-			new SpriteState("run-left", { frameY: 5, frames: 4 }),
-			new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
-			new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
-		])
-	);
+	player
+		.addComponent(new Velocity(0, 0))
+		.addComponent(new Gravity())
+		.addComponent(new Direction())
+		.addComponent(new Dynamic())
+		.addComponent(new Player())
+		.addComponent(new Input())
+		.addComponent(new Inventory())
+		.addComponent(new Health())
+		//.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
+		//.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8))
+		.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
+		.addComponent(new Collider(16, 2, 0, 2, 3, true))
+		.addComponent(new Detectable())
+		.addComponent(new Speed())
+		.addComponent(
+			new ParticleEmitter({
+				particlePerSecond: 15,
+				minTTL: 0.1,
+				maxTTL: 0.4,
+				minSize: 2,
+				maxSize: 3,
+				maxCount: 20,
+				alpha: 0.6,
+				speed: 20,
+				gravity: 0,
+			})
+		)
+		.addComponent(
+			new Sprite(CHARACTER_SPRITE, 16, 16, [
+				new SpriteState("idle-right", { frameY: 0, frames: 1 }),
+				new SpriteState("idle-left", { frameY: 1, frames: 1 }),
+				new SpriteState("jump-right", { frameY: 2, frames: 1 }),
+				new SpriteState("jump-left", { frameY: 3, frames: 1 }),
+				new SpriteState("run-right", { frameY: 4, frames: 4 }),
+				new SpriteState("run-left", { frameY: 5, frames: 4 }),
+				new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
+				new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
+			])
+		);
 }
 
 async function spawnMap() {
@@ -1479,6 +1491,7 @@ async function spawnMap() {
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
 						.addComponent(sprite)
 						.addComponent(new Collectible("coin"))
+						.addComponent(new Health())
 						.addComponent(
 							new ParticleEmitter({
 								particlePerSecond: 10,
@@ -1542,7 +1555,9 @@ document.addEventListener("click", () => {
 			break;
 		case "dead":
 			// TODO reset everything
-			location.reload();
+			//location.reload();
+			gameState.setState("play");
+			spawnPlayer(player, randomInteger(3, 30), randomInteger(1, 10));
 			break;
 	}
 });
