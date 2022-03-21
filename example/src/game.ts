@@ -1443,20 +1443,15 @@ function animate(now: number) {
 
 	if ((tmp += dt) > 1) {
 		tmp = 0;
-		let fps = `${(1 / dt).toFixed(2)} fps`;
-		//console.log(fps)
+		const fps = `${(1 / dt).toFixed(2)} fps`;
 		fps_display.innerText = fps;
 	}
 
-	{
-		// clear screen
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "rgb(0,0,0)";
-		context.fillRect(0, 0, canvas.width, canvas.height);
-	}
-	if (gameState.current.name == "play") {
-		// update game
+	context.clearRect(0, 0, canvas.width, canvas.height);
+	context.fillStyle = "rgb(0,0,0)";
+	context.fillRect(0, 0, canvas.width, canvas.height);
 
+	if (gameState.current.name == "play") {
 		context.beginPath();
 		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
 		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
@@ -1465,7 +1460,7 @@ function animate(now: number) {
 		context.stroke();
 		context.closePath();
 
-		ecs.update({ dt, canvas: canvas, context: context, ecs });
+		ecs.update({ dt, canvas, context, ecs });
 	}
 	requestAnimationFrame(animate);
 

@@ -4,7 +4,8 @@
   "description": "",
   "main": "game.ts",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "map": "python parse_map.py && webpack"
   },
   "author": "",
   "license": "ISC",
