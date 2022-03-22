@@ -350,16 +350,17 @@ class Inventory extends ECS.Component {
 }
 
 class Health extends ECS.Component {
-	value: number = 100;
-	constructor() {
+	value: number;
+	constructor(value: number = 100) {
 		super();
+		this.value = value;
 	}
 }
 
 class HealthSystem extends ECS.System {
 	healthDisplay: HTMLElement;
 	constructor() {
-		super([Health], { updatesPerSecond: 2 });
+		super([Health]);
 		this.healthDisplay = document.querySelector("#health");
 		this.healthDisplay.style.display = "flex";
 	}
@@ -1378,12 +1379,12 @@ ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
 ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
+ecs.addSystem(new HealthSystem());
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new CombatSystem(sph));
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new ParticleSystem());
 ecs.addSystem(new LightSystem());
-ecs.addSystem(new HealthSystem());
 ecs.addSystem(new HudSystem());
 ecs.addSystem(new PositionChangeSystem());
 
@@ -1491,7 +1492,7 @@ async function spawnMap() {
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
 						.addComponent(sprite)
 						.addComponent(new Collectible("coin"))
-						.addComponent(new Health())
+						.addComponent(new Health(1))
 						.addComponent(
 							new ParticleEmitter({
 								particlePerSecond: 10,

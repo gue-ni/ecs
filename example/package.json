@@ -5,7 +5,8 @@
   "main": "game.ts",
   "scripts": {
     "build": "webpack",
-    "map": "python parse_map.py && webpack"
+    "map": "python parse_map.py && webpack",
+    "deploy": "npm run map && deploy.bat"
   },
   "author": "",
   "license": "ISC",
