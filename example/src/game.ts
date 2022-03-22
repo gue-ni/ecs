@@ -13,7 +13,7 @@ let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
-const DARKNESS = 0.90;
+const DARKNESS = 0.80;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
@@ -1070,8 +1070,6 @@ class CollisionSystem extends ECS.System {
 		const inventory = entity.getComponent(Inventory) as Inventory;
 
 		const aabb = new AABB(collider, position);
-
-		//console.log({velocity})
 
 		if (position.changed) {
 			this.sph.remove(entity);
