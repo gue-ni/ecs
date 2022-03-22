@@ -13,6 +13,7 @@ let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
+const DARKNESS = 0.90;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
@@ -652,19 +653,10 @@ class CombatSystem extends ECS.System {
 		mouseDir.normalize();
 
 		if (input.is_key_pressed("KeyF", 250)) {
-			const aabb_a = new AABB(new Collider(16, 8, 0, 8), position);
-
-			for (const possible of this.sph.possible_collisions(entity, aabb_a)) {
-				const aabb_b = new AABB(
-					possible.getComponent(Collider) as Collider,
-					possible.getComponent(Position) as Position
-				);
-
-				const health = possible.getComponent(Health) as Health;
-
-				if (SpatialHashGrid.check_collision(aabb_a, aabb_b) && health) {
-					health.value -= 20;
-				}
+			const aabb = new AABB(new Collider(16, 8, 0, 8), position);
+			for (const collision of this.sph.collisions(entity, aabb)) {
+				const health = collision.entity.getComponent(Health) as Health;
+				if (health) health.value -= 20;
 			}
 
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
@@ -777,7 +769,7 @@ class LightSystem extends ECS.System {
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.context.fillStyle = "rgba(0, 0, 0, 0.85)";
+			this.context.fillStyle = `rgba(0, 0, 0, ${DARKNESS})`;
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 			return entities;
 		};
@@ -919,7 +911,7 @@ class AABB {
 }
 
 class DetectionRadius extends Collider {
-	detected: ECS.Entity[];
+	entities: ECS.Entity[];
 
 	constructor(range: number) {
 		super(range, range, range, range);
@@ -1048,21 +1040,14 @@ class DetectionSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		let position = entity.getComponent(Position) as Position;
-		let detection = entity.getComponent(DetectionRadius) as DetectionRadius;
+		const position = entity.getComponent(Position) as Position;
+		const detection = entity.getComponent(DetectionRadius) as DetectionRadius;
+		const aabb = new AABB(detection, position);
+		detection.entities = [];
 
-		let aabb = new AABB(detection, position);
-		detection.detected = [];
-
-		for (const other_entity of this.sph.possible_collisions(entity, aabb)) {
-			let p = other_entity.getComponent(Position) as Position;
-			let c = other_entity.getComponent(Collider) as Collider;
-			let other_aabb = new AABB(c, p);
-
-			if (SpatialHashGrid.check_collision(aabb, other_aabb)) {
-				if (other_entity.getComponent(Detectable)) {
-					detection.detected.push(other_entity);
-				}
+		for (const collision of this.sph.collisions(entity, aabb)) {
+			if (collision.entity.getComponent(Detectable)) {
+				detection.entities.push(collision.entity);
 			}
 		}
 	}
@@ -1085,6 +1070,8 @@ class CollisionSystem extends ECS.System {
 		const inventory = entity.getComponent(Inventory) as Inventory;
 
 		const aabb = new AABB(collider, position);
+
+		//console.log({velocity})
 
 		if (position.changed) {
 			this.sph.remove(entity);
@@ -1185,7 +1172,7 @@ class AiSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 		input.pressed = {};
 
-		for (const detected_entity of detection.detected) {
+		for (const detected_entity of detection.entities) {
 			if (detected_entity.getComponent(Player)) {
 				const target_pos = (detected_entity.getComponent(Position) as Position).vector;
 				const target_dir = target_pos.sub(position);
