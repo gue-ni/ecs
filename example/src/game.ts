@@ -1,6 +1,5 @@
-import { AssertsIdentifierTypePredicate } from "typescript";
 import * as ECS from "../../lib";
-import { randomInteger, randomFloat } from "./util";
+import { randomInteger, randomFloat, Vector } from "./util";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -13,7 +12,7 @@ let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
-const DARKNESS = 0.80;
+const DARKNESS = 0.8;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
@@ -61,50 +60,19 @@ SMALL_LIGHT_SPRITE.src = "assets/small-light.png";
 const cthulluSprite = new Image();
 cthulluSprite.src = "assets/cthullu.png";
 
-class Vector {
-	x: number;
-	y: number;
 
-	constructor(x: number, y: number) {
-		this.x = x;
-		this.y = y;
-	}
-
-	scalarMult(scalar: number): Vector {
-		this.x *= scalar;
-		this.y *= scalar;
-		return this;
-	}
-
-	add(vector: Vector): Vector {
-		return new Vector(this.x + vector.x, this.y + vector.y);
-	}
-
-	sub(vector: Vector): Vector {
-		return new Vector(this.x - vector.x, this.y - vector.y);
-	}
-
-	magnitude(): number {
-		return Math.sqrt(this.x * this.x + this.y * this.y);
-	}
-
-	round(): Vector {
-		this.x = Math.round(this.x);
-		this.y = Math.round(this.y);
-		return this;
-	}
-
-	normalize(): Vector {
-		let mag = this.magnitude();
-		this.x /= mag;
-		this.y /= mag;
-		return this;
-	}
-}
 
 class Detectable extends ECS.Component {}
 
-class Spikes extends ECS.Component {}
+class Static extends ECS.Component {}
+
+class Gravity extends ECS.Component {}
+
+class Player extends ECS.Component {}
+
+class Gun extends ECS.Component {}
+
+class Dynamic extends ECS.Component {}
 
 class Speed extends ECS.Component {
 	value: number;
@@ -114,7 +82,6 @@ class Speed extends ECS.Component {
 	}
 }
 
-class Player extends ECS.Component {}
 
 class Collectible extends ECS.Component {
 	type: string;
@@ -124,11 +91,16 @@ class Collectible extends ECS.Component {
 	}
 }
 
-class Static extends ECS.Component {}
 
-class Gravity extends ECS.Component {}
-
-class Dynamic extends ECS.Component {}
+class Melee extends ECS.Component {
+	range: number;
+	damage: number;
+	constructor(range: number = 16, damage: number = 10) {
+		super();
+		this.range = range;
+		this.damage = damage;
+	}
+}
 
 class Damage extends ECS.Component {
 	value: number;
@@ -293,10 +265,6 @@ class Sprite extends ECS.Component {
 }
 
 class Input extends ECS.Component {
-	leftRight: number = 0;
-	doubleJumpAllowed: boolean = false;
-	timeBetweenJumps: number = 0;
-
 	pressed: any;
 	last_pressed: any;
 
@@ -305,6 +273,8 @@ class Input extends ECS.Component {
 
 	mouseY: number;
 	mouseX: number;
+
+	doubleJumpAllowed: boolean = false;
 
 	constructor() {
 		super();
@@ -587,15 +557,15 @@ class MovementSystem extends ECS.System {
 		const speedVal = speed.value;
 		const jump_speed = -150;
 
+		let leftRight = 0;
+
 		if (input.is_key_pressed("KeyA")) {
-			input.leftRight = -1;
+			leftRight = -1;
 		} else if (input.is_key_pressed("KeyD")) {
-			input.leftRight = 1;
-		} else {
-			input.leftRight = 0;
+			leftRight = 1;
 		}
 
-		velocity.x = speedVal * input.leftRight;
+		velocity.x = speedVal * leftRight;
 
 		if (entity.getComponent(Player)) {
 			direction.right = input.mouseX - (position.x - WINDOW_OFFSET_X) > 0;
@@ -603,39 +573,35 @@ class MovementSystem extends ECS.System {
 
 		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
-		input.timeBetweenJumps += params.dt;
 		if (
-			input.is_key_pressed("KeyW") &&
-			(standing || (input.doubleJumpAllowed && !standing && input.timeBetweenJumps > 0.3)) &&
+			input.is_key_pressed("KeyW", 300) &&
+			(standing || (input.doubleJumpAllowed && !standing)) &&
 			!aabb.topCollision
 		) {
-			input.timeBetweenJumps = 0;
 			input.doubleJumpAllowed = standing;
 			velocity.y = jump_speed;
 		}
 
-		if (sprite.state.playOnce) {
-			return;
-		}
+		if (sprite.state.playOnce) return;
 
 		sprite.setState(direction.right ? "idle-right" : "idle-left");
 		if (emitter) emitter.emit = false;
 
-		if (Math.abs(input.leftRight) > 0) {
+		if (Math.abs(leftRight) > 0) {
 			sprite.setState(direction.right ? "run-right" : "run-left");
 		}
 
 		if (!standing) {
 			sprite.setState(direction.right ? "jump-right" : "jump-left");
-			if (emitter) emitter.emit = true;
+			if (emitter && velocity.y < 0) emitter.emit = true;
 		}
 	}
 }
 
-class CombatSystem extends ECS.System {
+class MeleeSystem extends ECS.System {
 	sph: SpatialHashGrid;
 	constructor(sph: SpatialHashGrid) {
-		super([Input, Position, Direction, Sprite]);
+		super([Input, Position, Sprite, Melee, Direction]);
 		this.sph = sph;
 	}
 
@@ -644,33 +610,44 @@ class CombatSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
-
-		let gunPosOffset = 10;
-		let mouseDir = new Vector(
-			input.mouseX - (position.x - WINDOW_OFFSET_X),
-			input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset)
-		);
-		mouseDir.normalize();
+		const melee = entity.getComponent(Melee) as Melee;
 
 		if (input.is_key_pressed("KeyF", 250)) {
-			const aabb = new AABB(new Collider(16, 8, 0, 8), position);
+			const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 			for (const collision of this.sph.collisions(entity, aabb)) {
 				const health = collision.entity.getComponent(Health) as Health;
-				if (health) health.value -= 20;
+				if (health) health.value -= melee.damage;
 			}
 
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
 		}
+	}
+}
 
-		let explosion = {
-			minTTL: 0.2,
+class GunSystem extends ECS.System {
+	constructor() {
+		super([Input, Position, Gun]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(Input) as Input;
+		const position = entity.getComponent(Position) as Position;
+
+		const gunPosOffset = 10;
+		const mouseDir = new Vector(
+			input.mouseX - (position.x - WINDOW_OFFSET_X),
+			input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset)
+		).normalize();
+
+		const explosion = {
+			minTTL: 0.1,
 			maxTTL: 0.3,
 			minSize: 1,
 			maxSize: 2,
 			maxCount: 7,
-			alpha: 1.0,
+			alpha: 1,
 			gravity: GRAVITY,
-			speed: 25,
+			speed: 27,
 			positionSpread: 5,
 			explosive: true,
 		};
@@ -1146,16 +1123,7 @@ class CollisionSystem extends ECS.System {
 	}
 }
 
-type AiType = "walkTowards";
-
-class Ai extends ECS.Component {
-	time: number = 0;
-	type: AiType;
-	constructor(type: AiType = "walkTowards") {
-		super();
-		this.type = type;
-	}
-}
+class Ai extends ECS.Component {}
 
 class AiSystem extends ECS.System {
 	constructor() {
@@ -1366,7 +1334,8 @@ ecs.addSystem(new DetectionSystem(sph));
 ecs.addSystem(new AiSystem());
 ecs.addSystem(new HealthSystem());
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new CombatSystem(sph));
+ecs.addSystem(new GunSystem());
+ecs.addSystem(new MeleeSystem(sph));
 ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new ParticleSystem());
 ecs.addSystem(new LightSystem());
@@ -1374,8 +1343,6 @@ ecs.addSystem(new HudSystem());
 ecs.addSystem(new PositionChangeSystem());
 
 function spawnPlayer(player: ECS.Entity, x: number, y: number) {
-	console.log("spawn", { x, y });
-
 	// reset camera
 	WINDOW_OFFSET_X = 0;
 	WINDOW_OFFSET_Y = 0;
@@ -1387,7 +1354,9 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 		.addComponent(new Direction())
 		.addComponent(new Dynamic())
 		.addComponent(new Player())
+		.addComponent(new Gun())
 		.addComponent(new Input())
+		.addComponent(new Melee(20, 150))
 		.addComponent(new Inventory())
 		.addComponent(new Health())
 		//.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
@@ -1449,6 +1418,7 @@ async function spawnMap() {
 					.addComponent(new Input())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(30))
+					.addComponent(new Melee(16, 10))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 3, 0, 3, 3, true))
 					.addComponent(new Velocity(0, 0))
