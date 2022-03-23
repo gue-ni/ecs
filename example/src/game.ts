@@ -60,8 +60,6 @@ SMALL_LIGHT_SPRITE.src = "assets/small-light.png";
 const cthulluSprite = new Image();
 cthulluSprite.src = "assets/cthullu.png";
 
-
-
 class Detectable extends ECS.Component {}
 
 class Static extends ECS.Component {}
@@ -82,7 +80,6 @@ class Speed extends ECS.Component {
 	}
 }
 
-
 class Collectible extends ECS.Component {
 	type: string;
 	constructor(type: string = "default") {
@@ -90,7 +87,6 @@ class Collectible extends ECS.Component {
 		this.type = type;
 	}
 }
-
 
 class Melee extends ECS.Component {
 	range: number;
@@ -104,11 +100,9 @@ class Melee extends ECS.Component {
 
 class Damage extends ECS.Component {
 	value: number;
-	dealtBy: ECS.Entity;
-	constructor(dealtBy: ECS.Entity, damage: number = 10) {
+	constructor(damage: number = 10) {
 		super();
 		this.value = damage;
-		this.dealtBy = dealtBy;
 	}
 }
 
@@ -120,6 +114,10 @@ class Velocity extends ECS.Component {
 		super();
 		this.x = x;
 		this.y = y;
+	}
+
+	get vector(): Vector {
+		return new Vector(this.x, this.y);
 	}
 }
 
@@ -348,8 +346,17 @@ class HealthSystem extends ECS.System {
 				console.log("you died!");
 				gameState.setState("dead");
 			} else {
-				//console.log("removing entity", health.value)
-				params.ecs.removeEntity(entity);
+				// if it has a death particle animation, play it
+				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+				if (emitter && emitter.explosive) {
+					entity.removeComponent(Collider);
+					entity.removeComponent(Sprite);
+					entity.removeComponent(Light);
+					emitter.emit = true;
+					entity.ttl = 1.0;
+				} else {
+					params.ecs.removeEntity(entity);
+				}
 			}
 		}
 	}
@@ -459,7 +466,6 @@ class MobileInputSystem extends ECS.System {
 	mouseX: number;
 	mouseY: number;
 
-
 	constructor() {
 		super([Input, Player]);
 
@@ -476,14 +482,14 @@ class MobileInputSystem extends ECS.System {
 			let x = touch.clientX - bbox.left;
 			let width = left_control.offsetWidth;
 			let tolerance = width * 0.1;
-			if (x < width / 2 - tolerance){
+			if (x < width / 2 - tolerance) {
 				//this.leftRight = -1;
-				console.log("left")
+				console.log("left");
 				this.keys["KeyA"] = true;
 				this.keys["KeyD"] = false;
-			} else if (x > width / 2 + tolerance){
+			} else if (x > width / 2 + tolerance) {
 				//this.leftRight = 1;
-				console.log("right")
+				console.log("right");
 				this.keys["KeyD"] = true;
 				this.keys["KeyA"] = false;
 			}
@@ -520,96 +526,8 @@ class MobileInputSystem extends ECS.System {
 
 		//input.mouseX = this.mouseX;
 		//input.mouseY = this.mouseY;
-
 	}
 }
-
-/*
-class MobileInputSystem extends ECS.System {
-	leftRight: number = 0;
-	topDown: number = 0;
-	jump: boolean = false;
-	shoot: boolean = false;
-	grenade: boolean = false;
-
-	constructor() {
-		super([Input]);
-		console.log("mobile");
-
-		let left_control = document.querySelector("#left-control") as HTMLElement;
-		left_control.style.display = "flex";
-
-		let bbox = left_control.getBoundingClientRect();
-
-		const handleTouch = (e: TouchEvent) => {
-			let touch = e.touches[0];
-			let x = touch.clientX - bbox.left;
-			let width = left_control.offsetWidth;
-			this.leftRight = 0;
-			let tolerance = width * 0.1;
-			if (x < width / 2 - tolerance){
-				this.leftRight = -1;
-			} else if (x > width / 2 + tolerance){
-				this.leftRight = 1;
-			}
-			//this.leftRight = x < width / 2 ? -1 : 1;
-			//left_debug.innerText = `${this.leftRight}, x=${x}, width=${width}`;
-		};
-
-		const handleTouch2 = (e: TouchEvent)=> {
-			let touch = e.changedTouches[0];
-			let x = touch.clientX - bbox.left;
-			let width = left_control.offsetWidth;
-			let h = width / 2;
-			let val = (x - h) / h
-			val *= 3;
-			//let sigmoid = 1 / (1 + Math.exp(-val)) * Math.sign(val);
-			this.leftRight = Math.min(Math.max(val, -1.0), 1.0);
-		}
-
-		left_control.addEventListener("touchstart", handleTouch);
-		left_control.addEventListener("touchmove", handleTouch);
-		left_control.addEventListener("touchend", () => {
-			this.leftRight = 0;
-		});
-
-		const right_control = document.querySelector("#right-control") as HTMLElement;
-		right_control.style.display = "flex";
-		right_control.addEventListener("touchstart", (e) => {
-			this.jump = true;
-		});
-		right_control.addEventListener("touchend", (e) => {
-			this.jump = false;
-		});
-
-		const button_1 = document.querySelector("#button-1") as HTMLElement;
-		button_1.style.display = "flex";
-		button_1.addEventListener("touchstart", () => {
-			this.shoot = true;
-		});
-		button_1.addEventListener("touchend", () => {
-			this.shoot = false;
-		});
-
-		const button_2 = document.querySelector("#button-2") as HTMLElement;
-		button_2.style.display = "flex";
-		button_2.addEventListener("touchstart", () => {
-			this.grenade = true;
-		});
-		button_2.addEventListener("touchend", () => {
-			this.grenade = false;
-		});
-	}
-
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const input = entity.getComponent(Input) as Input;
-		input.jump = this.jump;
-		input.shoot = this.shoot;
-		input.grenade = this.grenade;
-		input.leftRight = this.leftRight;
-	}
-}
-*/
 
 class MovementSystem extends ECS.System {
 	constructor() {
@@ -736,9 +654,10 @@ class GunSystem extends ECS.System {
 				.addComponent(new Gravity())
 				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite)
-				.addComponent(new Collider(1, 1, 1, 1, 0, true))
+				.addComponent(new Health(1))
+				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
 				.addComponent(new ParticleEmitter(explosion))
-				.addComponent(new Damage(entity, 150));
+				.addComponent(new Damage(150));
 			params.ecs.addEntity(projectile);
 		}
 
@@ -748,9 +667,10 @@ class GunSystem extends ECS.System {
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(mouseDir.x, mouseDir.y))
 				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
+				.addComponent(new Health(1))
 				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
-				.addComponent(new Collider(1, 1, 1, 1, 0, true))
-				.addComponent(new Damage(entity, 30))
+				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
+				.addComponent(new Damage(30))
 				.addComponent(new ParticleEmitter(explosion));
 
 			params.ecs.addEntity(projectile);
@@ -908,13 +828,16 @@ class Collider extends ECS.Component {
 	rightCollision: boolean;
 	bottomCollision: boolean;
 
+	ignoreCollisionsWith: string;
+
 	constructor(
 		top: number,
 		right: number,
 		bottom: number,
 		left: number,
 		padding: number = 0,
-		active: boolean = false
+		active: boolean = false,
+		ignoreCollisionWith: string = null
 	) {
 		super();
 		this.active = active;
@@ -927,6 +850,7 @@ class Collider extends ECS.Component {
 		this.topCollision = false;
 		this.rightCollision = false;
 		this.leftCollision = false;
+		this.ignoreCollisionsWith = ignoreCollisionWith;
 	}
 
 	destroy(): void {
@@ -1130,39 +1054,36 @@ class CollisionSystem extends ECS.System {
 
 		if (collider.active) {
 			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
+				if (other.id == collider.ignoreCollisionsWith) continue;
+
+				// colliding from above, kill other entity
+				if (entity.getComponent(Player) && other.getComponent(Health) && velocity && velocity.y > 200) {
+					const health = other.getComponent(Health) as Health;
+					health.value = 0;
+				}
+
 				// if its collectible, collect it
 				const collectible = other.getComponent(Collectible) as Collectible;
-				if (inventory && collectible) {
+				const otherHealth = other.getComponent(Health) as Health;
+				if (inventory && collectible && health) {
 					inventory.increment(collectible.type);
-
-					const emitter = other.getComponent(ParticleEmitter) as ParticleEmitter;
-					if (emitter && emitter.explosive) emitter.emit = true;
-
-					other.removeComponent(Collectible);
-					other.removeComponent(Sprite);
-					other.ttl = 0.5;
+					otherHealth.value = 0;
 				}
 
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
-				if (health && otherDamage && otherDamage.dealtBy.id != entity.id) {
+				if (health && otherDamage) {
 					health.value -= otherDamage.value;
 				}
 
 				// if you do damage, deal the damage
-				const otherHealth = other.getComponent(Health) as Health;
-				if (damage && otherHealth && damage.dealtBy.id != other.id) {
+				if (damage && otherHealth) {
 					otherHealth.value -= damage.value;
 				}
 
-				// if you can explode, explode
-				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
-				if (emitter && emitter.explosive && damage.dealtBy.id != other.id) {
-					emitter.emit = true;
-					entity.removeComponent(Collider);
-					entity.removeComponent(Sprite);
-					entity.removeComponent(Light);
-					entity.ttl = 1.0;
+				// remove health upon high speed collision (eg fall damage or bullet impact)
+				if (!entity.getComponent(Player) && health && velocity && velocity.vector.magnitude() > 300) {
+					health.value -= 1;
 				}
 
 				// do collision physics
@@ -1494,7 +1415,22 @@ async function spawnMap() {
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 3, 0, 3, 3, true))
 					.addComponent(new Velocity(0, 0))
-					.addComponent(new DetectionRadius(randomInteger(32, 64)));
+					.addComponent(new DetectionRadius(randomInteger(32, 64)))
+					.addComponent(
+						new ParticleEmitter({
+							particlePerSecond: 10,
+							minTTL: 0.4,
+							maxTTL: 0.6,
+							minSize: 1,
+							maxSize: 2,
+							maxCount: 10,
+							alpha: 1.0,
+							gravity: -200,
+							speed: 0,
+							positionSpread: 5,
+							explosive: true,
+						})
+					);
 
 				ecs.addEntity(entity);
 
@@ -1527,7 +1463,7 @@ async function spawnMap() {
 								maxTTL: 0.6,
 								minSize: 1,
 								maxSize: 2,
-								maxCount: 10,
+								maxCount: 5,
 								alpha: 1.0,
 								gravity: -200,
 								speed: 0,
@@ -1590,7 +1526,9 @@ document.addEventListener("click", () => {
 	}
 });
 
-document.addEventListener("touchstart",() => {
+document.addEventListener(
+	"touchstart",
+	() => {
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
 				screen.orientation.lock("landscape");
@@ -1600,7 +1538,6 @@ document.addEventListener("touchstart",() => {
 	},
 	false
 );
-
 
 const fps_display = document.querySelector("#fps") as HTMLElement;
 let tmp = 0;
