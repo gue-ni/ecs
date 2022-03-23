@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -30,8 +31,7 @@
 		<style>
 			:root {
 				--primary: rgba(255, 255, 255, 0.3);
-				/*--secondary: rgba(255, 255, 255, 1.0);*/
-				--secondary: black;
+				--secondary: rgba(255, 255, 255, 1.0);
 			}
 
 			* {
@@ -44,17 +44,13 @@
 				user-select: none;
 			}
 
-			html, body {
+			html,
+			body {
 				margin: 0 !important;
 				padding: 0 !important;
 				width: 100%;
 				height: 100%;
 				overflow: hidden;
-			}
-
-			main {
-				max-width: 960px;
-				margin: 0 auto;
 			}
 
 			.overlay {
@@ -142,12 +138,8 @@
 
 			canvas {
 				border: 1px solid black;
-				/*
 				width: 100%;
 				height: 100%;
-				*/
-				width: 960px;
-				height: 640px;
 				image-rendering: -moz-crisp-edges;
 				image-rendering: -webkit-crisp-edges;
 				image-rendering: pixelated;
@@ -157,7 +149,6 @@
 		</style>
 	</head>
 	<body>
-		<main>
 		<div class="overlay">
 			<div class="centered" id="title">Click anywhere.</div>
 		</div>
@@ -171,10 +162,9 @@
 		<div class="overlay">
 			<div class="centered" id="dead">You are dead.</div>
 		</div>
-		
-		<div class="display" id="fps">fps</div>
 
 		<div id="hud">
+			<div class="display" id="fps">fps</div>
 			<div class="display" id="health">health</div>
 			<div class="display" id="coins">health</div>
 			<div class="input" id="left-control">
@@ -185,14 +175,7 @@
 			<div class="input" id="button-1">shoot</div>
 			<div class="input" id="button-2">light</div>
 		</div>
-
-		<canvas id="canvas" width="240" height="160"></canvas>
-		
-		<!--
-		<canvas id="canvas" width="360" height="240"></canvas>
-		-->
-
-		</main>
+		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js?reload=1"></script>
 	</body>
 </html>

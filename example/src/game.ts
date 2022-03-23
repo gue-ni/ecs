@@ -452,6 +452,78 @@ class InputSystem extends ECS.System {
 	}
 }
 
+class MobileInputSystem extends ECS.System {
+	keys: any;
+	mouse: any;
+
+	mouseX: number;
+	mouseY: number;
+
+
+	constructor() {
+		super([Input, Player]);
+
+		this.keys = {};
+		this.mouse = {};
+
+		let left_control = document.querySelector("#left-control") as HTMLElement;
+		left_control.style.display = "block";
+		let left_debug = document.querySelector("#left-debug") as HTMLElement;
+		let bbox = left_control.getBoundingClientRect();
+
+		const handleTouch = (e: TouchEvent) => {
+			let touch = e.touches[0];
+			let x = touch.clientX - bbox.left;
+			let width = left_control.offsetWidth;
+			let tolerance = width * 0.1;
+			if (x < width / 2 - tolerance){
+				//this.leftRight = -1;
+				console.log("left")
+				this.keys["KeyA"] = true;
+				this.keys["KeyD"] = false;
+			} else if (x > width / 2 + tolerance){
+				//this.leftRight = 1;
+				console.log("right")
+				this.keys["KeyD"] = true;
+				this.keys["KeyA"] = false;
+			}
+		};
+
+		left_control.addEventListener("touchmove", handleTouch);
+
+		left_control.addEventListener("touchstart", handleTouch);
+
+		left_control.addEventListener("touchend", (e) => {
+			console.log("touchend");
+			this.keys["KeyD"] = false;
+			this.keys["KeyA"] = false;
+
+			//this.leftRight = 0;
+			//left_debug.innerText = `${this.leftRight}`;
+		});
+
+		const right_control = document.querySelector("#right-control") as HTMLElement;
+		right_control.style.display = "block";
+		right_control.addEventListener("touchstart", (e) => {
+			this.keys["KeyW"] = true;
+		});
+
+		right_control.addEventListener("touchend", (e) => {
+			this.keys["KeyW"] = false;
+		});
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(Input) as Input;
+		input.pressed = { ...this.keys };
+		input.mouse = { ...this.mouse };
+
+		//input.mouseX = this.mouseX;
+		//input.mouseY = this.mouseY;
+
+	}
+}
+
 /*
 class MobileInputSystem extends ECS.System {
 	leftRight: number = 0;
@@ -1326,7 +1398,7 @@ class ParticleSystem extends ECS.System {
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
-ecs.addSystem(new InputSystem());
+ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new InputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
@@ -1518,6 +1590,18 @@ document.addEventListener("click", () => {
 	}
 });
 
+document.addEventListener("touchstart",() => {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen().then(() => {
+				screen.orientation.lock("landscape");
+				if (gameState.current.name === "title") gameState.setState("play");
+			});
+		}
+	},
+	false
+);
+
+
 const fps_display = document.querySelector("#fps") as HTMLElement;
 let tmp = 0;
 
@@ -1527,7 +1611,7 @@ let then: number = 0;
 ecs.addEntity(player);
 
 spawnMap();
-spawnPlayer(player, 3, 1);
+spawnPlayer(player, 1, 1);
 
 function animate(now: number) {
 	(now *= 0.001), (dt = now - then), (then = now);
