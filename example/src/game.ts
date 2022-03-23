@@ -262,6 +262,8 @@ class Sprite extends ECS.Component {
 	}
 }
 
+type MouseButton = "left" | "right";
+
 class Input extends ECS.Component {
 	pressed: any;
 	last_pressed: any;
@@ -293,7 +295,7 @@ class Input extends ECS.Component {
 		return false;
 	}
 
-	is_mouse_pressed(side: string, delay?: number): boolean {
+	is_mouse_pressed(side: MouseButton, delay?: number): boolean {
 		if (this.mouse[side]) {
 			if (!delay || !this.mouse_last_pressed[side] || Date.now() - this.mouse_last_pressed[side] > delay) {
 				this.mouse_last_pressed[side] = Date.now();
