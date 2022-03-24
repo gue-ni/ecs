@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -31,7 +30,7 @@
 		<style>
 			:root {
 				--primary: rgba(255, 255, 255, 0.3);
-				--secondary: rgba(255, 255, 255, 1.0);
+				--secondary: rgba(255, 255, 255, 1);
 			}
 
 			* {
@@ -112,6 +111,13 @@
 				width: 15%;
 			}
 
+			#button-3 {
+				display: none;
+				left: 60%;
+				top: 70%;
+				height: 25%;
+				width: 15%;
+			}
 
 			#hud {
 				display: none;
@@ -121,7 +127,6 @@
 				left: 5%;
 				top: 20%;
 			}
-
 
 			#coins {
 				left: 5%;
@@ -167,13 +172,11 @@
 			<div class="display" id="fps">fps</div>
 			<div class="display" id="health">health</div>
 			<div class="display" id="coins">health</div>
-			<div class="input" id="left-control">
-				move
-				<span id="left-debug"></span>
-			</div>
+			<div class="input" id="left-control">move</div>
 			<div class="input" id="right-control">jump</div>
-			<div class="input" id="button-1">shoot</div>
-			<div class="input" id="button-2">light</div>
+			<div class="input" id="button-1">melee</div>
+			<div class="input" id="button-2">shoot</div>
+			<div class="input" id="button-3">button 3</div>
 		</div>
 		<canvas id="canvas" width="256" height="128"></canvas>
 		<script src="game.js?reload=1"></script>

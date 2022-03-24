@@ -14,7 +14,7 @@ let WINDOW_CENTER_X = canvas.width / 2;
 const GRAVITY = 500;
 const DARKNESS = 0.9;
 const FRAME_RATE = 1 / 12;
-const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
+const BOTTOM_BORDER = ON_MOBILE ? 30 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const MELEE_KEY = "KeyJ";
@@ -492,8 +492,7 @@ class MobileInputSystem extends ECS.System {
 		this.mouse = {};
 
 		let left_control = document.querySelector("#left-control") as HTMLElement;
-		left_control.style.display = "block";
-		let left_debug = document.querySelector("#left-debug") as HTMLElement;
+		left_control.style.display = "flex";
 		let bbox = left_control.getBoundingClientRect();
 
 		const handleTouch = (e: TouchEvent) => {
@@ -501,16 +500,12 @@ class MobileInputSystem extends ECS.System {
 			let x = touch.clientX - bbox.left;
 			let width = left_control.offsetWidth;
 			let tolerance = width * 0.1;
-			if (x < width / 2 - tolerance) {
-				//this.leftRight = -1;
-				console.log("left");
+			if (x < (width / 2) - tolerance) {
 				this.keys["KeyA"] = true;
 				this.keys["KeyD"] = false;
-			} else if (x > width / 2 + tolerance) {
-				//this.leftRight = 1;
-				console.log("right");
-				this.keys["KeyD"] = true;
+			} else if (x > (width / 2) + tolerance) {
 				this.keys["KeyA"] = false;
+				this.keys["KeyD"] = true;
 			}
 		};
 
@@ -519,23 +514,46 @@ class MobileInputSystem extends ECS.System {
 		left_control.addEventListener("touchstart", handleTouch);
 
 		left_control.addEventListener("touchend", (e) => {
-			console.log("touchend");
-			this.keys["KeyD"] = false;
-			this.keys["KeyA"] = false;
-
-			//this.leftRight = 0;
-			//left_debug.innerText = `${this.leftRight}`;
+			delete this.keys["KeyD"];
+			delete this.keys["KeyA"];
 		});
 
 		const right_control = document.querySelector("#right-control") as HTMLElement;
-		right_control.style.display = "block";
-		right_control.addEventListener("touchstart", (e) => {
+		right_control.style.display = "flex";
+		right_control.addEventListener("touchstart", () => {
 			this.keys["KeyW"] = true;
 		});
-
-		right_control.addEventListener("touchend", (e) => {
-			this.keys["KeyW"] = false;
+		right_control.addEventListener("touchend", () => {
+			delete this.keys["KeyW"];
 		});
+
+		const button_1 = document.querySelector("#button-1") as HTMLElement;
+		button_1.style.display = "flex";
+		button_1.addEventListener("touchstart", () => {
+			this.keys[MELEE_KEY] = true;
+		});
+		button_1.addEventListener("touchend", () => {
+			delete this.keys[MELEE_KEY];
+		});
+
+		const button_2 = document.querySelector("#button-2") as HTMLElement;
+		button_2.style.display = "flex";
+		button_2.addEventListener("touchstart", () => {
+			this.keys[SHOOT_KEY] = true;
+		});
+		button_2.addEventListener("touchend", () => {
+			delete this.keys[SHOOT_KEY];
+		});
+
+		const button_3 = document.querySelector("#button-3") as HTMLElement;
+		button_3.style.display = "flex";
+		button_3.addEventListener("touchstart", () => {
+			this.keys[GRENADE_KEY] = true;
+		});
+		button_3.addEventListener("touchend", () => {
+			delete this.keys[GRENADE_KEY];
+		});
+
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -730,22 +748,17 @@ class PhysicsSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 		const aabb = entity.getComponent(Collider) as Collider; // optional
 
-		position._lastX = position.x;
-		position._lastY = position.y;
+		position._lastX = position._x;
+		position._lastY = position._y;
 
+		position.x = position.x + params.dt * velocity.x;
+		position.y = position.y + params.dt * velocity.y;
+
+		/*
 		let xSpeed = params.dt * velocity.x;
-
-		position.x += params.dt * velocity.x;
-		position.y += params.dt * velocity.y;
-
 		let xDiff = position.x - position._lastX;
-
 		console.log(entity.id, xDiff, xSpeed);
-
-		if (!entity.getComponent(Player)) {
-			//console.log(entity.id, velocity.x, position.x)
-			//console.log(entity.id, velocity.x, position.x)
-		}
+		*/
 
 		if (
 			position.y < GROUND_LEVEL &&
@@ -1480,7 +1493,7 @@ async function spawnMap() {
 					.addComponent(new Dynamic())
 					.addComponent(new Input())
 					.addComponent(new Gravity())
-					.addComponent(new Speed(40))
+					.addComponent(new Speed(50))
 					.addComponent(new Melee(16, 10, 0.5))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
