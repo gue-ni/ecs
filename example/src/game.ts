@@ -1189,7 +1189,7 @@ class AiSystem extends ECS.System {
 				if (target_dir.magnitude() > meleeRange) {
 					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
 				} else {
-					input.pressed["KeyF"] = true;
+					input.pressed[MELEE_KEY] = true;
 				}
 
 				/*
