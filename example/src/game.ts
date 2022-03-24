@@ -13,6 +13,7 @@ let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
 const DARKNESS = 0.9;
+const FRAME_RATE = 1 / 12;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
@@ -96,11 +97,15 @@ class Collectible extends ECS.Component {
 
 class Melee extends ECS.Component {
 	range: number;
+	delaySeconds: number;
+	time: number = 0;
 	damage: number;
-	constructor(range: number = 16, damage: number = 10) {
+	inProgress: boolean = false;
+	constructor(range: number = 16, damage: number = 10, delaySeconds: number = 0) {
 		super();
 		this.range = range;
 		this.damage = damage;
+		this.delaySeconds = delaySeconds;
 	}
 }
 
@@ -353,13 +358,13 @@ class HealthSystem extends ECS.System {
 
 		if (health.value <= 0) {
 			if (entity.getComponent(Player)) {
-				console.log("you died!");
+				//console.log("you died!");
 				gameState.setState("dead");
 			} else {
 				// if it has a death particle animation, play it
 				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 				if (emitter && emitter.explosive) {
-					console.log("explode and remove", entity.id);
+					//console.log("explode and remove", entity.id);
 					entity.removeComponent(Collider);
 					entity.removeComponent(Sprite);
 					entity.removeComponent(Health);
@@ -385,10 +390,10 @@ class CameraSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 
 		const maxDiffX = 40;
-		const maxDiffY = 80;
+		const maxDiffY = canvas.height - BOTTOM_BORDER * 2;
 		const minDiffY = BOTTOM_BORDER;
-		let diffX = position.x - WINDOW_CENTER_X;
 
+		let diffX = position.x - WINDOW_CENTER_X;
 		let diffY = canvas.height - WINDOW_OFFSET_Y - position.y;
 
 		let delta = 0;
@@ -572,6 +577,9 @@ class MovementSystem extends ECS.System {
 		}
 
 		velocity.x = speedVal * leftRight;
+		if (!entity.getComponent(Player)) {
+			//console.log(velocity.x)
+		}
 
 		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
@@ -615,13 +623,20 @@ class MeleeSystem extends ECS.System {
 		const melee = entity.getComponent(Melee) as Melee;
 
 		if (input.is_key_pressed(MELEE_KEY, 250)) {
-			const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
-			for (const collision of this.sph.collisions(entity, aabb)) {
-				const health = collision.entity.getComponent(Health) as Health;
-				if (health) health.value -= melee.damage;
-			}
-
+			melee.inProgress = true;
 			sprite.setState(direction.right ? "melee-right" : "melee-left");
+		}
+
+		if (melee.inProgress) {
+			if ((melee.time += params.dt) > melee.delaySeconds) {
+				melee.time = 0;
+				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
+				for (const collision of this.sph.collisions(entity, aabb)) {
+					const health = collision.entity.getComponent(Health) as Health;
+					if (health) health.value -= melee.damage;
+				}
+				melee.inProgress = false;
+			}
 		}
 	}
 }
@@ -715,13 +730,22 @@ class PhysicsSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 		const aabb = entity.getComponent(Collider) as Collider; // optional
 
-		let dt = params.dt;
-
 		position._lastX = position.x;
 		position._lastY = position.y;
 
-		position.x += dt * velocity.x;
-		position.y += dt * velocity.y;
+		let xSpeed = params.dt * velocity.x;
+
+		position.x += params.dt * velocity.x;
+		position.y += params.dt * velocity.y;
+
+		let xDiff = position.x - position._lastX;
+
+		console.log(entity.id, xDiff, xSpeed);
+
+		if (!entity.getComponent(Player)) {
+			//console.log(entity.id, velocity.x, position.x)
+			//console.log(entity.id, velocity.x, position.x)
+		}
 
 		if (
 			position.y < GROUND_LEVEL &&
@@ -729,7 +753,7 @@ class PhysicsSystem extends ECS.System {
 			entity.getComponent(Gravity) &&
 			velocity.y < 400
 		) {
-			velocity.y += dt * GRAVITY;
+			velocity.y += params.dt * GRAVITY;
 		}
 
 		if (position.clamp) {
@@ -801,13 +825,10 @@ class SpriteSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: any): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const coords = entity.getComponent(Position) as Position;
-		const direction = entity.getComponent(Direction) as Direction;
 
 		if (sprite.state.playOnce && sprite.state.frameX == sprite.state.frames - 1) {
 			sprite.setPreviousState();
 		}
-
-		const FRAME_RATE = 0.1;
 
 		if (sprite.state.frames > 1) {
 			sprite.time += params.dt;
@@ -1078,7 +1099,7 @@ class CollisionSystem extends ECS.System {
 				const otherCollider = other.getComponent(Collider) as Collider;
 
 				if (other.id == collider.ignoreCollisionsWith || otherCollider.ignoreCollisionsWith == entity.id) {
-					console.log("ignore collision", entity.id, other.id);
+					//console.log("ignore collision", entity.id, other.id);
 					continue;
 				} else {
 					if (entity.getComponent(Player) || other.getComponent(Player)) {
@@ -1089,7 +1110,7 @@ class CollisionSystem extends ECS.System {
 				// colliding from above, kill other entity
 				const otherHealth = other.getComponent(Health) as Health;
 				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 150) {
-					console.log("collide from above", entity.id, other.id);
+					//console.log("collide from above", entity.id, other.id);
 					otherHealth.value = 0;
 				}
 
@@ -1098,20 +1119,20 @@ class CollisionSystem extends ECS.System {
 				if (inventory && collectible && health) {
 					inventory.increment(collectible.type);
 					otherHealth.value = 0;
-					console.log("collect", entity.id, other.id);
+					//console.log("collect", entity.id, other.id);
 				}
 
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
 				if (health && !health.impactOnly && otherDamage) {
 					health.value -= otherDamage.value;
-					console.log("take damage", entity.id, other.id);
+					//console.log("take damage", entity.id, other.id);
 				}
 
 				// if you do damage, deal the damage
 				if (damage && otherHealth && !otherHealth.impactOnly) {
 					otherHealth.value -= damage.value;
-					console.log("deal damage", entity.id, other.id);
+					//console.log("deal damage", entity.id, other.id);
 				}
 
 				// remove health upon high speed collision (eg fall damage or bullet impact)
@@ -1123,7 +1144,7 @@ class CollisionSystem extends ECS.System {
 					velocity.vector.magnitude() > 100
 				) {
 					health.value -= 1;
-					console.log("high speed impact", entity.id, other.id);
+					//console.log("high speed impact", entity.id, other.id);
 				}
 
 				// do collision physics
@@ -1404,7 +1425,7 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 		.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
 		.addComponent(new Collider(16, 2, 0, 2, 3, true))
 		.addComponent(new Detectable())
-		.addComponent(new Speed())
+		.addComponent(new Speed(70))
 		.addComponent(
 			new ParticleEmitter({
 				particlePerSecond: 15,
@@ -1441,7 +1462,7 @@ async function spawnMap() {
 		i++;
 		switch (type) {
 			case "villain-1": {
-				const entity = new ECS.Entity({ id: `Enemey-${i}` });
+				const entity = new ECS.Entity({ id: `Enemy-${i}` });
 				entity
 					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
 					.addComponent(
@@ -1459,8 +1480,8 @@ async function spawnMap() {
 					.addComponent(new Dynamic())
 					.addComponent(new Input())
 					.addComponent(new Gravity())
-					.addComponent(new Speed(30))
-					.addComponent(new Melee(16, 10))
+					.addComponent(new Speed(40))
+					.addComponent(new Melee(16, 10, 0.5))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
@@ -1537,9 +1558,6 @@ async function spawnMap() {
 				);
 				break;
 			}
-
-			default:
-				console.log("unkown");
 		}
 	}
 }
@@ -1601,11 +1619,15 @@ spawnMap();
 spawnPlayer(player, 1, 1);
 
 function animate(now: number) {
-	(now *= 0.001), (dt = now - then), (then = now);
+	now *= 0.001;
+	dt = now - then;
+	//dt = 0.016;
+	//if (isNaN(dt) || dt > 0.016) dt = 0.016;
+	then = now;
 
 	if ((tmp += dt) > 1) {
 		tmp = 0;
-		const fps = `${(1 / dt).toFixed(2)} fps`;
+		const fps = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;
 		fps_display.innerText = fps;
 	}
 
