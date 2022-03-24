@@ -3,7 +3,7 @@ import { randomInteger, randomFloat, Vector } from "./util";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-const player = new ECS.Entity();
+const player = new ECS.Entity({ id: "Player" });
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -12,9 +12,13 @@ let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
-const DARKNESS = 0.8;
+const DARKNESS = 0.9;
 const BOTTOM_BORDER = ON_MOBILE ? 40 : 30;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
+
+const MELEE_KEY = "KeyJ";
+const SHOOT_KEY = "KeyK";
+const GRENADE_KEY = "KeyL";
 
 const gameState = new ECS.FiniteStateMachine();
 gameState.addState(new ECS.HTMLState("pause", "#paused"));
@@ -69,6 +73,8 @@ class Gravity extends ECS.Component {}
 class Player extends ECS.Component {}
 
 class Gun extends ECS.Component {}
+
+class Fragile extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
@@ -322,9 +328,11 @@ class Inventory extends ECS.Component {
 
 class Health extends ECS.Component {
 	value: number;
-	constructor(value: number = 100) {
+	impactOnly: boolean;
+	constructor(value: number = 100, impactOnly: boolean = false) {
 		super();
 		this.value = value;
+		this.impactOnly = impactOnly;
 	}
 }
 
@@ -351,12 +359,16 @@ class HealthSystem extends ECS.System {
 				// if it has a death particle animation, play it
 				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 				if (emitter && emitter.explosive) {
+					console.log("explode and remove", entity.id);
 					entity.removeComponent(Collider);
 					entity.removeComponent(Sprite);
+					entity.removeComponent(Health);
+					entity.removeComponent(Damage);
 					entity.removeComponent(Light);
 					emitter.emit = true;
 					entity.ttl = 1.0;
 				} else {
+					console.log("remove", entity.id);
 					params.ecs.removeEntity(entity);
 				}
 			}
@@ -547,26 +559,24 @@ class MovementSystem extends ECS.System {
 		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 
 		const speedVal = speed.value;
-		const jump_speed = -150;
+		const jump_speed = -180;
 
 		let leftRight = 0;
 
-		if (input.is_key_pressed("KeyA")) {
+		if (input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) {
 			leftRight = -1;
-		} else if (input.is_key_pressed("KeyD")) {
+			direction.right = false;
+		} else if (input.is_key_pressed("KeyD") || input.is_key_pressed("ArrowRight")) {
 			leftRight = 1;
+			direction.right = true;
 		}
 
 		velocity.x = speedVal * leftRight;
 
-		if (entity.getComponent(Player)) {
-			direction.right = input.mouseX - (position.x - WINDOW_OFFSET_X) > 0;
-		}
-
 		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
 		if (
-			input.is_key_pressed("KeyW", 300) &&
+			(input.is_key_pressed("KeyW", 300) || input.is_key_pressed("ArrowUp", 300)) &&
 			(standing || (input.doubleJumpAllowed && !standing)) &&
 			!aabb.topCollision
 		) {
@@ -604,7 +614,7 @@ class MeleeSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 		const melee = entity.getComponent(Melee) as Melee;
 
-		if (input.is_key_pressed("KeyF", 250)) {
+		if (input.is_key_pressed(MELEE_KEY, 250)) {
 			const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 			for (const collision of this.sph.collisions(entity, aabb)) {
 				const health = collision.entity.getComponent(Health) as Health;
@@ -618,18 +628,23 @@ class MeleeSystem extends ECS.System {
 
 class GunSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Gun]);
+		super([Input, Position, Gun, Direction]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
+		const direction = entity.getComponent(Direction) as Direction;
 		const position = entity.getComponent(Position) as Position;
 
 		const gunPosOffset = 10;
-		const mouseDir = new Vector(
+		/*
+		const shootDir = new Vector(
 			input.mouseX - (position.x - WINDOW_OFFSET_X),
 			input.mouseY - (position.y + WINDOW_OFFSET_Y - gunPosOffset)
 		).normalize();
+		*/
+
+		const shootDir = new Vector(direction.right ? 1 : -1, 0);
 
 		const explosion = {
 			minTTL: 0.1,
@@ -644,32 +659,31 @@ class GunSystem extends ECS.System {
 			explosive: true,
 		};
 
-		if (input.is_mouse_pressed("right", 500)) {
-			mouseDir.scalarMult(300);
+		if (input.is_mouse_pressed("right", 500) || input.is_key_pressed(GRENADE_KEY, 500)) {
+			shootDir.scalarMult(200);
 
 			let sprite = new Sprite(bulletSprite, 4, 4);
 			sprite.flushBottom = false;
 
-			const projectile = new ECS.Entity(2)
+			const projectile = new ECS.Entity({ ttl: 1, id: `Grenade-${randomInteger(1, 10000)}` })
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(mouseDir.x, mouseDir.y))
-				.addComponent(new Gravity())
+				.addComponent(new Velocity(shootDir.x, shootDir.y))
 				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite)
-				.addComponent(new Health(1))
+				.addComponent(new Health(1, true))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
 				.addComponent(new ParticleEmitter(explosion))
 				.addComponent(new Damage(150));
 			params.ecs.addEntity(projectile);
 		}
 
-		if (input.is_mouse_pressed("left", 100)) {
-			mouseDir.scalarMult(400);
-			const projectile = new ECS.Entity(1)
+		if (input.is_mouse_pressed("left", 100) || input.is_key_pressed(SHOOT_KEY, 200)) {
+			shootDir.scalarMult(300);
+			const projectile = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(mouseDir.x, mouseDir.y))
+				.addComponent(new Velocity(shootDir.x, shootDir.y))
 				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
-				.addComponent(new Health(1))
+				.addComponent(new Health(1, true))
 				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
 				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
 				.addComponent(new Damage(30))
@@ -709,7 +723,12 @@ class PhysicsSystem extends ECS.System {
 		position.x += dt * velocity.x;
 		position.y += dt * velocity.y;
 
-		if (position.y < GROUND_LEVEL && (!aabb || !aabb.bottomCollision) && entity.getComponent(Gravity)) {
+		if (
+			position.y < GROUND_LEVEL &&
+			(!aabb || !aabb.bottomCollision) &&
+			entity.getComponent(Gravity) &&
+			velocity.y < 400
+		) {
 			velocity.y += dt * GRAVITY;
 		}
 
@@ -1056,36 +1075,55 @@ class CollisionSystem extends ECS.System {
 
 		if (collider.active) {
 			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
-				if (other.id == collider.ignoreCollisionsWith) continue;
+				const otherCollider = other.getComponent(Collider) as Collider;
+
+				if (other.id == collider.ignoreCollisionsWith || otherCollider.ignoreCollisionsWith == entity.id) {
+					console.log("ignore collision", entity.id, other.id);
+					continue;
+				} else {
+					if (entity.getComponent(Player) || other.getComponent(Player)) {
+						//console.log("collision", entity.id, other.id);
+					}
+				}
 
 				// colliding from above, kill other entity
-				if (entity.getComponent(Player) && other.getComponent(Health) && velocity && velocity.y > 200) {
-					const health = other.getComponent(Health) as Health;
-					health.value = 0;
+				const otherHealth = other.getComponent(Health) as Health;
+				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 150) {
+					console.log("collide from above", entity.id, other.id);
+					otherHealth.value = 0;
 				}
 
 				// if its collectible, collect it
 				const collectible = other.getComponent(Collectible) as Collectible;
-				const otherHealth = other.getComponent(Health) as Health;
 				if (inventory && collectible && health) {
 					inventory.increment(collectible.type);
 					otherHealth.value = 0;
+					console.log("collect", entity.id, other.id);
 				}
 
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
-				if (health && otherDamage) {
+				if (health && !health.impactOnly && otherDamage) {
 					health.value -= otherDamage.value;
+					console.log("take damage", entity.id, other.id);
 				}
 
 				// if you do damage, deal the damage
-				if (damage && otherHealth) {
+				if (damage && otherHealth && !otherHealth.impactOnly) {
 					otherHealth.value -= damage.value;
+					console.log("deal damage", entity.id, other.id);
 				}
 
 				// remove health upon high speed collision (eg fall damage or bullet impact)
-				if (!entity.getComponent(Player) && health && velocity && velocity.vector.magnitude() > 300) {
+				if (
+					!entity.getComponent(Player) &&
+					(other.getComponent(Static) || other.getComponent(Dynamic)) &&
+					health &&
+					velocity &&
+					velocity.vector.magnitude() > 100
+				) {
 					health.value -= 1;
+					console.log("high speed impact", entity.id, other.id);
 				}
 
 				// do collision physics
@@ -1354,7 +1392,7 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 		.addComponent(new Melee(20, 150))
 		.addComponent(new Inventory())
 		.addComponent(new Health())
-		//.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
+		.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
 		//.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8))
 		.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
 		.addComponent(new Collider(16, 2, 0, 2, 3, true))
@@ -1390,19 +1428,21 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 async function spawnMap() {
 	let res = await fetch("assets/objects.json");
 	let json = await res.json();
+	let i = 0;
 
 	for (let { type, x, y } of json) {
+		i++;
 		switch (type) {
 			case "villain-1": {
-				const entity = new ECS.Entity();
+				const entity = new ECS.Entity({ id: `Enemey-${i}` });
 				entity
 					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
 					.addComponent(
 						new Sprite(VILLAIN_SPRITE, 16, 16, [
-							new SpriteState("idle-left", { frameY: 0, frames: 4 }),
-							new SpriteState("idle-right", { frameY: 1, frames: 4 }),
-							new SpriteState("run-left", { frameY: 0, frames: 4 }),
-							new SpriteState("run-right", { frameY: 1, frames: 4 }),
+							new SpriteState("idle-left", { frameY: 0, frames: 6 }),
+							new SpriteState("idle-right", { frameY: 1, frames: 6 }),
+							new SpriteState("run-left", { frameY: 0, frames: 6 }),
+							new SpriteState("run-right", { frameY: 1, frames: 6 }),
 							new SpriteState("melee-left", { frameY: 3, frames: 3, playOnce: true }),
 							new SpriteState("melee-right", { frameY: 2, frames: 3, playOnce: true }),
 						])
@@ -1415,9 +1455,9 @@ async function spawnMap() {
 					.addComponent(new Speed(30))
 					.addComponent(new Melee(16, 10))
 					.addComponent(new Health())
-					.addComponent(new Collider(16, 3, 0, 3, 3, true))
+					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
-					.addComponent(new DetectionRadius(randomInteger(32, 64)))
+					.addComponent(new DetectionRadius(randomInteger(50, 70)))
 					.addComponent(
 						new ParticleEmitter({
 							particlePerSecond: 10,
@@ -1440,7 +1480,7 @@ async function spawnMap() {
 			}
 
 			case "tile-1": {
-				const box = new ECS.Entity()
+				const box = new ECS.Entity({ id: `Tile-${i}` })
 					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
 					.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
 					.addComponent(new Collider(16, 8, 0, 8, 0, false))

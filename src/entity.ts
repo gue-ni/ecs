@@ -2,17 +2,23 @@ import { Component } from "./component";
 
 let _entities = 0;
 
+interface EntityParams {
+	id?: string;
+	ttl?: number;
+}
+
 class Entity {
 	id: string;
 	active: boolean;
 	ttl?: number;
 	components: Map<string, Component>;
 
-	constructor(ttl?: number) {
+	constructor(params?: EntityParams) {
+		params = params || {}
 		this.active = true;
 		this.components = new Map<string, Component>();
-		this.id = (+new Date()).toString(16) + _entities++;
-		this.ttl = ttl;
+		this.id = params.id || ((+new Date()).toString(16) + _entities++);
+		this.ttl = params.ttl;
 	}
 
 	addComponent(component: Component): Entity {
