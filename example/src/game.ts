@@ -1251,6 +1251,7 @@ interface ParticleConfig {
 	alpha?: number;
 	particlePerSecond?: number;
 	positionSpread?: number;
+	positionOffset?: Vector;
 	gravity?: number;
 	explosive?: boolean;
 	emit?: boolean;
@@ -1258,6 +1259,7 @@ interface ParticleConfig {
 
 class ParticleEmitter extends ECS.Component {
 	particles: Particle[];
+
 	time: number = 0;
 	has_exploded: boolean = false;
 	emit: boolean;
@@ -1272,9 +1274,11 @@ class ParticleEmitter extends ECS.Component {
 	gravity: number;
 	positionSpread: number;
 	explosive: boolean;
+	positionOffset: Vector;
 
 	constructor(params: ParticleConfig) {
 		super();
+
 		this.freq = 1 / params.particlePerSecond;
 		this.maxParticleCount = params.maxCount || 10;
 		this.minSize = params.minSize || 1;
@@ -1288,6 +1292,7 @@ class ParticleEmitter extends ECS.Component {
 		this.emit = params.emit;
 		this.positionSpread = params.positionSpread !== undefined ? params.positionSpread : 0;
 		this.particles = [];
+		this.positionOffset = params.positionOffset || new Vector(0, 0);
 		this.emit = params.emit;
 	}
 }
@@ -1297,12 +1302,14 @@ class Particles {
 		const particle = new Particle();
 		particle.alpha = emitter.alpha;
 		particle.gravity = emitter.gravity;
-		particle.pos = position.vector.add(
-			new Vector(
-				randomFloat(-emitter.positionSpread, emitter.positionSpread),
-				randomFloat(-emitter.positionSpread, emitter.positionSpread)
-			)
-		);
+		particle.pos = position.vector
+			.add(emitter.positionOffset)
+			.add(
+				new Vector(
+					randomFloat(-emitter.positionSpread, emitter.positionSpread),
+					randomFloat(-emitter.positionSpread, emitter.positionSpread)
+				)
+			);
 		particle.ttl = randomFloat(emitter.minTtl, emitter.maxTtl);
 		particle.size = randomInteger(emitter.minSize, emitter.maxSize);
 		particle.vel = new Vector(Math.random() - 0.5, Math.random() - 0.5).normalize().scalarMult(emitter.speed);
@@ -1467,6 +1474,7 @@ async function spawnMap() {
 							maxSize: 2,
 							maxCount: 10,
 							alpha: 1.0,
+							positionOffset: new Vector(0, -8),
 							gravity: -200,
 							speed: 0,
 							positionSpread: 5,
