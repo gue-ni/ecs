@@ -11,23 +11,38 @@ let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
+let LEVEL = 1;
+
 const GRAVITY = 500;
 const DARKNESS = 0.9;
+const TILE_SIZE = 16;
 const FRAME_RATE = 1 / 12;
-const BOTTOM_BORDER = ON_MOBILE ? 30 : 30;
+const BOTTOM_BORDER = TILE_SIZE * 2;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
 const MELEE_KEY = "KeyJ";
 const SHOOT_KEY = "KeyK";
 const GRENADE_KEY = "KeyL";
 
-const gameState = new ECS.FiniteStateMachine();
-gameState.addState(new ECS.HTMLState("pause", "#paused"));
-gameState.addState(new ECS.HTMLState("play", "#hud"));
-gameState.addState(new ECS.HTMLState("dead", "#dead"));
-gameState.addState(new ECS.HTMLState("title", "#title"));
-gameState.addState(new ECS.HTMLState("orientation", "#orientation"));
-gameState.setState("title");
+class PlayState extends ECS.HTMLElementState {
+	enter(): void {
+		super.enter();
+		loadLevel(LEVEL)
+	}
+
+	exit(): void {
+		super.exit();
+	}
+}
+
+const game = new ECS.FiniteStateMachine();
+game.addState(new PlayState("play", "#hud"));
+game.addState(new ECS.HTMLElementState("dead", "#dead"));
+game.addState(new ECS.HTMLElementState("title", "#title"));
+game.addState(new ECS.HTMLElementState("pause", "#paused"));
+game.addState(new ECS.HTMLElementState("loading", "#loading"));
+game.addState(new ECS.HTMLElementState("orientation", "#orientation"));
+game.setState("title");
 
 const CHARACTER_SPRITE = new Image();
 CHARACTER_SPRITE.src = "assets/sprites.png";
@@ -37,6 +52,9 @@ VILLAIN_SPRITE.src = "assets/bones.png";
 
 const spikes = new Image();
 spikes.src = "assets/bottom_spikes.png";
+
+const HEART_SPRITE = new Image();
+HEART_SPRITE.src = "assets/heart.png";
 
 const BIG_LIGHT_SPRITE = new Image();
 BIG_LIGHT_SPRITE.src = "assets/light.png";
@@ -73,9 +91,19 @@ class Gravity extends ECS.Component {}
 
 class Player extends ECS.Component {}
 
-class Gun extends ECS.Component {}
+class Gun extends ECS.Component {
+	damage: number;
+	velocity: number;
+	firingRate: number;
+	constructor(damage: number = 10, velocity: number = 90, firingRate: number = 500) {
+		super();
+		this.damage = damage;
+		this.velocity = velocity;
+		this.firingRate = firingRate;
+	}
+}
 
-class Fragile extends ECS.Component {}
+class DieOnCollision extends ECS.Component {}
 
 class Dynamic extends ECS.Component {}
 
@@ -121,7 +149,7 @@ class Velocity extends ECS.Component {
 	x: number;
 	y: number;
 
-	constructor(x, y) {
+	constructor(x: number = 0, y: number = 0) {
 		super();
 		this.x = x;
 		this.y = y;
@@ -228,14 +256,21 @@ class Sprite extends ECS.Component {
 	states: Map<string, SpriteState>;
 	state: SpriteState;
 	time: number;
-	flushBottom: boolean = true;
+	flushBottom: boolean;
 
-	constructor(image: HTMLImageElement, width: number, height: number, states: SpriteState[] = []) {
+	constructor(
+		image: HTMLImageElement,
+		width: number,
+		height: number,
+		states: SpriteState[] = [],
+		flushBottom: boolean = true
+	) {
 		super();
 		this.image = image;
 		this.width = width;
 		this.height = height;
 		this.time = 0;
+		this.flushBottom = flushBottom;
 		this.states = new Map();
 
 		if (states.length == 0) {
@@ -325,7 +360,7 @@ class Inventory extends ECS.Component {
 		this.inventory = new Map();
 	}
 
-	increment(type: string) {
+	add(type: string) {
 		let num = this.inventory.get(type) || 0;
 		this.inventory.set(type, num + 1);
 	}
@@ -359,21 +394,24 @@ class HealthSystem extends ECS.System {
 		if (health.value <= 0) {
 			if (entity.getComponent(Player)) {
 				//console.log("you died!");
-				gameState.setState("dead");
+				game.setState("dead");
 			} else {
 				// if it has a death particle animation, play it
 				const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 				if (emitter && emitter.explosive) {
-					//console.log("explode and remove", entity.id);
+					//console.log("explode and remove", entity.id, health.value);
 					entity.removeComponent(Collider);
 					entity.removeComponent(Sprite);
 					entity.removeComponent(Health);
 					entity.removeComponent(Damage);
+					entity.removeComponent(Gun);
+					entity.removeComponent(Melee);
+					entity.removeComponent(Ai);
 					entity.removeComponent(Light);
+					entity.ttl = emitter.maxTtl;
 					emitter.emit = true;
-					entity.ttl = 1.0;
 				} else {
-					console.log("remove", entity.id);
+					// console.log("remove", entity.id);
 					params.ecs.removeEntity(entity);
 				}
 			}
@@ -491,29 +529,31 @@ class MobileInputSystem extends ECS.System {
 		this.keys = {};
 		this.mouse = {};
 
-		let left_control = document.querySelector("#left-control") as HTMLElement;
-		left_control.style.display = "flex";
-		let bbox = left_control.getBoundingClientRect();
-
 		const handleTouch = (e: TouchEvent) => {
 			let touch = e.touches[0];
 			let x = touch.clientX - bbox.left;
 			let width = left_control.offsetWidth;
-			let tolerance = width * 0.1;
-			if (x < (width / 2) - tolerance) {
+			//let tolerance = width * 0.1;
+
+			let tolerance = 0;
+			if (x < width / 2 - tolerance) {
 				this.keys["KeyA"] = true;
 				this.keys["KeyD"] = false;
-			} else if (x > (width / 2) + tolerance) {
+			} else if (x > width / 2 + tolerance) {
 				this.keys["KeyA"] = false;
 				this.keys["KeyD"] = true;
 			}
 		};
 
+		const left_control = document.querySelector("#left-control") as HTMLElement;
+		left_control.style.display = "flex";
+		let bbox = left_control.getBoundingClientRect();
+
 		left_control.addEventListener("touchmove", handleTouch);
 
 		left_control.addEventListener("touchstart", handleTouch);
 
-		left_control.addEventListener("touchend", (e) => {
+		left_control.addEventListener("touchend", () => {
 			delete this.keys["KeyD"];
 			delete this.keys["KeyA"];
 		});
@@ -553,7 +593,6 @@ class MobileInputSystem extends ECS.System {
 		button_3.addEventListener("touchend", () => {
 			delete this.keys[GRENADE_KEY];
 		});
-
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -581,25 +620,23 @@ class MovementSystem extends ECS.System {
 		const speed = entity.getComponent(Speed) as Speed;
 		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 
+		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 		const speedVal = speed.value;
 		const jump_speed = -180;
 
 		let leftRight = 0;
 
-		if (input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) {
-			leftRight = -1;
-			direction.right = false;
-		} else if (input.is_key_pressed("KeyD") || input.is_key_pressed("ArrowRight")) {
-			leftRight = 1;
-			direction.right = true;
-		}
+		if (standing || entity.getComponent(Player)) {
+			if (input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) {
+				leftRight = -1;
+				direction.right = false;
+			} else if (input.is_key_pressed("KeyD") || input.is_key_pressed("ArrowRight")) {
+				leftRight = 1;
+				direction.right = true;
+			}
 
-		velocity.x = speedVal * leftRight;
-		if (!entity.getComponent(Player)) {
-			//console.log(velocity.x)
+			velocity.x = speedVal * leftRight;
 		}
-
-		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
 
 		if (
 			(input.is_key_pressed("KeyW", 300) || input.is_key_pressed("ArrowUp", 300)) &&
@@ -621,7 +658,7 @@ class MovementSystem extends ECS.System {
 
 		if (!standing) {
 			sprite.setState(direction.right ? "jump-right" : "jump-left");
-			if (emitter && velocity.y < 0) emitter.emit = true;
+			if (emitter && !emitter.explosive && velocity.y < 0) emitter.emit = true;
 		}
 	}
 }
@@ -651,7 +688,17 @@ class MeleeSystem extends ECS.System {
 				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 				for (const collision of this.sph.collisions(entity, aabb)) {
 					const health = collision.entity.getComponent(Health) as Health;
-					if (health) health.value -= melee.damage;
+					const velocity = collision.entity.getComponent(Velocity) as Velocity;
+					const otherDir = collision.entity.getComponent(Direction) as Direction;
+
+					if (health) {
+						health.value -= melee.damage;
+					}
+
+					if (velocity && otherDir && entity.getComponent(Player)) {
+						velocity.x = (otherDir.right ? -1 : 1) * 100;
+						velocity.y = -100;
+					}
 				}
 				melee.inProgress = false;
 			}
@@ -668,6 +715,7 @@ class GunSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		const direction = entity.getComponent(Direction) as Direction;
 		const position = entity.getComponent(Position) as Position;
+		const gun = entity.getComponent(Gun) as Gun;
 
 		const gunPosOffset = 10;
 		/*
@@ -692,37 +740,40 @@ class GunSystem extends ECS.System {
 			explosive: true,
 		};
 
+		if (input.is_mouse_pressed("left", gun.firingRate) || input.is_key_pressed(SHOOT_KEY, gun.firingRate)) {
+			shootDir.scalarMult(gun.velocity);
+
+			const bullet = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
+				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
+				.addComponent(new Velocity(shootDir.x, shootDir.y))
+				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
+				.addComponent(new Health(1, true))
+				.addComponent(new DieOnCollision())
+				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
+				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
+				.addComponent(new Damage(gun.damage))
+				.addComponent(new ParticleEmitter(explosion));
+
+			params.ecs.addEntity(bullet);
+		}
+
 		if (input.is_mouse_pressed("right", 500) || input.is_key_pressed(GRENADE_KEY, 500)) {
 			shootDir.scalarMult(200);
 
-			let sprite = new Sprite(bulletSprite, 4, 4);
-			sprite.flushBottom = false;
+			let sprite = new Sprite(bulletSprite, 4, 4, [], false);
+			//sprite.flushBottom = false;
 
-			const projectile = new ECS.Entity({ ttl: 1, id: `Grenade-${randomInteger(1, 10000)}` })
+			const grenade = new ECS.Entity({ ttl: 1, id: `Grenade-${randomInteger(1, 10000)}` })
 				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
 				.addComponent(new Velocity(shootDir.x, shootDir.y))
 				.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
 				.addComponent(sprite)
 				.addComponent(new Health(1, true))
+				.addComponent(new DieOnCollision())
 				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
 				.addComponent(new ParticleEmitter(explosion))
 				.addComponent(new Damage(150));
-			params.ecs.addEntity(projectile);
-		}
-
-		if (input.is_mouse_pressed("left", 100) || input.is_key_pressed(SHOOT_KEY, 200)) {
-			shootDir.scalarMult(300);
-			const projectile = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
-				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(shootDir.x, shootDir.y))
-				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
-				.addComponent(new Health(1, true))
-				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
-				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
-				.addComponent(new Damage(30))
-				.addComponent(new ParticleEmitter(explosion));
-
-			params.ecs.addEntity(projectile);
+			params.ecs.addEntity(grenade);
 		}
 	}
 }
@@ -1122,22 +1173,39 @@ class CollisionSystem extends ECS.System {
 
 				// colliding from above, kill other entity
 				const otherHealth = other.getComponent(Health) as Health;
-				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 150) {
+				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
 					//console.log("collide from above", entity.id, other.id);
 					otherHealth.value = 0;
+				}
+
+				if (
+					health &&
+					entity.getComponent(DieOnCollision) &&
+					(other.getComponent(Static) || other.getComponent(Dynamic))
+				) {
+					health.value = 0;
 				}
 
 				// if its collectible, collect it
 				const collectible = other.getComponent(Collectible) as Collectible;
 				if (inventory && collectible && health) {
-					inventory.increment(collectible.type);
 					otherHealth.value = 0;
-					//console.log("collect", entity.id, other.id);
+
+					switch (collectible.type) {
+						case "heart":
+							if (health) health.value = 100;
+							break;
+
+						default:
+							inventory.add(collectible.type);
+					}
+
+					//console.log("collect", collectible.type, entity.id, other.id);
 				}
 
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
-				if (health && !health.impactOnly && otherDamage) {
+				if (!collider.active && health && !health.impactOnly && otherDamage) {
 					health.value -= otherDamage.value;
 					//console.log("take damage", entity.id, other.id);
 				}
@@ -1149,6 +1217,7 @@ class CollisionSystem extends ECS.System {
 				}
 
 				// remove health upon high speed collision (eg fall damage or bullet impact)
+				/*
 				if (
 					!entity.getComponent(Player) &&
 					(other.getComponent(Static) || other.getComponent(Dynamic)) &&
@@ -1159,6 +1228,7 @@ class CollisionSystem extends ECS.System {
 					health.value -= 1;
 					//console.log("high speed impact", entity.id, other.id);
 				}
+				*/
 
 				// do collision physics
 				if (velocity && other.getComponent(Static)) {
@@ -1222,6 +1292,7 @@ class AiSystem extends ECS.System {
 
 				if (target_dir.magnitude() > meleeRange) {
 					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
+					input.pressed[SHOOT_KEY] = true;
 				} else {
 					input.pressed[MELEE_KEY] = true;
 				}
@@ -1416,26 +1487,25 @@ ecs.addSystem(new LightSystem());
 ecs.addSystem(new HudSystem());
 ecs.addSystem(new PositionChangeSystem());
 
-function spawnPlayer(player: ECS.Entity, x: number, y: number) {
+async function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 	// reset camera
-	WINDOW_OFFSET_X = 0;
+	WINDOW_OFFSET_X = TILE_SIZE * x;
 	WINDOW_OFFSET_Y = 0;
-	WINDOW_CENTER_X = canvas.width / 2;
+	WINDOW_CENTER_X = canvas.width / 2 + TILE_SIZE * x;
 
 	player
-		.addComponent(new Velocity(0, 0))
+		.addComponent(new Velocity())
 		.addComponent(new Gravity())
 		.addComponent(new Direction())
 		.addComponent(new Dynamic())
 		.addComponent(new Player())
 		.addComponent(new Gun())
 		.addComponent(new Input())
-		.addComponent(new Melee(20, 150))
+		.addComponent(new Melee(20, 50))
 		.addComponent(new Inventory())
 		.addComponent(new Health())
 		.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
-		//.addComponent(new Light(CHARACTER_LIGHT, 16, 16, 8))
-		.addComponent(new Position(WINDOW_CENTER_X - 16 * x, GROUND_LEVEL - 16 * y))
+		.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
 		.addComponent(new Collider(16, 2, 0, 2, 3, true))
 		.addComponent(new Detectable())
 		.addComponent(new Speed(70))
@@ -1466,18 +1536,24 @@ function spawnPlayer(player: ECS.Entity, x: number, y: number) {
 		);
 }
 
-async function spawnMap() {
-	let res = await fetch("assets/objects.json");
-	let json = await res.json();
+async function loadLevel(level: number) {
+	const res = await fetch(`assets/level-${level}.json`);
+	const level_data = await res.json();
 	let i = 0;
 
-	for (let { type, x, y } of json) {
+	for (let { type, x, y } of level_data) {
 		i++;
 		switch (type) {
-			case "villain-1": {
+			case "player": {
+				console.log("create player", x, y);
+				spawnPlayer(player, x, y);
+				break;
+			}
+
+			case "enemy-1": {
 				const entity = new ECS.Entity({ id: `Enemy-${i}` });
 				entity
-					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
+					.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
 					.addComponent(
 						new Sprite(VILLAIN_SPRITE, 16, 16, [
 							new SpriteState("idle-left", { frameY: 0, frames: 6 }),
@@ -1492,6 +1568,7 @@ async function spawnMap() {
 					.addComponent(new Direction())
 					.addComponent(new Dynamic())
 					.addComponent(new Input())
+					.addComponent(new Gun())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(50))
 					.addComponent(new Melee(16, 10, 0.5))
@@ -1523,7 +1600,7 @@ async function spawnMap() {
 
 			case "tile-1": {
 				const box = new ECS.Entity({ id: `Tile-${i}` })
-					.addComponent(new Position(x * 16, GROUND_LEVEL - 16 * y))
+					.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
 					.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
 					.addComponent(new Collider(16, 8, 0, 8, 0, false))
 					.addComponent(new Static());
@@ -1531,13 +1608,43 @@ async function spawnMap() {
 				break;
 			}
 
-			case "coin": {
-				let sprite = new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })]);
-				sprite.flushBottom = false;
+			case "heart": {
+				console.log("add heart");
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-						.addComponent(sprite)
+						.addComponent(
+							new Sprite(HEART_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 5 })], false)
+						)
+						.addComponent(new Collectible("heart"))
+						.addComponent(new Health(1))
+						.addComponent(new Collider(3, 3, 3, 3))
+						.addComponent(
+							new ParticleEmitter({
+								particlePerSecond: 10,
+								minTTL: 0.4,
+								maxTTL: 0.6,
+								minSize: 1,
+								maxSize: 2,
+								maxCount: 5,
+								alpha: 1.0,
+								gravity: -200,
+								speed: 0,
+								positionSpread: 5,
+								explosive: true,
+							})
+						)
+				);
+				break;
+			}
+
+			case "coin": {
+				ecs.addEntity(
+					new ECS.Entity()
+						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
+						.addComponent(
+							new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })], false)
+						)
 						.addComponent(new Collectible("coin"))
 						.addComponent(new Health(1))
 						.addComponent(
@@ -1578,10 +1685,10 @@ async function spawnMap() {
 document.addEventListener("keydown", (e) => {
 	switch (e.code) {
 		case "KeyP": {
-			if (gameState.current.name == "pause") {
-				gameState.setPreviousState();
+			if (game.current.name == "pause") {
+				game.setPreviousState();
 			} else {
-				gameState.setState("pause");
+				game.setState("pause");
 			}
 			break;
 		}
@@ -1594,14 +1701,12 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("click", () => {
-	switch (gameState.current.name) {
+	switch (game.current.name) {
 		case "title":
-			gameState.setState("play");
+			game.setState("play");
 			break;
 		case "dead":
-			// TODO reset everything
-			//location.reload();
-			gameState.setState("play");
+			game.setState("play");
 			spawnPlayer(player, randomInteger(3, 30), randomInteger(1, 10));
 			break;
 	}
@@ -1613,7 +1718,7 @@ document.addEventListener(
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
 				screen.orientation.lock("landscape");
-				if (gameState.current.name === "title") gameState.setState("play");
+				if (game.current.name === "title") game.setState("play");
 			});
 		}
 	},
@@ -1628,34 +1733,30 @@ let then: number = 0;
 
 ecs.addEntity(player);
 
-spawnMap();
-spawnPlayer(player, 1, 1);
-
 function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
-	//dt = 0.016;
-	//if (isNaN(dt) || dt > 0.016) dt = 0.016;
 	then = now;
 
 	if ((tmp += dt) > 1) {
+		fps_display.innerText = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;
 		tmp = 0;
-		const fps = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;
-		fps_display.innerText = fps;
 	}
 
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	context.fillStyle = "rgb(0,0,0)";
+	context.fillStyle = "#000";
 	context.fillRect(0, 0, canvas.width, canvas.height);
 
-	if (gameState.current.name == "play") {
-		context.beginPath();
-		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
-		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
-		context.strokeStyle = "#fff";
-		context.lineWidth = 1;
-		context.stroke();
-		context.closePath();
+	if (game.current.name == "play") {
+		{
+			context.beginPath();
+			context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+			context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+			context.strokeStyle = "#fff";
+			context.lineWidth = 1;
+			context.stroke();
+			context.closePath();
+		}
 
 		ecs.update({ dt, canvas, context, ecs });
 	}

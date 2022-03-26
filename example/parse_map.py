@@ -30,11 +30,17 @@ for x in range(width):
             objects.append({"type": "light", "x": x, "y": y})
 
         elif (r == 255 and g == 255 and b == 0):  # red == light source
-            objects.append({"type": "villain-1", "x": x, "y": y})
+            objects.append({"type": "enemy-1", "x": x, "y": y})
+
+        elif (r == 255 and g == 0 and b == 255):
+            objects.append({"type": "heart", "x": x, "y": y})
+
+        elif (r == 0 and g == 255 and b == 255):
+            objects.append({"type": "player", "x": x, "y": y})
 
 
 
 
-with open("assets/objects.json", 'w') as f:
+with open("assets/level-1.json", 'w') as f:
     dump = json.dumps(objects, indent=4)
     print(dump, file=f)
