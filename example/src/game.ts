@@ -690,10 +690,6 @@ class MovementSystem extends ECS.System {
 
 		let leftRight = 0;
 
-		if (entity.getComponent(Player)) {
-			console.log({ standing });
-		}
-
 		if (standing || entity.getComponent(Player)) {
 			if ((input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) && !collider.touching_left) {
 				leftRight = -1;
@@ -868,7 +864,7 @@ class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
-		const aabb = entity.getComponent(Collider) as Collider; // optional
+		const collider = entity.getComponent(Collider) as Collider; 
 
 		position._lastX = position._x;
 		position._lastY = position._y;
@@ -876,17 +872,11 @@ class PhysicsSystem extends ECS.System {
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
 
-		/*
-		let xSpeed = params.dt * velocity.x;
-		let xDiff = position.x - position._lastX;
-		console.log(entity.id, xDiff, xSpeed);
-		*/
-
 		if (
 			position.y < GROUND_LEVEL &&
-			(!aabb || !aabb.touching_bottom) &&
+			(!collider || !collider.touching_bottom) &&
 			entity.getComponent(Gravity) &&
-			velocity.y < 400
+			velocity.y < 250
 		) {
 			velocity.y += params.dt * GRAVITY;
 		}
@@ -1005,7 +995,7 @@ class Collider extends ECS.Component {
 	touching_right: boolean;
 	touching_bottom: boolean;
 
-	ignoreCollisionsWith: string;
+	ignore: string;
 
 	constructor(
 		top: number,
@@ -1027,7 +1017,7 @@ class Collider extends ECS.Component {
 		this.touching_top = false;
 		this.touching_right = false;
 		this.touching_left = false;
-		this.ignoreCollisionsWith = ignoreCollisionWith;
+		this.ignore = ignoreCollisionWith;
 	}
 
 	destroy(): void {
@@ -1235,7 +1225,7 @@ class CollisionSystem extends ECS.System {
 			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
 				const otherCollider = other.getComponent(Collider) as Collider;
 
-				if (other.id == collider.ignoreCollisionsWith || otherCollider.ignoreCollisionsWith == entity.id) {
+				if (other.id == collider.ignore || otherCollider.ignore == entity.id) {
 					continue;
 				}
 
@@ -1245,19 +1235,10 @@ class CollisionSystem extends ECS.System {
 					game.setState("loading");
 				}
 
-				if (health && !health.invincible && other.getComponent(Spikes)) {
-					health.value -= 25;
-					health.invincibleForSeconds = 0.5;
-					if (velocity) {
-						velocity.y = -150;
-					}
-				}
-
-				// colliding from above, kill other entity
-				const otherHealth = other.getComponent(Health) as Health;
-				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
-					//console.log("collide from above", entity.id, other.id);
-					otherHealth.value = 0;
+				// spike collision
+				if (health && !health.invincible && velocity && velocity.y > 0 && other.getComponent(Spikes)) {
+					health.value -= 50;
+					health.invincibleForSeconds = 0.25;
 				}
 
 				if (
@@ -1269,6 +1250,7 @@ class CollisionSystem extends ECS.System {
 				}
 
 				// if its collectible, collect it
+				const otherHealth = other.getComponent(Health) as Health;
 				const collectible = other.getComponent(Collectible) as Collectible;
 				if (inventory && collectible && health) {
 					otherHealth.value = 0;
@@ -1284,6 +1266,13 @@ class CollisionSystem extends ECS.System {
 
 					//console.log("collect", collectible.type, entity.id, other.id);
 				}
+
+				// colliding from above, kill other entity
+				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
+					//console.log("collide from above", entity.id, other.id);
+					otherHealth.value = 0;
+				}
+
 
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
@@ -1307,15 +1296,19 @@ class CollisionSystem extends ECS.System {
 							if (x > collider.padding) {
 								//console.log("right collision");
 								position.x -= x - collider.padding;
+								velocity.x = Math.min(0, velocity.x);
 							} else if (x == collider.padding) {
 								//console.log("touching right");
+								velocity.x = Math.min(0, velocity.x);
 								collider.touching_right = true;
 							}
 						} else if (x < 0 && y != 0) {
 							if (x < -collider.padding) {
 								//console.log("left collision");
 								position.x -= x + collider.padding;
+								velocity.x = Math.max(0, velocity.x);
 							} else if (x == -collider.padding) {
+								velocity.x = Math.max(0, velocity.x);
 								collider.touching_left = true;
 								//console.log("touching left");
 							}
@@ -1600,7 +1593,7 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Health(100))
 			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
 			.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
-			.addComponent(new Collider(16, 2, 0, 2, 3, true))
+			.addComponent(new Collider(13, 2, 0, 2, 3, true))
 			.addComponent(new Detectable())
 			.addComponent(new Speed(70))
 			.addComponent(
