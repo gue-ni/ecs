@@ -41,6 +41,17 @@ class ECS {
 		return entity;
 	}
 
+	clearEntities(): void {
+		for (let entity of this.entities) {
+			entity._destroy();
+		}
+		this.entities = [];
+	}
+
+	clearSystems(): void {
+		this.systems = []
+	}
+
 	removeEntity(entity: Entity): void {
 		entity._destroy();
 		this._entitiesToRemove.add(entity);

@@ -55,7 +55,7 @@
 				width: 100%;
 				height: 100%;
 				overflow: hidden;
-				
+
 				font-smooth: never;
 				-webkit-font-smoothing: none;
 				font-family: Silkscreen;
@@ -150,6 +150,28 @@
 				width: 15%;
 			}
 
+			.loading-paragraph span:before {
+				animation: dots 2s linear infinite;
+				content: "";
+			}
+
+			@keyframes dots {
+				0%,
+				20% {
+					content: ".";
+				}
+				40% {
+					content: "..";
+				}
+				60% {
+					content: "...";
+				}
+				90%,
+				100% {
+					content: "";
+				}
+			}
+
 			canvas {
 				border: 1px solid black;
 				width: 100%;
@@ -170,14 +192,16 @@
 			<div class="centered" id="paused">Paused</div>
 		</div>
 		<div class="overlay">
-			<div class="centered" id="loading">Loading...</div>
+			<div class="centered loading-paragraph" id="loading">Loading next level<span></span>
+
+			</div>
 		</div>
 		<div class="overlay">
 			<div class="centered" id="orientation">Please rotate your screen!</div>
 		</div>
 
 		<div class="overlay">
-			<div class="centered" id="dead">You are dead.</div>
+			<div class="centered" id="dead">You are dead. Click anywhere to resume.</div>
 		</div>
 
 		<div id="hud">

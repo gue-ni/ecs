@@ -6,23 +6,25 @@ export class State {
 		this.name = name;
 	}
 
-	exit() {}
+	exit()  {}
 
-	enter() {}
+	enter()  {}
 }
 
-export class HTMLState extends State {
+export class HTMLElementState extends State {
 	el: HTMLElement | null;
-	constructor(name: string, selector: string) {
+	visible: string;
+	constructor(name: string, selector: string, visible: string = "block") {
 		super(name);
+		this.visible = visible;
 		this.el = document.querySelector(selector);
 	}
 
-	enter(): void {
-		if (this.el) this.el.style.display = "block";
+	enter() {
+		if (this.el) this.el.style.display = this.visible;
 	}
 
-	exit(): void {
+	exit() {
 		if (this.el) this.el.style.display = "none";
 	}
 }
@@ -41,13 +43,16 @@ export class FiniteStateMachine {
 
 	setState(name: string) {
 		if (name == this.current?.name) return;
+
 		const previous = this.current;
 		previous?.exit();
+
 		const state = this.states.get(name);
 		if (!state) throw new Error(`State "${name}" does not exist!`);
+
+		state.previous = previous
+		state.enter()
 		this.current = state;
-		this.current.previous = previous;
-		this.current.enter();
 	}
 
 	setPreviousState() {

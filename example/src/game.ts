@@ -48,12 +48,21 @@ class DeathState extends ECS.HTMLElementState {
 	}
 }
 
+class LoadingNextLevel extends ECS.HTMLElementState {
+	enter(): void {
+		super.enter();
+		setTimeout(() => {
+			game.setPreviousState();
+		}, 2500);
+	}
+}
+
 const game = new ECS.FiniteStateMachine();
 game.addState(new PlayState("play", "#hud"));
 game.addState(new DeathState("dead", "#dead"));
 game.addState(new ECS.HTMLElementState("title", "#title"));
 game.addState(new ECS.HTMLElementState("pause", "#paused"));
-game.addState(new ECS.HTMLElementState("loading", "#loading"));
+game.addState(new LoadingNextLevel("loading", "#loading"));
 game.addState(new ECS.HTMLElementState("orientation", "#orientation"));
 game.setState("title");
 
@@ -63,8 +72,8 @@ CHARACTER_SPRITE.src = "assets/sprites.png";
 const VILLAIN_SPRITE = new Image();
 VILLAIN_SPRITE.src = "assets/bones.png";
 
-const spikes = new Image();
-spikes.src = "assets/bottom_spikes.png";
+const SPIKES_SPRITE = new Image();
+SPIKES_SPRITE.src = "assets/spikes.png";
 
 const HEART_SPRITE = new Image();
 HEART_SPRITE.src = "assets/heart.png";
@@ -74,6 +83,9 @@ BIG_LIGHT_SPRITE.src = "assets/light.png";
 
 const COIN_SPRITE = new Image();
 COIN_SPRITE.src = "assets/coin.png";
+
+const DOOR_SPRITE = new Image();
+DOOR_SPRITE.src = "assets/door.png";
 
 const BRIGHT_LIGHT_SPRITE = new Image();
 BRIGHT_LIGHT_SPRITE.src = "assets/light2.png";
@@ -103,6 +115,10 @@ class Static extends ECS.Component {}
 class Gravity extends ECS.Component {}
 
 class Player extends ECS.Component {}
+
+class Exit extends ECS.Component {}
+
+class Spikes extends ECS.Component {}
 
 class Gun extends ECS.Component {
 	damage: number;
@@ -382,6 +398,8 @@ class Inventory extends ECS.Component {
 class Health extends ECS.Component {
 	_value: number;
 	impactOnly: boolean;
+	invincibleForSeconds: number = 0;
+
 	constructor(value: number = 100, impactOnly: boolean = false) {
 		super();
 		this._value = value;
@@ -393,7 +411,16 @@ class Health extends ECS.Component {
 		return this._value;
 	}
 
+	get invincible(): boolean {
+		return this.invincibleForSeconds > 0;
+	}
+
 	set value(v: number) {
+		if (this.invincibleForSeconds > 0) {
+			console.log("still invincible");
+			return; // temporarily invincible
+		}
+
 		if (this.entity && this.entity.id == "Player") {
 			console.log("setting health", v);
 		}
@@ -411,6 +438,10 @@ class HealthSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const health = entity.getComponent(Health) as Health;
+
+		if (health.invincibleForSeconds > 0) {
+			health.invincibleForSeconds -= params.dt;
+		}
 
 		if (entity.getComponent(Player)) {
 			this.healthDisplay.innerText = `Health: ${health.value}`;
@@ -1008,11 +1039,11 @@ class AABB {
 	}
 
 	get minX() {
-		return this.position.x - this.collider.left - this.collider.padding;
+		return this.position.x - this.collider.left;
 	}
 
 	get maxX() {
-		return this.position.x + this.collider.right + this.collider.padding;
+		return this.position.x + this.collider.right;
 	}
 
 	get minY() {
@@ -1198,11 +1229,20 @@ class CollisionSystem extends ECS.System {
 				const otherCollider = other.getComponent(Collider) as Collider;
 
 				if (other.id == collider.ignoreCollisionsWith || otherCollider.ignoreCollisionsWith == entity.id) {
-					//console.log("ignore collision", entity.id, other.id);
 					continue;
-				} else {
-					if (entity.getComponent(Player) || other.getComponent(Player)) {
-						//console.log("collision", entity.id, other.id);
+				}
+
+				if (entity.getComponent(Player) && other.getComponent(Exit)) {
+					other.removeComponent(Exit);
+					LEVEL++;
+					game.setState("loading");
+				}
+
+				if (health && !health.invincible && other.getComponent(Spikes)) {
+					health.value -= 25;
+					health.invincibleForSeconds = 0.5;
+					if (velocity) {
+						velocity.y = -150;
 					}
 				}
 
@@ -1315,7 +1355,6 @@ class AiSystem extends ECS.System {
 				const target_pos = (detected_entity.getComponent(Position) as Position).vector;
 				const target_dir = target_pos.sub(position);
 
-				const meleeRange = 7;
 
 				if (Math.abs(target_dir.y) > 16) continue;
 
@@ -1325,11 +1364,19 @@ class AiSystem extends ECS.System {
 					direction.right = false;
 				}
 
-				if (target_dir.magnitude() > meleeRange) {
-					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
+				const gun = entity.getComponent(Gun) as Gun;
+				const melee = entity.getComponent(Melee) as Melee
+
+				const distance = target_dir.magnitude()
+
+				let gunRange = 32;
+			
+				if (gun && distance <= gunRange) {
 					input.pressed[SHOOT_KEY] = true;
-				} else {
+				} else if (melee && distance <= melee.range / 2){
 					input.pressed[MELEE_KEY] = true;
+				} else {
+					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
 				}
 
 				/*
@@ -1609,10 +1656,9 @@ async function loadLevel(level: number) {
 					.addComponent(new Direction())
 					.addComponent(new Dynamic())
 					.addComponent(new Input())
-					.addComponent(new Gun())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(50))
-					.addComponent(new Melee(16, 30, 0.5))
+					.addComponent(Math.random() > 0.8 ? new Gun() : new Melee(16, 30, 0.5))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
@@ -1718,6 +1764,27 @@ async function loadLevel(level: number) {
 				);
 				break;
 			}
+
+			case "exit": {
+				let exit = new ECS.Entity({ id: "exit" })
+					.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y))
+					.addComponent(new Sprite(DOOR_SPRITE, 16, 16))
+					.addComponent(new Collider(16, 8, 0, 8))
+					.addComponent(new Exit());
+
+				ecs.addEntity(exit);
+				break;
+			}
+
+			case "spikes": {
+				ecs.addEntity(
+					new ECS.Entity()
+						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y))
+						.addComponent(new Sprite(SPIKES_SPRITE, 16, 16))
+						.addComponent(new Collider(4, 8, 0, 8))
+						.addComponent(new Spikes())
+				);
+			}
 		}
 	}
 
@@ -1725,25 +1792,6 @@ async function loadLevel(level: number) {
 	console.log("finished loading level ", level);
 }
 
-document.addEventListener("keydown", (e) => {
-	switch (e.code) {
-		/*
-		case "KeyP": {
-			if (game.current.name == "pause") {
-				game.setPreviousState();
-			} else {
-				game.setState("pause");
-			}
-			break;
-		}
-		*/
-
-		case "KeyO": {
-			loadLevel(1);
-			break;
-		}
-	}
-});
 
 document.addEventListener("click", () => {
 	switch (game.current.name) {
