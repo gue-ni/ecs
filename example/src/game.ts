@@ -3,13 +3,13 @@ import { randomInteger, randomFloat, Vector } from "./util";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-const player = new ECS.Entity({ id: "Player" });
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
+let LOADED = false;
 
 let LEVEL = 1;
 
@@ -25,19 +25,32 @@ const SHOOT_KEY = "KeyK";
 const GRENADE_KEY = "KeyL";
 
 class PlayState extends ECS.HTMLElementState {
-	enter(): void {
+	enter() {
 		super.enter();
-		loadLevel(LEVEL)
+		console.log("enter play state, loading level");
+		loadLevel(LEVEL);
+		//animate(0)
 	}
 
-	exit(): void {
+	exit() {
+		super.exit();
+	}
+}
+
+class DeathState extends ECS.HTMLElementState {
+	enter() {
+		super.enter();
+		console.log("enter dead state");
+	}
+
+	exit() {
 		super.exit();
 	}
 }
 
 const game = new ECS.FiniteStateMachine();
 game.addState(new PlayState("play", "#hud"));
-game.addState(new ECS.HTMLElementState("dead", "#dead"));
+game.addState(new DeathState("dead", "#dead"));
 game.addState(new ECS.HTMLElementState("title", "#title"));
 game.addState(new ECS.HTMLElementState("pause", "#paused"));
 game.addState(new ECS.HTMLElementState("loading", "#loading"));
@@ -224,12 +237,12 @@ class SpriteState extends ECS.State {
 		this.playOnce = params.playOnce || false;
 	}
 
-	enter(): void {
+	enter() {
 		if (this.playOnce) this.frameX = 0;
 		//console.log("enter", this.name)
 	}
 
-	exit(): void {
+	exit() {
 		//console.log("exit", this.name)
 	}
 }
@@ -367,12 +380,24 @@ class Inventory extends ECS.Component {
 }
 
 class Health extends ECS.Component {
-	value: number;
+	_value: number;
 	impactOnly: boolean;
 	constructor(value: number = 100, impactOnly: boolean = false) {
 		super();
-		this.value = value;
+		this._value = value;
 		this.impactOnly = impactOnly;
+		//console.log("Health createed", this.value)
+	}
+
+	get value() {
+		return this._value;
+	}
+
+	set value(v: number) {
+		if (this.entity && this.entity.id == "Player") {
+			console.log("setting health", v);
+		}
+		this._value = v;
 	}
 }
 
@@ -393,7 +418,17 @@ class HealthSystem extends ECS.System {
 
 		if (health.value <= 0) {
 			if (entity.getComponent(Player)) {
-				//console.log("you died!");
+				entity.removeComponent(Collider);
+				entity.removeComponent(Sprite);
+				entity.removeComponent(Health);
+				entity.removeComponent(Damage);
+				entity.removeComponent(Gun);
+				entity.removeComponent(Melee);
+				entity.removeComponent(Ai);
+				entity.removeComponent(Light);
+
+				console.log("you died!, health <= 0", health.value);
+				console.log(entity);
 				game.setState("dead");
 			} else {
 				// if it has a death particle animation, play it
@@ -973,11 +1008,11 @@ class AABB {
 	}
 
 	get minX() {
-		return this.position.x - this.collider.left;
+		return this.position.x - this.collider.left - this.collider.padding;
 	}
 
 	get maxX() {
-		return this.position.x + this.collider.right;
+		return this.position.x + this.collider.right + this.collider.padding;
 	}
 
 	get minY() {
@@ -1487,66 +1522,72 @@ ecs.addSystem(new LightSystem());
 ecs.addSystem(new HudSystem());
 ecs.addSystem(new PositionChangeSystem());
 
-async function spawnPlayer(player: ECS.Entity, x: number, y: number) {
+function spawnPlayer(x: number, y: number) {
 	// reset camera
 	WINDOW_OFFSET_X = TILE_SIZE * x;
 	WINDOW_OFFSET_Y = 0;
 	WINDOW_CENTER_X = canvas.width / 2 + TILE_SIZE * x;
 
-	player
-		.addComponent(new Velocity())
-		.addComponent(new Gravity())
-		.addComponent(new Direction())
-		.addComponent(new Dynamic())
-		.addComponent(new Player())
-		.addComponent(new Gun())
-		.addComponent(new Input())
-		.addComponent(new Melee(20, 50))
-		.addComponent(new Inventory())
-		.addComponent(new Health())
-		.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
-		.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
-		.addComponent(new Collider(16, 2, 0, 2, 3, true))
-		.addComponent(new Detectable())
-		.addComponent(new Speed(70))
-		.addComponent(
-			new ParticleEmitter({
-				particlePerSecond: 15,
-				minTTL: 0.1,
-				maxTTL: 0.4,
-				minSize: 2,
-				maxSize: 3,
-				maxCount: 20,
-				alpha: 0.6,
-				speed: 20,
-				gravity: 0,
-			})
-		)
-		.addComponent(
-			new Sprite(CHARACTER_SPRITE, 16, 16, [
-				new SpriteState("idle-right", { frameY: 0, frames: 1 }),
-				new SpriteState("idle-left", { frameY: 1, frames: 1 }),
-				new SpriteState("jump-right", { frameY: 2, frames: 1 }),
-				new SpriteState("jump-left", { frameY: 3, frames: 1 }),
-				new SpriteState("run-right", { frameY: 4, frames: 4 }),
-				new SpriteState("run-left", { frameY: 5, frames: 4 }),
-				new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
-				new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
-			])
-		);
+	ecs.addEntity(
+		new ECS.Entity({ id: "Player" })
+			.addComponent(new Velocity())
+			.addComponent(new Gravity())
+			.addComponent(new Direction())
+			.addComponent(new Dynamic())
+			.addComponent(new Player())
+			.addComponent(new Gun())
+			.addComponent(new Input())
+			.addComponent(new Melee(20, 50))
+			.addComponent(new Inventory())
+			.addComponent(new Health(100))
+			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
+			.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
+			.addComponent(new Collider(16, 2, 0, 2, 3, true))
+			.addComponent(new Detectable())
+			.addComponent(new Speed(70))
+			.addComponent(
+				new ParticleEmitter({
+					particlePerSecond: 15,
+					minTTL: 0.1,
+					maxTTL: 0.4,
+					minSize: 2,
+					maxSize: 3,
+					maxCount: 20,
+					alpha: 0.6,
+					speed: 20,
+					gravity: 0,
+				})
+			)
+			.addComponent(
+				new Sprite(CHARACTER_SPRITE, 16, 16, [
+					new SpriteState("idle-right", { frameY: 0, frames: 1 }),
+					new SpriteState("idle-left", { frameY: 1, frames: 1 }),
+					new SpriteState("jump-right", { frameY: 2, frames: 1 }),
+					new SpriteState("jump-left", { frameY: 3, frames: 1 }),
+					new SpriteState("run-right", { frameY: 4, frames: 4 }),
+					new SpriteState("run-left", { frameY: 5, frames: 4 }),
+					new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
+					new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
+				])
+			)
+	);
 }
 
 async function loadLevel(level: number) {
+	console.log("loading level ", level);
+	LOADED = false;
+
 	const res = await fetch(`assets/level-${level}.json`);
 	const level_data = await res.json();
 	let i = 0;
+	ecs.clearEntities();
 
 	for (let { type, x, y } of level_data) {
 		i++;
 		switch (type) {
 			case "player": {
 				console.log("create player", x, y);
-				spawnPlayer(player, x, y);
+				spawnPlayer(x, y);
 				break;
 			}
 
@@ -1571,11 +1612,11 @@ async function loadLevel(level: number) {
 					.addComponent(new Gun())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(50))
-					.addComponent(new Melee(16, 10, 0.5))
+					.addComponent(new Melee(16, 30, 0.5))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
-					.addComponent(new DetectionRadius(randomInteger(50, 70)))
+					.addComponent(new DetectionRadius(64))
 					.addComponent(
 						new ParticleEmitter({
 							particlePerSecond: 10,
@@ -1609,7 +1650,6 @@ async function loadLevel(level: number) {
 			}
 
 			case "heart": {
-				console.log("add heart");
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
@@ -1680,10 +1720,14 @@ async function loadLevel(level: number) {
 			}
 		}
 	}
+
+	LOADED = true;
+	console.log("finished loading level ", level);
 }
 
 document.addEventListener("keydown", (e) => {
 	switch (e.code) {
+		/*
 		case "KeyP": {
 			if (game.current.name == "pause") {
 				game.setPreviousState();
@@ -1692,9 +1736,10 @@ document.addEventListener("keydown", (e) => {
 			}
 			break;
 		}
+		*/
 
 		case "KeyO": {
-			spawnPlayer(player, randomInteger(3, 30), randomInteger(1, 10));
+			loadLevel(1);
 			break;
 		}
 	}
@@ -1707,7 +1752,6 @@ document.addEventListener("click", () => {
 			break;
 		case "dead":
 			game.setState("play");
-			spawnPlayer(player, randomInteger(3, 30), randomInteger(1, 10));
 			break;
 	}
 });
@@ -1718,20 +1762,19 @@ document.addEventListener(
 		if (!document.fullscreenElement) {
 			document.documentElement.requestFullscreen().then(() => {
 				screen.orientation.lock("landscape");
-				if (game.current.name === "title") game.setState("play");
+				//if (game.current.name === "title") game.setState("play");
 			});
 		}
 	},
 	false
 );
 
-const fps_display = document.querySelector("#fps") as HTMLElement;
+const fps = document.querySelector("#fps") as HTMLElement;
 let tmp = 0;
 
+let currentState = "";
 let dt: number = 0;
 let then: number = 0;
-
-ecs.addEntity(player);
 
 function animate(now: number) {
 	now *= 0.001;
@@ -1739,27 +1782,34 @@ function animate(now: number) {
 	then = now;
 
 	if ((tmp += dt) > 1) {
-		fps_display.innerText = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;
+		fps.innerText = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;
 		tmp = 0;
 	}
 
+	if (currentState != game.current.name) {
+		console.log("Game State:", game.current.name);
+		currentState = game.current.name;
+	}
+
+	// clear screen
 	context.clearRect(0, 0, canvas.width, canvas.height);
 	context.fillStyle = "#000";
 	context.fillRect(0, 0, canvas.width, canvas.height);
 
-	if (game.current.name == "play") {
-		{
-			context.beginPath();
-			context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
-			context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
-			context.strokeStyle = "#fff";
-			context.lineWidth = 1;
-			context.stroke();
-			context.closePath();
-		}
-
+	if (game.current.name == "play" && LOADED) {
+		// console.log("update");
+		// draw horizontal "ground" line
+		context.beginPath();
+		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+		context.strokeStyle = "#fff";
+		context.lineWidth = 1;
+		context.stroke();
+		context.closePath();
+		// update ecs
 		ecs.update({ dt, canvas, context, ecs });
 	}
+
 	requestAnimationFrame(animate);
 }
 
