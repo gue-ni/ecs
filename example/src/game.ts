@@ -7,19 +7,19 @@ const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRende
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let LOADED = false;
-let CURRENT_LEVEL = 1;
+let CURRENT_LEVEL = 3;
 let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
 const GRAVITY = 500;
-const DARKNESS = 0.9;
+const DARKNESS = 0.92;
 const TILE_SIZE = 16;
 const FRAME_RATE = 1 / 12;
-const BOTTOM_BORDER = TILE_SIZE * 2;
+const BOTTOM_BORDER = TILE_SIZE * 3;
 const GROUND_LEVEL = canvas.height - BOTTOM_BORDER;
 
-const MELEE_KEY = "KeyJ";
+const MELEE_KEY = "Space";
 const SHOOT_KEY = "KeyK";
 const GRENADE_KEY = "KeyL";
 
@@ -38,7 +38,9 @@ class PlayState extends ECS.HTMLElementState {
 class DeathState extends ECS.HTMLElementState {
 	enter() {
 		super.enter();
-		console.log("enter dead state");
+		setTimeout(() => {
+			game.setState("play")
+		}, 2000)
 	}
 
 	exit() {

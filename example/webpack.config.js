@@ -23,6 +23,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: "./*.html", to: "." },
+        { from: "./*.css", to: "." },
         { from: "./favicon.ico", to: "." },
         { from: "assets", to: "assets" }
       ],
