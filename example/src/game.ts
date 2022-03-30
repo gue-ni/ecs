@@ -6,12 +6,11 @@ const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRende
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+let LOADED = false;
+let CURRENT_LEVEL = 1;
 let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
-let LOADED = false;
-
-let LEVEL = 1;
 
 const GRAVITY = 500;
 const DARKNESS = 0.9;
@@ -28,8 +27,7 @@ class PlayState extends ECS.HTMLElementState {
 	enter() {
 		super.enter();
 		console.log("enter play state, loading level");
-		loadLevel(LEVEL);
-		//animate(0)
+		loadLevel(CURRENT_LEVEL);
 	}
 
 	exit() {
@@ -53,7 +51,7 @@ class LoadingNextLevel extends ECS.HTMLElementState {
 		super.enter();
 		setTimeout(() => {
 			game.setPreviousState();
-		}, 2500);
+		}, 2000);
 	}
 }
 
@@ -1234,7 +1232,7 @@ class CollisionSystem extends ECS.System {
 
 				if (entity.getComponent(Player) && other.getComponent(Exit)) {
 					other.removeComponent(Exit);
-					LEVEL++;
+					CURRENT_LEVEL++;
 					game.setState("loading");
 				}
 
@@ -1589,17 +1587,17 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Health(100))
 			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
 			.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
-			.addComponent(new Collider(16, 2, 0, 2, 3, true))
+			.addComponent(new Collider(16, 2, 0, 2, 5, true))
 			.addComponent(new Detectable())
 			.addComponent(new Speed(70))
 			.addComponent(
 				new ParticleEmitter({
-					particlePerSecond: 15,
+					particlePerSecond: 20,
 					minTTL: 0.1,
 					maxTTL: 0.4,
-					minSize: 2,
-					maxSize: 3,
-					maxCount: 20,
+					minSize: 1,
+					maxSize: 2,
+					maxCount: 50,
 					alpha: 0.6,
 					speed: 20,
 					gravity: 0,
