@@ -676,7 +676,7 @@ class MovementSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
-		const aabb = entity.getComponent(Collider) as Collider;
+		const collider = entity.getComponent(Collider) as Collider;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
@@ -684,17 +684,24 @@ class MovementSystem extends ECS.System {
 		const speed = entity.getComponent(Speed) as Speed;
 		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 
-		const standing = aabb.bottomCollision || position.y == GROUND_LEVEL;
+		const standing = collider.touching_bottom || position.y == GROUND_LEVEL;
 		const speedVal = speed.value;
 		const jump_speed = -180;
 
 		let leftRight = 0;
 
+		if (entity.getComponent(Player)) {
+			console.log({ standing });
+		}
+
 		if (standing || entity.getComponent(Player)) {
-			if (input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) {
+			if ((input.is_key_pressed("KeyA") || input.is_key_pressed("ArrowLeft")) && !collider.touching_left) {
 				leftRight = -1;
 				direction.right = false;
-			} else if (input.is_key_pressed("KeyD") || input.is_key_pressed("ArrowRight")) {
+			} else if (
+				(input.is_key_pressed("KeyD") || input.is_key_pressed("ArrowRight")) &&
+				!collider.touching_right
+			) {
 				leftRight = 1;
 				direction.right = true;
 			}
@@ -705,7 +712,7 @@ class MovementSystem extends ECS.System {
 		if (
 			(input.is_key_pressed("KeyW", 300) || input.is_key_pressed("ArrowUp", 300)) &&
 			(standing || (input.doubleJumpAllowed && !standing)) &&
-			!aabb.topCollision
+			!collider.touching_top
 		) {
 			input.doubleJumpAllowed = standing;
 			velocity.y = jump_speed;
@@ -877,7 +884,7 @@ class PhysicsSystem extends ECS.System {
 
 		if (
 			position.y < GROUND_LEVEL &&
-			(!aabb || !aabb.bottomCollision) &&
+			(!aabb || !aabb.touching_bottom) &&
 			entity.getComponent(Gravity) &&
 			velocity.y < 400
 		) {
@@ -993,10 +1000,10 @@ class Collider extends ECS.Component {
 	left: number;
 	padding: number;
 
-	topCollision: boolean;
-	leftCollision: boolean;
-	rightCollision: boolean;
-	bottomCollision: boolean;
+	touching_top: boolean;
+	touching_left: boolean;
+	touching_right: boolean;
+	touching_bottom: boolean;
 
 	ignoreCollisionsWith: string;
 
@@ -1016,10 +1023,10 @@ class Collider extends ECS.Component {
 		this.bottom = bottom;
 		this.left = left;
 		this.padding = padding;
-		this.bottomCollision = false;
-		this.topCollision = false;
-		this.rightCollision = false;
-		this.leftCollision = false;
+		this.touching_bottom = false;
+		this.touching_top = false;
+		this.touching_right = false;
+		this.touching_left = false;
 		this.ignoreCollisionsWith = ignoreCollisionWith;
 	}
 
@@ -1037,11 +1044,11 @@ class AABB {
 	}
 
 	get minX() {
-		return this.position.x - this.collider.left;
+		return this.position.x - this.collider.left - this.collider.padding;
 	}
 
 	get maxX() {
-		return this.position.x + this.collider.right;
+		return this.position.x + this.collider.right + this.collider.padding;
 	}
 
 	get minY() {
@@ -1219,8 +1226,10 @@ class CollisionSystem extends ECS.System {
 			this.sph.insert(entity, aabb);
 		}
 
-		collider.topCollision = false;
-		collider.bottomCollision = false;
+		collider.touching_top = false;
+		collider.touching_left = false;
+		collider.touching_right = false;
+		collider.touching_bottom = false;
 
 		if (collider.active) {
 			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
@@ -1289,41 +1298,46 @@ class CollisionSystem extends ECS.System {
 					//console.log("deal damage", entity.id, other.id);
 				}
 
-				// remove health upon high speed collision (eg fall damage or bullet impact)
-				/*
-				if (
-					!entity.getComponent(Player) &&
-					(other.getComponent(Static) || other.getComponent(Dynamic)) &&
-					health &&
-					velocity &&
-					velocity.vector.magnitude() > 100
-				) {
-					health.value -= 1;
-					//console.log("high speed impact", entity.id, other.id);
-				}
-				*/
-
 				// do collision physics
 				if (velocity && other.getComponent(Static)) {
 					let [x, y] = depth;
 
-					if (Math.abs(x) < Math.abs(y) - collider.padding) {
-						position.x -= x;
+					if (Math.abs(x) - collider.padding * 2 < Math.abs(y) - collider.padding * 2) {
+						if (x > 0 && y != 0) {
+							if (x > collider.padding) {
+								//console.log("right collision");
+								position.x -= x - collider.padding;
+							} else if (x == collider.padding) {
+								//console.log("touching right");
+								collider.touching_right = true;
+							}
+						} else if (x < 0 && y != 0) {
+							if (x < -collider.padding) {
+								//console.log("left collision");
+								position.x -= x + collider.padding;
+							} else if (x == -collider.padding) {
+								collider.touching_left = true;
+								//console.log("touching left");
+							}
+						}
 					} else {
-						if (y > 0 && x != 0) {
+						// colliding in y axis
+						if (y > 0 && Math.abs(x) > collider.padding) {
+							// colliding on the bottom
 							if (y > collider.padding) {
 								velocity.y = Math.min(0, velocity.y);
 								position.y -= y - collider.padding;
 							} else if (y == collider.padding) {
 								velocity.y = Math.min(0, velocity.y);
-								collider.bottomCollision = true;
+								collider.touching_bottom = true;
 							}
-						} else if (y < 0 && x != 0) {
+						} else if (y < 0 && Math.abs(x) > collider.padding) {
+							// colliding on the top
 							if (Math.abs(y) > collider.padding) {
 								position.y -= y + collider.padding;
 								velocity.y = Math.max(0, velocity.y);
 							} else {
-								collider.topCollision = true;
+								collider.touching_top = true;
 							}
 						}
 					}
@@ -1353,7 +1367,6 @@ class AiSystem extends ECS.System {
 				const target_pos = (detected_entity.getComponent(Position) as Position).vector;
 				const target_dir = target_pos.sub(position);
 
-
 				if (Math.abs(target_dir.y) > 16) continue;
 
 				if (target_dir.x > 5) {
@@ -1363,15 +1376,15 @@ class AiSystem extends ECS.System {
 				}
 
 				const gun = entity.getComponent(Gun) as Gun;
-				const melee = entity.getComponent(Melee) as Melee
+				const melee = entity.getComponent(Melee) as Melee;
 
-				const distance = target_dir.magnitude()
+				const distance = target_dir.magnitude();
 
 				let gunRange = 32;
-			
+
 				if (gun && distance <= gunRange) {
 					input.pressed[SHOOT_KEY] = true;
-				} else if (melee && distance <= melee.range / 2){
+				} else if (melee && distance <= melee.range / 2) {
 					input.pressed[MELEE_KEY] = true;
 				} else {
 					input.pressed[direction.right ? "KeyD" : "KeyA"] = true;
@@ -1587,7 +1600,7 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Health(100))
 			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
 			.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
-			.addComponent(new Collider(16, 2, 0, 2, 5, true))
+			.addComponent(new Collider(16, 2, 0, 2, 3, true))
 			.addComponent(new Detectable())
 			.addComponent(new Speed(70))
 			.addComponent(
@@ -1789,7 +1802,6 @@ async function loadLevel(level: number) {
 	LOADED = true;
 	console.log("finished loading level ", level);
 }
-
 
 document.addEventListener("click", () => {
 	switch (game.current.name) {
