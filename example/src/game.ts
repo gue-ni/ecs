@@ -39,8 +39,8 @@ class DeathState extends ECS.HTMLElementState {
 	enter() {
 		super.enter();
 		setTimeout(() => {
-			game.setState("play")
-		}, 2000)
+			game.setState("play");
+		}, 2000);
 	}
 
 	exit() {
@@ -124,10 +124,13 @@ class Gun extends ECS.Component {
 	damage: number;
 	velocity: number;
 	firingRate: number;
-	constructor(damage: number = 10, velocity: number = 90, firingRate: number = 500) {
+	powerup: number;
+	tmp: number = 0;
+	constructor(damage: number = 30, velocity: number = 90, firingRate: number = 500, powerup: number = 0) {
 		super();
 		this.damage = damage;
 		this.velocity = velocity;
+		this.powerup = powerup;
 		this.firingRate = firingRate;
 	}
 }
@@ -154,15 +157,13 @@ class Collectible extends ECS.Component {
 
 class Melee extends ECS.Component {
 	range: number;
-	delaySeconds: number;
-	time: number = 0;
+	powerup: number;
 	damage: number;
-	inProgress: boolean = false;
-	constructor(range: number = 16, damage: number = 10, delaySeconds: number = 0) {
+	constructor(range: number = 16, damage: number = 10, powerup: number = 0) {
 		super();
 		this.range = range;
 		this.damage = damage;
-		this.delaySeconds = delaySeconds;
+		this.powerup = powerup;
 	}
 }
 
@@ -746,13 +747,28 @@ class MeleeSystem extends ECS.System {
 		const direction = entity.getComponent(Direction) as Direction;
 		const melee = entity.getComponent(Melee) as Melee;
 
-		if (input.is_key_pressed(MELEE_KEY, 250)) {
-			melee.inProgress = true;
-			sprite.setState(direction.right ? "melee-right" : "melee-left");
+		if (input.is_key_pressed(MELEE_KEY, melee.powerup)) {
+			setTimeout(() => {
+				sprite.setState(direction.right ? "melee-right" : "melee-left");
+				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
+				for (const collision of this.sph.collisions(entity, aabb)) {
+					const health = collision.entity.getComponent(Health) as Health;
+					const velocity = collision.entity.getComponent(Velocity) as Velocity;
+					const otherDir = collision.entity.getComponent(Direction) as Direction;
+
+					if (health) health.value -= melee.damage;
+
+					if (velocity && otherDir && entity.getComponent(Player)) {
+						velocity.x = (otherDir.right ? -1 : 1) * 100;
+						velocity.y = -100;
+					}
+				}
+			}, melee.powerup);
 		}
 
+		/*		
 		if (melee.inProgress) {
-			if ((melee.time += params.dt) > melee.delaySeconds) {
+			if ((melee.time += params.dt) > melee.powerup) {
 				melee.time = 0;
 				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 				for (const collision of this.sph.collisions(entity, aabb)) {
@@ -772,6 +788,7 @@ class MeleeSystem extends ECS.System {
 				melee.inProgress = false;
 			}
 		}
+		*/
 	}
 }
 
@@ -810,22 +827,24 @@ class GunSystem extends ECS.System {
 		};
 
 		if (input.is_mouse_pressed("left", gun.firingRate) || input.is_key_pressed(SHOOT_KEY, gun.firingRate)) {
-			shootDir.scalarMult(gun.velocity);
+			setTimeout(() => {
+				shootDir.scalarMult(gun.velocity);
+				const bullet = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
+					.addComponent(new Position(position.x, position.y - gunPosOffset, false))
+					.addComponent(new Velocity(shootDir.x, shootDir.y))
+					.addComponent(new Sprite(ONE_PIXEL, 2, 2))
+					.addComponent(new Health(1, true))
+					.addComponent(new DieOnCollision())
+					.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
+					.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
+					.addComponent(new Damage(gun.damage))
+					.addComponent(new ParticleEmitter(explosion));
 
-			const bullet = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
-				.addComponent(new Position(position.x, position.y - gunPosOffset, false))
-				.addComponent(new Velocity(shootDir.x, shootDir.y))
-				.addComponent(new Sprite(ONE_PIXEL, 2, 2))
-				.addComponent(new Health(1, true))
-				.addComponent(new DieOnCollision())
-				.addComponent(new Light(SMALL_LIGHT_SPRITE, 16, 16))
-				.addComponent(new Collider(1, 1, 1, 1, 0, true, entity.id))
-				.addComponent(new Damage(gun.damage))
-				.addComponent(new ParticleEmitter(explosion));
-
-			params.ecs.addEntity(bullet);
+				params.ecs.addEntity(bullet);
+			}, gun.powerup);
 		}
 
+		/*
 		if (input.is_mouse_pressed("right", 500) || input.is_key_pressed(GRENADE_KEY, 500)) {
 			shootDir.scalarMult(200);
 
@@ -844,6 +863,7 @@ class GunSystem extends ECS.System {
 				.addComponent(new Damage(150));
 			params.ecs.addEntity(grenade);
 		}
+		*/
 	}
 }
 
@@ -866,7 +886,7 @@ class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const position = entity.getComponent(Position) as Position;
-		const collider = entity.getComponent(Collider) as Collider; 
+		const collider = entity.getComponent(Collider) as Collider;
 
 		position._lastX = position._x;
 		position._lastY = position._y;
@@ -1275,7 +1295,6 @@ class CollisionSystem extends ECS.System {
 					otherHealth.value = 0;
 				}
 
-
 				// if it does damage, take the damage
 				const otherDamage = other.getComponent(Damage) as Damage;
 				if (!collider.active && health && !health.impactOnly && otherDamage) {
@@ -1588,9 +1607,9 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Direction())
 			.addComponent(new Dynamic())
 			.addComponent(new Player())
-			.addComponent(new Gun())
+			.addComponent(new Gun(50, 200, 500, 0))
 			.addComponent(new Input())
-			.addComponent(new Melee(20, 50))
+			.addComponent(new Melee(20, 50, 0))
 			.addComponent(new Inventory())
 			.addComponent(new Health(100))
 			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
@@ -1639,7 +1658,6 @@ async function loadLevel(level: number) {
 		i++;
 		switch (type) {
 			case "player": {
-				console.log("create player", x, y);
 				spawnPlayer(x, y);
 				break;
 			}
@@ -1664,7 +1682,7 @@ async function loadLevel(level: number) {
 					.addComponent(new Input())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(50))
-					.addComponent(Math.random() > 0.8 ? new Gun() : new Melee(16, 30, 0.5))
+					.addComponent(Math.random() > 0 ? new Gun(25, 100, 500, 500) : new Melee(16, 20, 1000))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
@@ -1823,6 +1841,7 @@ document.addEventListener(
 );
 
 const fps = document.querySelector("#fps") as HTMLElement;
+fps.style.display = "none";
 let tmp = 0;
 
 let currentState = "";

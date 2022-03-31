@@ -2,7 +2,7 @@ from PIL import Image
 import json
 
 
-WIDTH = 64
+WIDTH = 76
 HEIGHT = 20
 
 
