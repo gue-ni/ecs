@@ -50,6 +50,7 @@ body {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	color: #6c6c6c;
 }
 
 .display {
@@ -74,20 +75,12 @@ body {
 #button-1 {
 	display: none;
 	left: 80%;
-	top: 40%;
+	top: 30%;
 	height: 25%;
 	width: 15%;
 }
 
 #button-2 {
-	display: none;
-	left: 80%;
-	top: 10%;
-	height: 25%;
-	width: 15%;
-}
-
-#button-3 {
 	display: none;
 	left: 60%;
 	top: 70%;
@@ -154,6 +147,8 @@ canvas {
 	image-rendering: -webkit-crisp-edges;
 	image-rendering: pixelated;
 	image-rendering: crisp-edges;
+	/*
 	cursor: none;
-	/*cursor: url("assets/cursor.png"), pointer;*/
+	cursor: url("assets/cursor.png"), pointer;
+	*/
 }

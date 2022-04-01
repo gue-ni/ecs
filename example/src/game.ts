@@ -12,8 +12,6 @@ let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
-let SHAKE_OFFSET_X = 0;
-let SHAKE_OFFSET_Y = 0;
 
 const GRAVITY = 500;
 const DARKNESS = 0.92;
@@ -69,10 +67,29 @@ game.addState(new LoadingNextLevel("loading", "#loading"));
 game.addState(new ECS.HTMLElementState("orientation", "#orientation"));
 game.setState("title");
 
+class ScreenShake {
+	SHAKE_OFFSET_X = 0;
+	SHAKE_OFFSET_Y = 0;
+	time: number = 0;
 
-function shake_screen(){
+	update(dt: number){
+		if ((this.time -= dt) > 0){
+			this.SHAKE_OFFSET_X = randomInteger(-3, 3)
+			this.SHAKE_OFFSET_Y = randomInteger(-3, 3)
+		} else {
+			this.SHAKE_OFFSET_X = 0;
+			this.SHAKE_OFFSET_Y = 0;
+		}
+
+	}
+
+	shake() {
+		this.time = 0.2;
+	}
 
 }
+
+const screenShaker = new ScreenShake()
 
 const CHARACTER_SPRITE = new Image();
 CHARACTER_SPRITE.src = "assets/sprites.png";
@@ -660,6 +677,7 @@ class MobileInputSystem extends ECS.System {
 			delete this.keys[SHOOT_KEY];
 		});
 
+		/*
 		const button_3 = document.querySelector("#button-3") as HTMLElement;
 		button_3.style.display = "flex";
 		button_3.addEventListener("touchstart", () => {
@@ -668,13 +686,13 @@ class MobileInputSystem extends ECS.System {
 		button_3.addEventListener("touchend", () => {
 			delete this.keys[GRENADE_KEY];
 		});
+		*/
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		input.pressed = { ...this.keys };
 		input.mouse = { ...this.mouse };
-
 		//input.mouseX = this.mouseX;
 		//input.mouseY = this.mouseY;
 	}
@@ -759,7 +777,11 @@ class MeleeSystem extends ECS.System {
 		if (input.is_key_pressed(MELEE_KEY, Math.max(melee.powerup, 333))) {
 			setTimeout(() => {
 				if (health && health.value <= 0) return;
+
 				sprite.setState(direction.right ? "melee-right" : "melee-left");
+
+				if (entity.getComponent(Player)) screenShaker.shake()
+
 				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 				for (const collision of this.sph.collisions(entity, aabb)) {
 					const health = collision.entity.getComponent(Health) as Health;
@@ -968,9 +990,8 @@ class LightSystem extends ECS.System {
 			0,
 			light.width,
 			light.height,
-			coords.x - Math.round(light.width / 2) - WINDOW_OFFSET_X,
-			coords.y - Math.round(light.height / 2) - light.yOffset + WINDOW_OFFSET_Y,
-			// coords.y - (light.flushBottom ? Math.round(light.height) : Math.round(light.height / 2)),
+			coords.x - Math.round(light.width / 2) - WINDOW_OFFSET_X + screenShaker.SHAKE_OFFSET_X,
+			coords.y - Math.round(light.height / 2) - light.yOffset + WINDOW_OFFSET_Y + screenShaker.SHAKE_OFFSET_Y,
 			light.width,
 			light.height
 		);
@@ -1004,10 +1025,11 @@ class SpriteSystem extends ECS.System {
 			sprite.state.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
-			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X + SHAKE_OFFSET_X,
+			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X + screenShaker.SHAKE_OFFSET_X,
 			coords.y -
 				(sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) +
-				WINDOW_OFFSET_Y + SHAKE_OFFSET_Y,
+				WINDOW_OFFSET_Y +
+				screenShaker.SHAKE_OFFSET_Y,
 			sprite.width,
 			sprite.height
 		);
@@ -1312,6 +1334,7 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
 						//console.log("collide from above", entity.id, other.id);
 						otherHealth.value = 0;
+						screenShaker.shake()
 					}
 
 					// if it does damage, take the damage
@@ -1899,6 +1922,8 @@ function animate(now: number) {
 		context.stroke();
 		context.closePath();
 		// update ecs
+
+		screenShaker.update(dt)
 		ecs.update({ dt, canvas, context, ecs });
 	}
 
