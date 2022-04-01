@@ -7,10 +7,13 @@ const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRende
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let LOADED = false;
-let CURRENT_LEVEL = 3;
+let CURRENT_LEVEL = 1;
 let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
+
+let SHAKE_OFFSET_X = 0;
+let SHAKE_OFFSET_Y = 0;
 
 const GRAVITY = 500;
 const DARKNESS = 0.92;
@@ -66,6 +69,11 @@ game.addState(new LoadingNextLevel("loading", "#loading"));
 game.addState(new ECS.HTMLElementState("orientation", "#orientation"));
 game.setState("title");
 
+
+function shake_screen(){
+
+}
+
 const CHARACTER_SPRITE = new Image();
 CHARACTER_SPRITE.src = "assets/sprites.png";
 
@@ -120,7 +128,7 @@ class Exit extends ECS.Component {}
 
 class Spikes extends ECS.Component {}
 
-class Gun extends ECS.Component {
+class RangeWeapon extends ECS.Component {
 	damage: number;
 	velocity: number;
 	firingRate: number;
@@ -418,12 +426,12 @@ class Health extends ECS.Component {
 
 	set value(v: number) {
 		if (this.invincibleForSeconds > 0) {
-			console.log("still invincible");
+			//console.log("still invincible");
 			return; // temporarily invincible
 		}
 
 		if (this.entity && this.entity.id == "Player") {
-			console.log("setting health", v);
+			//console.log("setting health", v);
 		}
 		this._value = v;
 	}
@@ -454,13 +462,13 @@ class HealthSystem extends ECS.System {
 				entity.removeComponent(Sprite);
 				entity.removeComponent(Health);
 				entity.removeComponent(Damage);
-				entity.removeComponent(Gun);
+				entity.removeComponent(RangeWeapon);
 				entity.removeComponent(Melee);
 				entity.removeComponent(Ai);
 				entity.removeComponent(Light);
 
 				console.log("you died!, health <= 0", health.value);
-				console.log(entity);
+				//console.log(entity);
 				game.setState("dead");
 			} else {
 				// if it has a death particle animation, play it
@@ -471,7 +479,7 @@ class HealthSystem extends ECS.System {
 					entity.removeComponent(Sprite);
 					entity.removeComponent(Health);
 					entity.removeComponent(Damage);
-					entity.removeComponent(Gun);
+					entity.removeComponent(RangeWeapon);
 					entity.removeComponent(Melee);
 					entity.removeComponent(Ai);
 					entity.removeComponent(Light);
@@ -746,9 +754,11 @@ class MeleeSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 		const direction = entity.getComponent(Direction) as Direction;
 		const melee = entity.getComponent(Melee) as Melee;
+		const health = entity.getComponent(Health) as Health;
 
-		if (input.is_key_pressed(MELEE_KEY, melee.powerup)) {
+		if (input.is_key_pressed(MELEE_KEY, Math.max(melee.powerup, 333))) {
 			setTimeout(() => {
+				if (health && health.value <= 0) return;
 				sprite.setState(direction.right ? "melee-right" : "melee-left");
 				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 				for (const collision of this.sph.collisions(entity, aabb)) {
@@ -794,14 +804,15 @@ class MeleeSystem extends ECS.System {
 
 class GunSystem extends ECS.System {
 	constructor() {
-		super([Input, Position, Gun, Direction]);
+		super([Input, Position, RangeWeapon, Direction]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 		const direction = entity.getComponent(Direction) as Direction;
 		const position = entity.getComponent(Position) as Position;
-		const gun = entity.getComponent(Gun) as Gun;
+		const gun = entity.getComponent(RangeWeapon) as RangeWeapon;
+		const health = entity.getComponent(Health) as Health;
 
 		const gunPosOffset = 10;
 		/*
@@ -828,6 +839,8 @@ class GunSystem extends ECS.System {
 
 		if (input.is_mouse_pressed("left", gun.firingRate) || input.is_key_pressed(SHOOT_KEY, gun.firingRate)) {
 			setTimeout(() => {
+				if (health && health.value <= 0) return;
+
 				shootDir.scalarMult(gun.velocity);
 				const bullet = new ECS.Entity({ ttl: 1, id: `Bullet-${randomInteger(1, 10000)}` })
 					.addComponent(new Position(position.x, position.y - gunPosOffset, false))
@@ -991,10 +1004,10 @@ class SpriteSystem extends ECS.System {
 			sprite.state.frameY * sprite.height,
 			sprite.width,
 			sprite.height,
-			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X,
+			coords.x - Math.round(sprite.width / 2) - WINDOW_OFFSET_X + SHAKE_OFFSET_X,
 			coords.y -
 				(sprite.flushBottom ? Math.round(sprite.height) : Math.round(sprite.height / 2)) +
-				WINDOW_OFFSET_Y,
+				WINDOW_OFFSET_Y + SHAKE_OFFSET_Y,
 			sprite.width,
 			sprite.height
 		);
@@ -1083,6 +1096,7 @@ class DetectionRadius extends Collider {
 interface Collision {
 	depth: number[];
 	entity: ECS.Entity;
+	collision: boolean;
 }
 
 class SpatialHashGrid {
@@ -1112,12 +1126,16 @@ class SpatialHashGrid {
 	}
 
 	collisions(entity: ECS.Entity, aabb: AABB): Collision[] {
-		let collisions = [];
+		const collisions = [];
 		for (const other of this.possible_collisions(entity, aabb)) {
 			const aabb_b = new AABB(other.getComponent(Collider) as Collider, other.getComponent(Position) as Position);
 
-			let depth = SpatialHashGrid.check_collision(aabb, aabb_b);
-			if (depth) collisions.push({ depth: depth, entity: other });
+			const depth = SpatialHashGrid.check_collision(aabb, aabb_b);
+			if (depth) {
+				const [x, y] = depth;
+				const collision = Math.abs(x) > aabb.collider.padding && Math.abs(y) > aabb.collider.padding;
+				collisions.push({ depth: depth, entity: other, collision });
+			}
 		}
 
 		return collisions;
@@ -1244,68 +1262,70 @@ class CollisionSystem extends ECS.System {
 		collider.touching_bottom = false;
 
 		if (collider.active) {
-			for (const { entity: other, depth } of this.sph.collisions(entity, aabb)) {
+			for (const { entity: other, depth, collision } of this.sph.collisions(entity, aabb)) {
 				const otherCollider = other.getComponent(Collider) as Collider;
 
 				if (other.id == collider.ignore || otherCollider.ignore == entity.id) {
 					continue;
 				}
 
-				if (entity.getComponent(Player) && other.getComponent(Exit)) {
-					other.removeComponent(Exit);
-					CURRENT_LEVEL++;
-					game.setState("loading");
-				}
-
-				// spike collision
-				if (health && !health.invincible && velocity && velocity.y > 0 && other.getComponent(Spikes)) {
-					health.value -= 50;
-					health.invincibleForSeconds = 0.25;
-				}
-
-				if (
-					health &&
-					entity.getComponent(DieOnCollision) &&
-					(other.getComponent(Static) || other.getComponent(Dynamic))
-				) {
-					health.value = 0;
-				}
-
-				// if its collectible, collect it
-				const otherHealth = other.getComponent(Health) as Health;
-				const collectible = other.getComponent(Collectible) as Collectible;
-				if (inventory && collectible && health) {
-					otherHealth.value = 0;
-
-					switch (collectible.type) {
-						case "heart":
-							if (health) health.value = 100;
-							break;
-
-						default:
-							inventory.add(collectible.type);
+				if (collision) {
+					if (entity.getComponent(Player) && other.getComponent(Exit)) {
+						other.removeComponent(Exit);
+						CURRENT_LEVEL++;
+						game.setState("loading");
 					}
 
-					//console.log("collect", collectible.type, entity.id, other.id);
-				}
+					// spike collision
+					if (health && !health.invincible && velocity && velocity.y > 0 && other.getComponent(Spikes)) {
+						health.value -= 50;
+						health.invincibleForSeconds = 0.25;
+					}
 
-				// colliding from above, kill other entity
-				if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
-					//console.log("collide from above", entity.id, other.id);
-					otherHealth.value = 0;
-				}
+					if (
+						health &&
+						entity.getComponent(DieOnCollision) &&
+						(other.getComponent(Static) || other.getComponent(Dynamic))
+					) {
+						health.value = 0;
+					}
 
-				// if it does damage, take the damage
-				const otherDamage = other.getComponent(Damage) as Damage;
-				if (!collider.active && health && !health.impactOnly && otherDamage) {
-					health.value -= otherDamage.value;
-					//console.log("take damage", entity.id, other.id);
-				}
+					// if its collectible, collect it
+					const otherHealth = other.getComponent(Health) as Health;
+					const collectible = other.getComponent(Collectible) as Collectible;
+					if (inventory && collectible && health) {
+						otherHealth.value = 0;
 
-				// if you do damage, deal the damage
-				if (damage && otherHealth && !otherHealth.impactOnly) {
-					otherHealth.value -= damage.value;
-					//console.log("deal damage", entity.id, other.id);
+						switch (collectible.type) {
+							case "heart":
+								if (health) health.value = 100;
+								break;
+
+							default:
+								inventory.add(collectible.type);
+						}
+
+						//console.log("collect", collectible.type, entity.id, other.id);
+					}
+
+					// colliding from above, kill other entity
+					if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
+						//console.log("collide from above", entity.id, other.id);
+						otherHealth.value = 0;
+					}
+
+					// if it does damage, take the damage
+					const otherDamage = other.getComponent(Damage) as Damage;
+					if (!collider.active && health && !health.impactOnly && otherDamage) {
+						health.value -= otherDamage.value;
+						//console.log("take damage", entity.id, other.id);
+					}
+
+					// if you do damage, deal the damage
+					if (damage && otherHealth && !otherHealth.impactOnly) {
+						otherHealth.value -= damage.value;
+						//console.log("deal damage", entity.id, other.id);
+					}
 				}
 
 				// do collision physics
@@ -1389,7 +1409,7 @@ class AiSystem extends ECS.System {
 					direction.right = false;
 				}
 
-				const gun = entity.getComponent(Gun) as Gun;
+				const gun = entity.getComponent(RangeWeapon) as RangeWeapon;
 				const melee = entity.getComponent(Melee) as Melee;
 
 				const distance = target_dir.magnitude();
@@ -1433,7 +1453,7 @@ class AiSystem extends ECS.System {
 class HudSystem extends ECS.System {
 	coins: HTMLElement;
 	constructor() {
-		super([Inventory, Health], { updatesPerSecond: 2 });
+		super([Inventory, Health]);
 		this.coins = document.querySelector("#coins")!;
 	}
 
@@ -1607,7 +1627,7 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Direction())
 			.addComponent(new Dynamic())
 			.addComponent(new Player())
-			.addComponent(new Gun(50, 200, 500, 0))
+			.addComponent(new RangeWeapon(50, 200, 500, 0))
 			.addComponent(new Input())
 			.addComponent(new Melee(20, 50, 0))
 			.addComponent(new Inventory())
@@ -1682,7 +1702,7 @@ async function loadLevel(level: number) {
 					.addComponent(new Input())
 					.addComponent(new Gravity())
 					.addComponent(new Speed(50))
-					.addComponent(Math.random() > 0 ? new Gun(25, 100, 500, 500) : new Melee(16, 20, 1000))
+					.addComponent(Math.random() > 0.5 ? new RangeWeapon(25, 100, 500, 500) : new Melee(16, 25, 1000))
 					.addComponent(new Health())
 					.addComponent(new Collider(16, 6, 0, 6, 3, true))
 					.addComponent(new Velocity(0, 0))
@@ -1841,7 +1861,7 @@ document.addEventListener(
 );
 
 const fps = document.querySelector("#fps") as HTMLElement;
-fps.style.display = "none";
+//fps.style.display = "none";
 let tmp = 0;
 
 let currentState = "";
