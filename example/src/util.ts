@@ -6,6 +6,14 @@ export function randomFloat(min: number, max: number): number {
 	return Math.random() * (max - min) + min;
 }
 
+export function normalize(val: number, min: number, max: number) {
+	return (val - min) / (max - min);
+}
+
+function normalizeToRange(val: number, minVal: number, maxVal: number, newMin: number, newMax: number) {
+	return newMin + ((val - minVal) * (newMax - newMin)) / (maxVal - minVal);
+}
+
 export class Vector {
 	x: number;
 	y: number;

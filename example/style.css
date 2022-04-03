@@ -54,9 +54,6 @@ body {
 }
 
 .display {
-	/*
-				color: var(--secondary);
-        */
 	color: #6c6c6c;
 	position: absolute;
 	display: flex;
@@ -106,7 +103,7 @@ body {
 
 #fps {
 	left: 5%;
-	top: 30%;
+	top: 90%;
 }
 
 #right-control {

@@ -160,7 +160,7 @@
         "y": 0
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 6,
         "y": 12
     },
@@ -310,7 +310,7 @@
         "y": 11
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 14,
         "y": 10
     },
@@ -320,7 +320,7 @@
         "y": 9
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 14,
         "y": 4
     },
@@ -415,7 +415,7 @@
         "y": 0
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 19,
         "y": 7
     },
@@ -500,7 +500,7 @@
         "y": 4
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 21,
         "y": 3
     },
@@ -600,7 +600,7 @@
         "y": 7
     },
     {
-        "type": "enemy-1",
+        "type": "skeleton",
         "x": 28,
         "y": 6
     },

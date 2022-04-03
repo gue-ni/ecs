@@ -1,5 +1,6 @@
 import * as ECS from "../../lib";
-import { randomInteger, randomFloat, Vector } from "./util";
+import { randomInteger, randomFloat, Vector, normalize } from "./util";
+import SimplexNoise from "simplex-noise";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -12,6 +13,7 @@ let WINDOW_OFFSET_X = 0;
 let WINDOW_OFFSET_Y = 0;
 let WINDOW_CENTER_X = canvas.width / 2;
 
+const simplex = new SimplexNoise();
 
 const GRAVITY = 500;
 const DARKNESS = 0.92;
@@ -72,24 +74,22 @@ class ScreenShake {
 	SHAKE_OFFSET_Y = 0;
 	time: number = 0;
 
-	update(dt: number){
-		if ((this.time -= dt) > 0){
-			this.SHAKE_OFFSET_X = randomInteger(-3, 3)
-			this.SHAKE_OFFSET_Y = randomInteger(-3, 3)
+	update(dt: number) {
+		if ((this.time -= dt) > 0) {
+			this.SHAKE_OFFSET_X = randomInteger(-3, 3);
+			this.SHAKE_OFFSET_Y = randomInteger(-3, 3);
 		} else {
 			this.SHAKE_OFFSET_X = 0;
 			this.SHAKE_OFFSET_Y = 0;
 		}
-
 	}
 
 	shake() {
 		this.time = 0.2;
 	}
-
 }
 
-const screenShaker = new ScreenShake()
+const screenShaker = new ScreenShake();
 
 const CHARACTER_SPRITE = new Image();
 CHARACTER_SPRITE.src = "assets/sprites.png";
@@ -99,6 +99,12 @@ VILLAIN_SPRITE.src = "assets/bones.png";
 
 const SPIKES_SPRITE = new Image();
 SPIKES_SPRITE.src = "assets/spikes.png";
+
+const BAT_SPRITE = new Image();
+BAT_SPRITE.src = "assets/bat.png";
+
+const FIRE_SPRITE = new Image();
+FIRE_SPRITE.src = "assets/fire.png";
 
 const HEART_SPRITE = new Image();
 HEART_SPRITE.src = "assets/heart.png";
@@ -294,12 +300,16 @@ class Light extends ECS.Component {
 	width: number;
 	height: number;
 	yOffset: number;
-	constructor(image: HTMLImageElement, w: number, h: number, yOffset: number = 0) {
+	time: number = 0;
+	flickering: boolean;
+
+	constructor(image: HTMLImageElement, w: number, h: number, yOffset: number = 0, flickering: boolean = false) {
 		super();
 		this.image = image;
 		this.width = w;
 		this.height = h;
 		this.yOffset = yOffset;
+		this.flickering = flickering;
 	}
 }
 
@@ -458,8 +468,8 @@ class HealthSystem extends ECS.System {
 	healthDisplay: HTMLElement;
 	constructor() {
 		super([Health]);
-		this.healthDisplay = document.querySelector("#health");
-		this.healthDisplay.style.display = "flex";
+		//this.healthDisplay = document.querySelector("#health");
+		//this.healthDisplay.style.display = "flex";
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -469,9 +479,11 @@ class HealthSystem extends ECS.System {
 			health.invincibleForSeconds -= params.dt;
 		}
 
+		/*
 		if (entity.getComponent(Player)) {
 			this.healthDisplay.innerText = `Health: ${health.value}`;
 		}
+		*/
 
 		if (health.value <= 0) {
 			if (entity.getComponent(Player)) {
@@ -780,7 +792,7 @@ class MeleeSystem extends ECS.System {
 
 				sprite.setState(direction.right ? "melee-right" : "melee-left");
 
-				if (entity.getComponent(Player)) screenShaker.shake()
+				if (entity.getComponent(Player)) screenShaker.shake();
 
 				const aabb = new AABB(new Collider(melee.range, melee.range / 2, 0, melee.range / 2), position);
 				for (const collision of this.sph.collisions(entity, aabb)) {
@@ -964,6 +976,7 @@ class LightSystem extends ECS.System {
 		this.canvas.height = canvas.height;
 
 		this.beforeUpdate = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+			this.context.globalAlpha = 1.0;
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 			this.context.fillStyle = `rgba(0, 0, 0, ${DARKNESS})`;
 			this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -982,6 +995,14 @@ class LightSystem extends ECS.System {
 		const coords = entity.getComponent(Position) as Position;
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+
+		// TODO: better noise, not just random
+		const x = (light.time += params.dt);
+		const noise = normalize(simplex.noise2D(1, x * 4), -1, 1);
+
+		//console.log(noise.toFixed(2));
+
+		if (light.flickering) this.context.globalAlpha = noise;
 
 		this.context.globalCompositeOperation = "destination-out";
 		this.context.drawImage(
@@ -1287,21 +1308,22 @@ class CollisionSystem extends ECS.System {
 			for (const { entity: other, depth, collision } of this.sph.collisions(entity, aabb)) {
 				const otherCollider = other.getComponent(Collider) as Collider;
 
-				if (other.id == collider.ignore || otherCollider.ignore == entity.id) {
-					continue;
-				}
+				if (other.id == collider.ignore || otherCollider.ignore == entity.id) continue;
 
+				// core collision, ignore padding
 				if (collision) {
 					if (entity.getComponent(Player) && other.getComponent(Exit)) {
 						other.removeComponent(Exit);
 						CURRENT_LEVEL++;
 						game.setState("loading");
+						//continue;
 					}
 
 					// spike collision
 					if (health && !health.invincible && velocity && velocity.y > 0 && other.getComponent(Spikes)) {
 						health.value -= 50;
 						health.invincibleForSeconds = 0.25;
+						//continue;
 					}
 
 					if (
@@ -1310,6 +1332,7 @@ class CollisionSystem extends ECS.System {
 						(other.getComponent(Static) || other.getComponent(Dynamic))
 					) {
 						health.value = 0;
+						//continue;
 					}
 
 					// if its collectible, collect it
@@ -1327,6 +1350,8 @@ class CollisionSystem extends ECS.System {
 								inventory.add(collectible.type);
 						}
 
+						//continue;
+
 						//console.log("collect", collectible.type, entity.id, other.id);
 					}
 
@@ -1334,7 +1359,8 @@ class CollisionSystem extends ECS.System {
 					if (entity.getComponent(Player) && otherHealth && velocity && velocity.y > 200) {
 						//console.log("collide from above", entity.id, other.id);
 						otherHealth.value = 0;
-						screenShaker.shake()
+						screenShaker.shake();
+						//continue;
 					}
 
 					// if it does damage, take the damage
@@ -1394,6 +1420,7 @@ class CollisionSystem extends ECS.System {
 								position.y -= y + collider.padding;
 								velocity.y = Math.max(0, velocity.y);
 							} else {
+								velocity.y = Math.max(0, velocity.y);
 								collider.touching_top = true;
 							}
 						}
@@ -1476,13 +1503,21 @@ class AiSystem extends ECS.System {
 class HudSystem extends ECS.System {
 	coins: HTMLElement;
 	constructor() {
-		super([Inventory, Health]);
-		this.coins = document.querySelector("#coins")!;
+		super([Inventory, Health, Player]);
+		//this.coins = document.querySelector("#coins")!;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const inventory = entity.getComponent(Inventory) as Inventory;
-		this.coins.innerText = `Coins: ${inventory.inventory.get("coin") || 0}`;
+		const health = entity.getComponent(Health) as Health;
+		//this.coins.innerText = `Coins: ${inventory.inventory.get("coin") || 0}`;
+
+		let x = 10,
+			y = 10;
+		params.context.fillStyle = "#6c6c6c";
+		params.context.fillRect(x, y, 102, 5);
+		params.context.fillStyle = "#000";
+		params.context.fillRect(x + 1 + health.value, y + 1, 100 - health.value, 3);
 	}
 }
 
@@ -1705,7 +1740,7 @@ async function loadLevel(level: number) {
 				break;
 			}
 
-			case "enemy-1": {
+			case "skeleton": {
 				const entity = new ECS.Entity({ id: `Enemy-${i}` });
 				entity
 					.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
@@ -1719,6 +1754,7 @@ async function loadLevel(level: number) {
 							new SpriteState("melee-right", { frameY: 2, frames: 3, playOnce: true }),
 						])
 					)
+					//.addComponent(new Sprite(BAT_SPRITE, 20, 20, [new SpriteState("flying", {frameY: 0, frames: 4})]))
 					.addComponent(new Ai())
 					.addComponent(new Direction())
 					.addComponent(new Dynamic())
@@ -1752,13 +1788,79 @@ async function loadLevel(level: number) {
 				break;
 			}
 
+			case "bat": {
+				ecs.addEntity(
+					new ECS.Entity({ id: `Bat-${i}` })
+						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
+						.addComponent(
+							new Sprite(BAT_SPRITE, 20, 20, [new SpriteState("flying", { frameY: 0, frames: 4 })])
+						)
+						.addComponent(new Health(50))
+						.addComponent(new Collider(16, 6, 0, 6, 3, true))
+						.addComponent(
+							new ParticleEmitter({
+								particlePerSecond: 10,
+								minTTL: 0.4,
+								maxTTL: 0.6,
+								minSize: 1,
+								maxSize: 2,
+								maxCount: 10,
+								alpha: 1.0,
+								positionOffset: new Vector(0, -8),
+								gravity: -200,
+								speed: 0,
+								positionSpread: 5,
+								explosive: true,
+							})
+						)
+				);
+
+				break;
+			}
+
 			case "tile-1": {
-				const box = new ECS.Entity({ id: `Tile-${i}` })
-					.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
-					.addComponent(new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })]))
-					.addComponent(new Collider(16, 8, 0, 8, 0, false))
-					.addComponent(new Static());
-				ecs.addEntity(box);
+				ecs.addEntity(
+					new ECS.Entity({ id: `Tile-${i}` })
+						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
+						.addComponent(
+							new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })])
+						)
+						.addComponent(new Collider(16, 8, 0, 8, 0, false))
+						.addComponent(new Static())
+				);
+				break;
+			}
+
+			case "tile-2": {
+				ecs.addEntity(
+					new ECS.Entity({ id: `Tile-${i}` })
+						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
+						.addComponent(
+							new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 1 })])
+						)
+						.addComponent(new Collider(16, 8, 0, 8, 0, false))
+						.addComponent(new Health())
+						.addComponent(new Static())
+						.addComponent(
+							new ParticleEmitter({
+								particlePerSecond: 10,
+								minTTL: 0.1,
+								maxTTL: 0.3,
+								minSize: 1,
+								maxSize: 3,
+								maxCount: 10,
+								positionOffset: new Vector(0, -8),
+								gravity: GRAVITY,
+								speed: 30,
+								positionSpread: 5,
+								explosive: true,
+							})
+						)
+	
+
+
+				);
+
 				break;
 			}
 
@@ -1821,13 +1923,11 @@ async function loadLevel(level: number) {
 			}
 
 			case "light": {
-				let sprite = new Sprite(bulletSprite, 4, 4);
-				sprite.flushBottom = false;
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-						.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128))
-						.addComponent(sprite)
+						.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128, 0, true))
+						.addComponent(new Sprite(FIRE_SPRITE, 16, 16, [new SpriteState("burn", {frames: 4, frameY: 0})], false))
 				);
 				break;
 			}
@@ -1836,7 +1936,7 @@ async function loadLevel(level: number) {
 				let exit = new ECS.Entity({ id: "exit" })
 					.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y))
 					.addComponent(new Sprite(DOOR_SPRITE, 16, 16))
-					.addComponent(new Collider(16, 8, 0, 8))
+					.addComponent(new Collider(5, 2, 0, 2))
 					.addComponent(new Exit());
 
 				ecs.addEntity(exit);
@@ -1923,7 +2023,7 @@ function animate(now: number) {
 		context.closePath();
 		// update ecs
 
-		screenShaker.update(dt)
+		screenShaker.update(dt);
 		ecs.update({ dt, canvas, context, ecs });
 	}
 

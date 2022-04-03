@@ -23,31 +23,38 @@ def parse_level(level):
 
             y = HEIGHT - y - 1
 
+            coords = {"x": x, "y":  y}
+
             if (r == 0 and g == 255 and b == 0):  # green == tile
-                objects.append({"type": "tile-1", "x": x, "y":  y})
+                objects.append({"type": "tile-1", **coords})
 
             elif (r == 0 and g == 0 and b == 255):  # blue == coin
-                objects.append({"type": "coin", "x": x, "y": y})
+                objects.append({"type": "coin", **coords})
 
             elif (r == 255 and g == 0 and b == 0):  # red == light source
-                objects.append({"type": "light", "x": x, "y": y})
+                objects.append({"type": "light", **coords})
 
             elif (r == 255 and g == 255 and b == 0):  # red == light source
-                objects.append({"type": "enemy-1", "x": x, "y": y})
+                objects.append({"type": "skeleton", **coords})
 
-            elif (r == 255 and g == 0 and b == 255): # pink ==  extra health
-                objects.append({"type": "heart", "x": x, "y": y})
+            elif (r == 255 and g == 0 and b == 255):  # pink ==  extra health
+                objects.append({"type": "heart", **coords})
 
-            elif (r == 0 and g == 255 and b == 255): # turqoise == player spawn point
-                objects.append({"type": "player", "x": x, "y": y})
+            elif (r == 0 and g == 255 and b == 255):  # turqoise == player spawn point
+                objects.append({"type": "player", **coords})
 
-            elif (r == 0 and g == 0 and b == 0): # black ==  next level
-                objects.append({"type": "exit", "x": x, "y": y})
+            elif (r == 0 and g == 0 and b == 0):  # black ==  next level
+                objects.append({"type": "exit", **coords})
 
-            elif (r == 255 and g == 150 and b == 0): # black ==  next level
-                objects.append({"type": "spikes", "x": x, "y": y})
+            elif (r == 255 and g == 150 and b == 0):  # black ==  next level
+                objects.append({"type": "spikes", **coords})
 
+            elif (r == 0 and g == 150 and b == 255):  # == bat
+                objects.append({"type": "bat", **coords})
 
+            elif (r == 0 and g == 160 and b == 0):  # == bat
+                objects.append({"type": "tile-2", **coords})
+                print("tile-2")
 
     with open(f"assets/level-{level}.json", 'w') as f:
         dump = json.dumps(objects, indent=4)
