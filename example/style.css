@@ -79,7 +79,7 @@ body {
 
 #button-2 {
 	display: none;
-	left: 60%;
+	left: 65%;
 	top: 70%;
 	height: 25%;
 	width: 15%;
@@ -88,8 +88,6 @@ body {
 #hud {
 	display: none;
 }
-
-
 
 #health {
 	left: 5%;

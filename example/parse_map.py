@@ -54,7 +54,6 @@ def parse_level(level):
 
             elif (r == 0 and g == 160 and b == 0):  # == bat
                 objects.append({"type": "tile-2", **coords})
-                print("tile-2")
 
     with open(f"assets/level-{level}.json", 'w') as f:
         dump = json.dumps(objects, indent=4)

@@ -43,7 +43,7 @@ class DeathState extends ECS.HTMLElementState {
 		super.enter();
 		setTimeout(() => {
 			game.setState("play");
-		}, 2000);
+		}, 1000);
 	}
 
 	exit() {
@@ -266,12 +266,12 @@ class Position extends ECS.Component {
 
 interface SpriteParams {
 	frameX?: number;
-	frameY: number;
+	frameY?: number;
 	frames?: number;
 	playOnce?: boolean;
 }
 
-class SpriteState extends ECS.State {
+class AnimationState extends ECS.State {
 	frameX: number;
 	frameY: number;
 	frames: number;
@@ -280,7 +280,7 @@ class SpriteState extends ECS.State {
 	constructor(name: string, params: SpriteParams) {
 		super(name);
 		this.frameX = params.frameX || 0;
-		this.frameY = params.frameY;
+		this.frameY = params.frameY || 0;
 		this.frames = params.frames || 1;
 		this.playOnce = params.playOnce || false;
 	}
@@ -318,8 +318,8 @@ class Sprite extends ECS.Component {
 	width: number;
 	height: number;
 
-	states: Map<string, SpriteState>;
-	state: SpriteState;
+	states: Map<string, AnimationState>;
+	state: AnimationState;
 	time: number;
 	flushBottom: boolean;
 
@@ -327,7 +327,7 @@ class Sprite extends ECS.Component {
 		image: HTMLImageElement,
 		width: number,
 		height: number,
-		states: SpriteState[] = [],
+		states: AnimationState[] = [],
 		flushBottom: boolean = true
 	) {
 		super();
@@ -339,7 +339,7 @@ class Sprite extends ECS.Component {
 		this.states = new Map();
 
 		if (states.length == 0) {
-			this.state = new SpriteState("idle", { frameY: 0 });
+			this.state = new AnimationState("idle", { frameY: 0 });
 		} else {
 			this.state = states[0];
 			for (let s of states) {
@@ -348,7 +348,7 @@ class Sprite extends ECS.Component {
 		}
 	}
 
-	addState(state: SpriteState) {
+	addState(state: AnimationState) {
 		this.states.set(state.name, state);
 	}
 
@@ -561,7 +561,7 @@ class CameraSystem extends ECS.System {
 	}
 }
 
-class InputSystem extends ECS.System {
+class DesktopInputSystem extends ECS.System {
 	keys: any;
 	mouse: any;
 
@@ -787,10 +787,10 @@ class MeleeSystem extends ECS.System {
 		const health = entity.getComponent(Health) as Health;
 
 		if (input.is_key_pressed(MELEE_KEY, Math.max(melee.powerup, 333))) {
+			sprite.setState(direction.right ? "melee-right" : "melee-left");
+
 			setTimeout(() => {
 				if (health && health.value <= 0) return;
-
-				sprite.setState(direction.right ? "melee-right" : "melee-left");
 
 				if (entity.getComponent(Player)) screenShaker.shake();
 
@@ -996,13 +996,13 @@ class LightSystem extends ECS.System {
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
 
-		// TODO: better noise, not just random
-		const x = (light.time += params.dt);
-		const noise = normalize(simplex.noise2D(1, x * 4), -1, 1);
-
-		//console.log(noise.toFixed(2));
-
-		if (light.flickering) this.context.globalAlpha = noise;
+		/*
+		if (!light.flickering) {
+			const x = (light.time += params.dt);
+			const noise = normalize(simplex.noise2D(1, x * 4), -1, 1);
+			this.context.globalAlpha = noise;
+		}
+		*/
 
 		this.context.globalCompositeOperation = "destination-out";
 		this.context.drawImage(
@@ -1451,7 +1451,7 @@ class AiSystem extends ECS.System {
 				const target_pos = (detected_entity.getComponent(Position) as Position).vector;
 				const target_dir = target_pos.sub(position);
 
-				if (Math.abs(target_dir.y) > 16) continue;
+				if (Math.abs(target_dir.y) > 20) continue;
 
 				if (target_dir.x > 5) {
 					direction.right = true;
@@ -1656,7 +1656,7 @@ class ParticleSystem extends ECS.System {
 const sph = new SpatialHashGrid(64);
 
 const ecs = new ECS.ECS();
-ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new InputSystem());
+ecs.addSystem(ON_MOBILE ? new MobileInputSystem() : new DesktopInputSystem());
 ecs.addSystem(new CameraSystem());
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem(sph));
@@ -1690,7 +1690,7 @@ function spawnPlayer(x: number, y: number) {
 			.addComponent(new Melee(20, 50, 0))
 			.addComponent(new Inventory())
 			.addComponent(new Health(100))
-			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12))
+			.addComponent(new Light(BIG_LIGHT_SPRITE, 128, 128, 12, false))
 			.addComponent(new Position(TILE_SIZE * x, GROUND_LEVEL - TILE_SIZE * y))
 			.addComponent(new Collider(13, 2, 0, 2, 3, true))
 			.addComponent(new Detectable())
@@ -1710,14 +1710,14 @@ function spawnPlayer(x: number, y: number) {
 			)
 			.addComponent(
 				new Sprite(CHARACTER_SPRITE, 16, 16, [
-					new SpriteState("idle-right", { frameY: 0, frames: 1 }),
-					new SpriteState("idle-left", { frameY: 1, frames: 1 }),
-					new SpriteState("jump-right", { frameY: 2, frames: 1 }),
-					new SpriteState("jump-left", { frameY: 3, frames: 1 }),
-					new SpriteState("run-right", { frameY: 4, frames: 4 }),
-					new SpriteState("run-left", { frameY: 5, frames: 4 }),
-					new SpriteState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
-					new SpriteState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
+					new AnimationState("idle-right", { frameY: 0, frames: 1 }),
+					new AnimationState("idle-left", { frameY: 1, frames: 1 }),
+					new AnimationState("jump-right", { frameY: 2, frames: 1 }),
+					new AnimationState("jump-left", { frameY: 3, frames: 1 }),
+					new AnimationState("run-right", { frameY: 4, frames: 4 }),
+					new AnimationState("run-left", { frameY: 5, frames: 4 }),
+					new AnimationState("melee-right", { frameY: 6, frames: 3, playOnce: true }),
+					new AnimationState("melee-left", { frameY: 7, frames: 3, playOnce: true }),
 				])
 			)
 	);
@@ -1732,8 +1732,38 @@ async function loadLevel(level: number) {
 	let i = 0;
 	ecs.clearEntities();
 
+	const spark1 = {
+		particlePerSecond: 10,
+		minTTL: 0.4,
+		maxTTL: 0.6,
+		minSize: 1,
+		maxSize: 2,
+		maxCount: 10,
+		alpha: 1.0,
+		positionOffset: new Vector(0, -8),
+		gravity: -200,
+		speed: 0,
+		positionSpread: 5,
+		explosive: true,
+	};
+
+	const spark2 = {
+		particlePerSecond: 10,
+		minTTL: 0.4,
+		maxTTL: 0.6,
+		minSize: 1,
+		maxSize: 2,
+		maxCount: 5,
+		alpha: 1.0,
+		gravity: -200,
+		speed: 0,
+		positionSpread: 5,
+		explosive: true,
+	};
+
 	for (let { type, x, y } of level_data) {
 		i++;
+
 		switch (type) {
 			case "player": {
 				spawnPlayer(x, y);
@@ -1741,49 +1771,34 @@ async function loadLevel(level: number) {
 			}
 
 			case "skeleton": {
-				const entity = new ECS.Entity({ id: `Enemy-${i}` });
-				entity
-					.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
-					.addComponent(
-						new Sprite(VILLAIN_SPRITE, 16, 16, [
-							new SpriteState("idle-left", { frameY: 0, frames: 6 }),
-							new SpriteState("idle-right", { frameY: 1, frames: 6 }),
-							new SpriteState("run-left", { frameY: 0, frames: 6 }),
-							new SpriteState("run-right", { frameY: 1, frames: 6 }),
-							new SpriteState("melee-left", { frameY: 3, frames: 3, playOnce: true }),
-							new SpriteState("melee-right", { frameY: 2, frames: 3, playOnce: true }),
-						])
-					)
-					//.addComponent(new Sprite(BAT_SPRITE, 20, 20, [new SpriteState("flying", {frameY: 0, frames: 4})]))
-					.addComponent(new Ai())
-					.addComponent(new Direction())
-					.addComponent(new Dynamic())
-					.addComponent(new Input())
-					.addComponent(new Gravity())
-					.addComponent(new Speed(50))
-					.addComponent(Math.random() > 0.5 ? new RangeWeapon(25, 100, 500, 500) : new Melee(16, 25, 1000))
-					.addComponent(new Health())
-					.addComponent(new Collider(16, 6, 0, 6, 3, true))
-					.addComponent(new Velocity(0, 0))
-					.addComponent(new DetectionRadius(64))
-					.addComponent(
-						new ParticleEmitter({
-							particlePerSecond: 10,
-							minTTL: 0.4,
-							maxTTL: 0.6,
-							minSize: 1,
-							maxSize: 2,
-							maxCount: 10,
-							alpha: 1.0,
-							positionOffset: new Vector(0, -8),
-							gravity: -200,
-							speed: 0,
-							positionSpread: 5,
-							explosive: true,
-						})
-					);
-
-				ecs.addEntity(entity);
+				ecs.addEntity(
+					new ECS.Entity({ id: `Enemy-${i}` })
+						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
+						.addComponent(new Ai())
+						.addComponent(new Direction())
+						.addComponent(new Dynamic())
+						.addComponent(new Input())
+						.addComponent(new Gravity())
+						.addComponent(new Speed(50))
+						.addComponent(new Health())
+						.addComponent(new Collider(16, 6, 0, 6, 3, true))
+						.addComponent(new Velocity(0, 0))
+						.addComponent(new DetectionRadius(64))
+						.addComponent(new ParticleEmitter(spark1))
+						.addComponent(
+							Math.random() > 0.5 ? new RangeWeapon(25, 100, 500, 500) : new Melee(16, 25, 1000)
+						)
+						.addComponent(
+							new Sprite(VILLAIN_SPRITE, 16, 16, [
+								new AnimationState("idle-left", { frameY: 0, frames: 6 }),
+								new AnimationState("idle-right", { frameY: 1, frames: 6 }),
+								new AnimationState("run-left", { frameY: 0, frames: 6 }),
+								new AnimationState("run-right", { frameY: 1, frames: 6 }),
+								new AnimationState("melee-left", { frameY: 3, frames: 3, playOnce: true }),
+								new AnimationState("melee-right", { frameY: 2, frames: 3, playOnce: true }),
+							])
+						)
+				);
 
 				break;
 			}
@@ -1792,26 +1807,19 @@ async function loadLevel(level: number) {
 				ecs.addEntity(
 					new ECS.Entity({ id: `Bat-${i}` })
 						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
-						.addComponent(
-							new Sprite(BAT_SPRITE, 20, 20, [new SpriteState("flying", { frameY: 0, frames: 4 })])
-						)
 						.addComponent(new Health(50))
+						.addComponent(new Ai())
+						.addComponent(new Direction())
+						.addComponent(new Dynamic())
+						.addComponent(new Input())
+						.addComponent(new Melee(16, 25, 1000))
+						.addComponent(new Speed(50))
+						.addComponent(new Velocity(0, 0))
+						.addComponent(new DetectionRadius(64))
 						.addComponent(new Collider(16, 6, 0, 6, 3, true))
+						.addComponent(new ParticleEmitter(spark1))
 						.addComponent(
-							new ParticleEmitter({
-								particlePerSecond: 10,
-								minTTL: 0.4,
-								maxTTL: 0.6,
-								minSize: 1,
-								maxSize: 2,
-								maxCount: 10,
-								alpha: 1.0,
-								positionOffset: new Vector(0, -8),
-								gravity: -200,
-								speed: 0,
-								positionSpread: 5,
-								explosive: true,
-							})
+							new Sprite(BAT_SPRITE, 20, 20, [new AnimationState("flying", { frameY: 0, frames: 4 })])
 						)
 				);
 
@@ -1823,7 +1831,7 @@ async function loadLevel(level: number) {
 					new ECS.Entity({ id: `Tile-${i}` })
 						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
 						.addComponent(
-							new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 0 })])
+							new Sprite(TILE_SPRITE, 16, 16, [new AnimationState("tile", { frameY: 0, frameX: 0 })])
 						)
 						.addComponent(new Collider(16, 8, 0, 8, 0, false))
 						.addComponent(new Static())
@@ -1836,7 +1844,7 @@ async function loadLevel(level: number) {
 					new ECS.Entity({ id: `Tile-${i}` })
 						.addComponent(new Position(x * TILE_SIZE, GROUND_LEVEL - TILE_SIZE * y))
 						.addComponent(
-							new Sprite(TILE_SPRITE, 16, 16, [new SpriteState("tile", { frameY: 0, frameX: 1 })])
+							new Sprite(TILE_SPRITE, 16, 16, [new AnimationState("tile", { frameY: 0, frameX: 1 })])
 						)
 						.addComponent(new Collider(16, 8, 0, 8, 0, false))
 						.addComponent(new Health())
@@ -1856,9 +1864,6 @@ async function loadLevel(level: number) {
 								explosive: true,
 							})
 						)
-	
-
-
 				);
 
 				break;
@@ -1868,26 +1873,18 @@ async function loadLevel(level: number) {
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-						.addComponent(
-							new Sprite(HEART_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 5 })], false)
-						)
 						.addComponent(new Collectible("heart"))
 						.addComponent(new Health(1))
 						.addComponent(new Collider(3, 3, 3, 3))
+						.addComponent(new ParticleEmitter(spark2))
 						.addComponent(
-							new ParticleEmitter({
-								particlePerSecond: 10,
-								minTTL: 0.4,
-								maxTTL: 0.6,
-								minSize: 1,
-								maxSize: 2,
-								maxCount: 5,
-								alpha: 1.0,
-								gravity: -200,
-								speed: 0,
-								positionSpread: 5,
-								explosive: true,
-							})
+							new Sprite(
+								HEART_SPRITE,
+								16,
+								16,
+								[new AnimationState("idle", { frameY: 0, frames: 5 })],
+								false
+							)
 						)
 				);
 				break;
@@ -1897,27 +1894,19 @@ async function loadLevel(level: number) {
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-						.addComponent(
-							new Sprite(COIN_SPRITE, 16, 16, [new SpriteState("idle", { frameY: 0, frames: 6 })], false)
-						)
 						.addComponent(new Collectible("coin"))
 						.addComponent(new Health(1))
-						.addComponent(
-							new ParticleEmitter({
-								particlePerSecond: 10,
-								minTTL: 0.4,
-								maxTTL: 0.6,
-								minSize: 1,
-								maxSize: 2,
-								maxCount: 5,
-								alpha: 1.0,
-								gravity: -200,
-								speed: 0,
-								positionSpread: 5,
-								explosive: true,
-							})
-						)
+						.addComponent(new ParticleEmitter(spark2))
 						.addComponent(new Collider(3, 3, 3, 3))
+						.addComponent(
+							new Sprite(
+								COIN_SPRITE,
+								16,
+								16,
+								[new AnimationState("idle", { frameY: 0, frames: 6 })],
+								false
+							)
+						)
 				);
 				break;
 			}
@@ -1926,8 +1915,10 @@ async function loadLevel(level: number) {
 				ecs.addEntity(
 					new ECS.Entity()
 						.addComponent(new Position(16 * x, GROUND_LEVEL - 16 * y - 8))
-						.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128, 0, true))
-						.addComponent(new Sprite(FIRE_SPRITE, 16, 16, [new SpriteState("burn", {frames: 4, frameY: 0})], false))
+						.addComponent(new Light(BRIGHT_LIGHT_SPRITE, 128, 128, 0, false))
+						.addComponent(
+							new Sprite(FIRE_SPRITE, 16, 16, [new AnimationState("", { frames: 4, frameY: 0 })], false)
+						)
 				);
 				break;
 			}
@@ -1964,9 +1955,11 @@ document.addEventListener("click", () => {
 		case "title":
 			game.setState("play");
 			break;
+		/*
 		case "dead":
 			game.setState("play");
 			break;
+		*/
 	}
 });
 
@@ -2002,7 +1995,7 @@ function animate(now: number) {
 	}
 
 	if (currentState != game.current.name) {
-		console.log("Game State:", game.current.name);
+		//console.log("Game State:", game.current.name);
 		currentState = game.current.name;
 	}
 
@@ -2015,8 +2008,8 @@ function animate(now: number) {
 		// console.log("update");
 		// draw horizontal "ground" line
 		context.beginPath();
-		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
-		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y);
+		context.moveTo(0, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y + screenShaker.SHAKE_OFFSET_Y);
+		context.lineTo(canvas.width, GROUND_LEVEL + 0.5 + WINDOW_OFFSET_Y + screenShaker.SHAKE_OFFSET_Y);
 		context.strokeStyle = "#fff";
 		context.lineWidth = 1;
 		context.stroke();
