@@ -1988,6 +1988,7 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
+	dt = Math.min(dt, 1 / 30);
 
 	if ((tmp += dt) > 1) {
 		fps.innerText = `${(1 / dt).toFixed(2)} fps (${dt.toFixed(3)} dt)`;

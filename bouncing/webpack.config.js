@@ -2,7 +2,7 @@ const path = require("path");
 const CopyPlugin = require("copy-webpack-plugin");
 
 module.exports = {
-  entry: "./bouncing.ts",
+  entry: "./bouncing_balls.ts",
   module: {
     rules: [
       {
@@ -16,7 +16,7 @@ module.exports = {
     extensions: ['.ts', '.js'],
   },
   output: {
-    filename: "bouncing.js",
+    filename: "bouncing_balls.js",
     path: path.resolve(__dirname, "dist"),
   },
   plugins: [

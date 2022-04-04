@@ -1,6 +1,8 @@
 # lofi-ecs
 
-A minimal entity-component-system.
+A simple entity-component-system for HTML5 games.
+
+## Usage
 
 ```JavaScript
 import * as ECS from "lofi-ecs";
