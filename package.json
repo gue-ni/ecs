@@ -1,12 +1,12 @@
 {
   "name": "lofi-ecs",
-  "version": "1.3.9",
-  "description": "A minimal Entity-Component-System for HTML5 games",
+  "version": "2.0.0",
+  "description": "A minimal Entity-Component-System for browser games",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
-    "prepare": "tsc",
-    "build": "tsc"
+    "prepare": "tsc && rollup -c",
+    "build": "tsc && rollup -c"
   },
   "babel": {
     "presets": [
@@ -23,6 +23,9 @@
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.3",
     "babel-preset-es2015": "^6.24.1",
-    "typescript": "^4.3.5"
+    "typescript": "^4.3.5",
+    "rollup": "^2.52.7",
+    "rollup-plugin-dts": "^3.0.2",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }

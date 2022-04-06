@@ -5,6 +5,13 @@ A simple entity-component-system for HTML5 games.
 ## Usage
 
 ```JavaScript
+import * as ECS from "./ecs.min.js"
+```
+
+or
+
+
+```TypeScript
 import * as ECS from "lofi-ecs";
 
 class Velocity extends ECS.Component {

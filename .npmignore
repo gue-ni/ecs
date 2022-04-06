@@ -1,4 +1,6 @@
+.vscode/
 src/
+dist/
 example/
 bouncing/
 node_modules/
