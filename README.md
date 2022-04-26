@@ -1,6 +1,11 @@
 # lofi-ecs
 
-A simple entity-component-system for HTML5 games.
+A simple entity-component-system for HTML5 games. 
+
+## TODO
+
+*	improve design
+* add collision system
 
 ## Usage
 
