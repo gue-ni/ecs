@@ -1,7 +1,6 @@
 import { ECS, UpdateParams } from "./ecs";
 import { Entity } from "./entity";
 
-type Operator = "and" | "or";
 type entityCallback = (entities: Entity[], params?: UpdateParams) => Entity[];
 
 interface SystemParams {
