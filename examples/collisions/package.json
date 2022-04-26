@@ -1,8 +1,8 @@
 {
-  "name": "example2",
+  "name": "collisions-example",
   "version": "1.0.0",
   "description": "",
-  "main": "game.ts",
+  "main": "example.ts",
   "scripts": {
     "build": "webpack"
   },

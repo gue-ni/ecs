@@ -6,7 +6,8 @@
   "types": "./lib/index.d.ts",
   "scripts": {
     "prepare": "tsc && rollup -c",
-    "build": "tsc && rollup -c"
+    "build": "tsc && rollup -c",
+    "tsc": "tsc"
   },
   "babel": {
     "presets": [

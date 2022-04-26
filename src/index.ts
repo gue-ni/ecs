@@ -1,5 +1,6 @@
-export { ECS, UpdateParams } from "./ecs.js";
-export { System } from "./system.js";
-export { Entity } from "./entity.js";
-export { Component } from "./component.js";
+export { ECS, UpdateParams } from "./ecs";
+export { System } from "./system";
+export { Entity } from "./entity";
+export { Position, Velocity } from "./components/index";
+export { Component } from "./component";
 export { State, HTMLElementState, FiniteStateMachine } from "./fsm";

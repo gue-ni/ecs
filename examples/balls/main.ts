@@ -1,4 +1,4 @@
-import * as ECS from "../lib";
+import * as ECS from "../../lib";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -43,6 +43,14 @@ class Sprite extends ECS.Component {
 		this.image = image;
 		this.width = width;
 		this.height = height;
+	}
+}
+
+class Ball extends ECS.Component {
+	radius: number;
+	constructor(radius: number = 10){
+		super()
+		this.radius = radius;
 	}
 }
 
@@ -96,10 +104,27 @@ class SpriteSystem extends ECS.System {
 	}
 }
 
+class BallSystem extends ECS.System {
+	constructor() {
+		super([Position, Ball]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: any): void {
+		const ball = entity.getComponent(Ball) as Ball;
+		const coords = entity.getComponent(Position) as Position;
+
+		params.context.beginPath();
+		params.context.arc(coords.x, coords.y, ball.radius, 0, Math.PI * 2);
+		params.context.fillStyle = "white";
+		params.context.fill();
+		params.context.closePath();
+	}
+}
+
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new PhysicsSystem());
-ecs.addSystem(new SpriteSystem());
+ecs.addSystem(new BallSystem());
 
 for (let i = 0; i < 10; i++) {
 	const entity = new ECS.Entity();
@@ -107,7 +132,8 @@ for (let i = 0; i < 10; i++) {
 	entity.addComponent(
 		new Position(Math.floor(Math.random() * canvas.width), Math.floor(Math.random() * canvas.height))
 	);
-	entity.addComponent(new Sprite(SPRITE, 16, 16));
+	//entity.addComponent(new Sprite(SPRITE, 16, 16));
+	entity.addComponent(new Ball(Math.floor(randomFloat(10, 20))));
 	ecs.addEntity(entity);
 }
 
