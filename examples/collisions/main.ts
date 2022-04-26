@@ -22,18 +22,56 @@ class RectSprite extends ECS.Component {
 	}
 }
 
+class Position extends ECS.Component {
+	_x: number;
+	_y: number;
+
+	constructor(x: number, y: number) {
+		super();
+		this._x = x;
+		this._y = y;
+	}
+
+	get x() {
+		return Math.round(this._x);
+	}
+
+	get y() {
+		return Math.round(this._y);
+	}
+
+	set x(v) {
+		this._x = v;
+	}
+
+	set y(v) {
+		this._y = v;
+	}
+}
+
+class Velocity extends ECS.Component {
+	x: number;
+	y: number;
+
+	constructor(x: number, y: number) {
+		super();
+		this.x = x;
+		this.y = y;
+	}
+}
+
 /**
  * Systems
  */
 
 class RectSystem extends ECS.System {
 	constructor() {
-		super([RectSprite, ECS.Position]);
+		super([RectSprite, Position]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const rect = entity.getComponent(RectSprite) as RectSprite;
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const position = entity.getComponent(Position) as Position;
 		params.context.fillStyle = rect.color;
 		params.context.fillRect(position.x, position.y, rect.w, rect.h);
 	}
@@ -41,12 +79,12 @@ class RectSystem extends ECS.System {
 
 class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([ECS.Position, ECS.Velocity]); // necessary Components
+		super([Position, Velocity]); // necessary Components
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const position = entity.getComponent(Position) as Position;
+		const velocity = entity.getComponent(Velocity) as Velocity;
 		
 		//const rect = entity.getComponent(RectSprite) as RectSprite;
 		//console.log("velocity", velocity.name, "position", position.name, "rect", rect.name);
@@ -73,14 +111,16 @@ class PhysicsSystem extends ECS.System {
  * Setup
  */
 
+const randomFloat = (min: number, max: number): number => Math.random() * (max - min) + min;
+
 const ecs = new ECS.ECS();
 
 ecs.addSystem(new RectSystem());
 ecs.addSystem(new PhysicsSystem());
 
-for (let i = 0; i < 1; i++) {
-	let v = new ECS.Velocity(Math.random() * 200 - 100, 0);
-	let p = new ECS.Position(Math.floor(Math.random() * canvas.width), Math.floor(Math.random() * canvas.height));
+for (let i = 0; i < 10; i++) {
+	let v = new Velocity(randomFloat(-200, 200), 0);
+	let p = new Position(randomFloat(0, canvas.width), randomFloat(0, canvas.height * .8));
 	let r = new RectSprite(10, 10);
 
 	console.log("vel", v.name, "pos", p.name, "rect", r.name)
