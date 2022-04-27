@@ -1,7 +1,7 @@
 import { Entity } from "./entity";
 
 abstract class Component {
-	entity: Entity | undefined;
+		entity: Entity | undefined;
 
 	get name(): string {
 		// https://www.beyondjava.net/constructor-name

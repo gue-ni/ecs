@@ -14,10 +14,10 @@ class Entity {
 	components: Map<string, Component>;
 
 	constructor(params?: EntityParams) {
-		params = params || {}
+		params = params || {};
 		this.active = true;
 		this.components = new Map<string, Component>();
-		this.id = params.id || ((+new Date()).toString(16) + _entities++);
+		this.id = params.id || (+new Date()).toString(16) + _entities++;
 		this.ttl = params.ttl;
 	}
 

@@ -1,9 +1,11 @@
-import * as ECS from "../../lib";
+import * as ECS from "../../../lib";
+import { Input, InputSystem } from "./input";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 500;
+const dummyhashgrid: ECS.Entity[] = [];
 
 /**
  * Components
@@ -60,6 +62,8 @@ class Velocity extends ECS.Component {
 	}
 }
 
+class Collider extends ECS.Component {}
+
 /**
  * Systems
  */
@@ -85,7 +89,7 @@ class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
-		
+
 		//const rect = entity.getComponent(RectSprite) as RectSprite;
 		//console.log("velocity", velocity.name, "position", position.name, "rect", rect.name);
 
@@ -107,6 +111,50 @@ class PhysicsSystem extends ECS.System {
 	}
 }
 
+class CollisionSystem extends ECS.System {
+	constructor() {
+		super([Collider, Position, RectSprite, Input]);
+	}
+
+	beforeAll(entities: ECS.Entity[], params: ECS.UpdateParams): void {
+		for (let entity of entities) {
+			const sprite = entity.getComponent(RectSprite) as RectSprite;
+			sprite.color = "green";
+		}
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(Position) as Position;
+		const sprite = entity.getComponent(RectSprite) as RectSprite;
+		const input = entity.getComponent(Input) as Input;
+
+		const rect = new ECS.Rectangle(new ECS.Vector(position.x, position.y), new ECS.Vector(sprite.w, sprite.h));
+
+		for (let target of dummyhashgrid) {
+			if (target.id == entity.id) continue;
+			const target_pos = target.getComponent(Position) as Position;
+			const target_rect = new ECS.Rectangle(new ECS.Vector(target_pos.x, target_pos.y), new ECS.Vector(30, 30));
+
+			if (ECS.RectVsRect(rect, target_rect)) {
+				sprite.color = "red";
+			}
+		}
+
+		let origin = new ECS.Vector(0,0)
+		let target = new ECS.Vector(input.mouseX, input.mouseY)
+
+		let intersect = ECS.RayVsRect(origin, target, rect);
+		if (intersect.collision) {
+			sprite.color = "red";
+		}
+
+		params.context.beginPath();
+		params.context.moveTo(origin.x, origin.y);
+		params.context.lineTo(target.x, target.y);
+		params.context.stroke();
+	}
+}
+
 /**
  * Setup
  */
@@ -117,16 +165,33 @@ const ecs = new ECS.ECS();
 
 ecs.addSystem(new RectSystem());
 ecs.addSystem(new PhysicsSystem());
+ecs.addSystem(new CollisionSystem());
+ecs.addSystem(new InputSystem(canvas));
 
-for (let i = 0; i < 10; i++) {
+/*
+for (let i = 0; i < 5; i++) {
 	let v = new Velocity(randomFloat(-200, 200), 0);
-	let p = new Position(randomFloat(0, canvas.width), randomFloat(0, canvas.height * .8));
-	let r = new RectSprite(10, 10);
+	let p = new Position(randomFloat(0, canvas.width), randomFloat(0, canvas.height * 0.8));
+	let r = new RectSprite(30, 30, "green");
+	let c = new Collider();
 
-	console.log("vel", v.name, "pos", p.name, "rect", r.name)
+	//console.log("vel", v.name, "pos", p.name, "rect", r.name)
 
-	const entity = new ECS.Entity().addComponent(v).addComponent(p).addComponent(r);
+	const entity = new ECS.Entity().addComponent(v).addComponent(p).addComponent(r).addComponent(c);
+	dummyhashgrid.push(entity);
 
+
+	ecs.addEntity(entity);
+}
+*/
+
+{
+	const entity = new ECS.Entity();
+	entity.addComponent(new Position(canvas.width / 2, canvas.height / 2));
+	entity.addComponent(new RectSprite(50, 50, "green"));
+	entity.addComponent(new Collider());
+	entity.addComponent(new Input());
+	dummyhashgrid.push(entity);
 	ecs.addEntity(entity);
 }
 
@@ -142,7 +207,7 @@ function animate(now: number) {
 	if (dt > 1 / 30) dt = 1 / 30;
 
 	context.clearRect(0, 0, canvas.width, canvas.height);
-	context.fillStyle = "#000";
+	context.fillStyle = "grey";
 	context.fillRect(0, 0, canvas.width, canvas.height);
 
 	ecs.update({ dt, canvas, context });

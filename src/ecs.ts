@@ -81,7 +81,7 @@ class ECS {
 				if (entity.ttl <= 0) this.removeEntity(entity);
 			}
 		}
-
+		
 		for (const system of this.systems) {
 			let entities = this.entities.filter((entity) => this._matching(entity, system));
 			system.updateSystem(entities, params);
