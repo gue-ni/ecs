@@ -194,7 +194,7 @@ class CollisionSystem extends ECS.System {
 			*/
 		}
 
-		// line collision
+		// line collision, just testing
 
 		const origin = new ECS.Vector(input.lastX, input.lastY);
 		const target = new ECS.Vector(input.mouseX, input.mouseY);
@@ -204,22 +204,24 @@ class CollisionSystem extends ECS.System {
 		params.context.lineTo(target.x, target.y);
 		params.context.stroke();
 
-		let { collision, contact_normal, contact_point, time } = ECS.RayVsRect(origin, target, rect);
+		let { collision, time} = ECS.RayVsRect(origin, target, rect);
 		if (collision && time <= 1) {
 			sprite.color = "yellow";
 
+			/*
 			params.context.fillStyle = "blue";
 			params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
+			*/
 
+			/*
 			contact_normal.scalarMult(10);
 			let p = contact_point.plus(contact_normal);
-
 			params.context.beginPath();
 			params.context.moveTo(contact_point.x, contact_point.y);
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
+			*/
 		}
-
 	}
 }
 
@@ -285,9 +287,8 @@ function animate(now: number) {
 		context.fillRect(0, 0, canvas.width, canvas.height);
 
 		ecs.update({ dt, canvas, context });
-
 	}
-	
+
 	requestAnimationFrame(animate);
 }
 

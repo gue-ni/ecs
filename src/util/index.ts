@@ -108,6 +108,25 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	return { collision: true, contact_point, contact_normal, time: t_hit_near };
 }
 
+function RayVsRect2(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
+	let tMin = new Vector();
+	let tMax = new Vector();
+
+	tMin.x = (target.pos.x - ray_origin.x) / ray_dir.x;
+	tMin.y = (target.pos.y - ray_origin.y) / ray_dir.y;
+
+	tMax.x = (target.pos.x + target.size.x - ray_origin.x) / ray_dir.x;
+	tMax.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
+
+	let t1 = Vector.min(tMin, tMax);
+	let t2 = Vector.max(tMin, tMax);
+
+	let tNear = Math.max(t1.x, t1.y);
+	let tFar = Math.min(t2.x, t2.y);
+
+	return { collision: tNear > tFar, time: tNear };
+}
+
 function DynamicRectVsRect(input: AABB, target: AABB, dt: number): boolean {
 	if (input.vel.x === 0 && input.vel.y === 0) return false;
 
@@ -141,4 +160,4 @@ class AABB {
 	}
 }
 
-export { Vector, AABB , PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };
+export { Vector, AABB, PointVsRect, RectVsRect, RayVsRect, RayVsRect2, DynamicRectVsRect };

@@ -10,6 +10,14 @@ export default class Vector {
 		this.y = y;
 	}
 
+	static min(v1: Vector, v2: Vector){
+		return new Vector(Math.min(v1.x, v2.x), Math.min(v1.y, v2.y))
+	}
+
+	static max(v1: Vector, v2: Vector){
+		return new Vector(Math.max(v1.x, v2.x), Math.max(v1.y, v2.y))
+	}
+
 	set(x: number, y: number){
 		this.x = x;
 		this.y = y;
