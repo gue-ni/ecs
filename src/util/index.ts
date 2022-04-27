@@ -33,11 +33,14 @@ function RectVsRect(r1: Rectangle, r2: Rectangle): boolean {
 	);
 }
 
-function RayVsRect(
-	ray_origin: Vector,
-	ray_dir: Vector,
-	target: Rectangle
-): { contact_point?: Vector; t_hit?: number; contact_normal?: Vector; collision: boolean } {
+interface CollisionEvent {
+	collision: boolean;
+	contact_point?: Vector;
+	contact_normal?: Vector;
+	time?: number;
+}
+
+function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: Rectangle): CollisionEvent {
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
 	t_near.y = (target.pos.y - ray_origin.y) / ray_dir.y;
@@ -65,13 +68,44 @@ function RayVsRect(
 
 	if (t_hit_far < 0) return { collision: false };
 
-	return { collision: true };
+	const contact_point = new Vector();
+	contact_point.x = ray_origin.x + t_hit_near * ray_dir.x;
+	contact_point.y = ray_origin.y + t_hit_near * ray_dir.y;
+
+	const contact_normal = new Vector();
+
+	if (t_near.x > t_near.y) {
+		if (ray_dir.x < 0) {
+			contact_normal.set(1, 0);
+		} else {
+			contact_normal.set(-1, 0);
+		}
+	} else if (t_near.x < t_near.y) {
+		if (ray_dir.y < 0) {
+			contact_normal.set(0, 1);
+		} else {
+			contact_normal.set(0, -1);
+		}
+	}
+
+	return { collision: true, contact_point, contact_normal, time: t_hit_near };
+}
+
+function DynamicRectVsRect(input: Rectangle, target: Rectangle): CollisionEvent {
+	let expanded_target = new Rectangle(
+		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
+		target.size.plus(input.size)
+	);
+
+	//if (RayVsRect(input.pos.))
+
+	return { collision: false };
 }
 
 class Rectangle {
 	pos: Vector;
 	size: Vector;
-	constructor(pos: Vector, size: Vector) {
+	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
 		this.pos = pos;
 		this.size = size;
 	}

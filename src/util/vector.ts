@@ -10,6 +10,11 @@ export default class Vector {
 		this.y = y;
 	}
 
+	set(x: number, y: number){
+		this.x = x;
+		this.y = y;
+	}
+
 	scalarMult(scalar: number): Vector {
 		this.x *= scalar;
 		this.y *= scalar;

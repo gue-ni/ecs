@@ -140,12 +140,27 @@ class CollisionSystem extends ECS.System {
 			}
 		}
 
-		let origin = new ECS.Vector(0,0)
-		let target = new ECS.Vector(input.mouseX, input.mouseY)
+		const origin = new ECS.Vector(0, 0);
+		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
-		let intersect = ECS.RayVsRect(origin, target, rect);
-		if (intersect.collision) {
+		let { collision, contact_normal, contact_point, time } = ECS.RayVsRect(origin, target, rect);
+		if (collision && time <= 1) {
 			sprite.color = "red";
+
+			params.context.fillStyle = "blue";
+			params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
+
+			console.log(contact_normal.x, contact_normal.y)
+
+			contact_normal.scalarMult(10)
+			let p = contact_point.plus(contact_normal)
+
+			params.context.beginPath();
+			params.context.moveTo(contact_point.x, contact_point.y);
+			params.context.lineTo(p.x, p.y)
+			params.context.stroke()
+
+			//console.log({ contact_normal, contact_point });
 		}
 
 		params.context.beginPath();
