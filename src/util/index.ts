@@ -20,11 +20,11 @@ function normalizeToRange(val: number, minVal: number, maxVal: number, newMin: n
  * Collisions
  */
 
-function PointVsRect(p: Vector, r: Rectangle): boolean {
+function PointVsRect(p: Vector, r: AABB): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
 }
 
-function RectVsRect(r1: Rectangle, r2: Rectangle): boolean {
+function RectVsRect(r1: AABB, r2: AABB): boolean {
 	return (
 		r1.pos.x < r2.pos.x + r2.size.x &&
 		r1.pos.x + r1.size.x > r2.pos.x &&
@@ -40,7 +40,10 @@ interface CollisionEvent {
 	time?: number;
 }
 
-function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: Rectangle): CollisionEvent {
+// TODO fix this function
+// beware of divide by zero in javascript vs c++
+
+function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
 	t_near.y = (target.pos.y - ray_origin.y) / ray_dir.y;
@@ -49,24 +52,37 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: Rectangle): Coll
 	t_far.x = (target.pos.x + target.size.x - ray_origin.x) / ray_dir.x;
 	t_far.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
 
+	//if (!isFinite(t_far.x) || !isFinite(t_far.y)) return { collision: false };
+	//if (!isFinite(t_near.x) || !isFinite(t_near.y)) return { collision: false };
+
 	if (t_near.x > t_far.x) {
-		let tmp = t_near.x;
+		const tmp = t_near.x;
 		t_near.x = t_far.x;
 		t_far.x = tmp;
 	}
 
 	if (t_near.y > t_far.y) {
-		let tmp = t_near.y;
+		const tmp = t_near.y;
 		t_near.y = t_far.y;
 		t_far.y = tmp;
 	}
 
-	if (t_near.x > t_far.y || t_near.y > t_far.x) return { collision: false };
+	console.log("t_near", t_near.x.toFixed(1), t_near.y.toFixed(1), "t_far", t_far.x.toFixed(1), t_far.y.toFixed(1));
 
-	let t_hit_near = Math.max(t_near.x, t_near.y);
-	let t_hit_far = Math.min(t_far.x, t_far.y);
+	if (t_near.x > t_far.y || t_near.y > t_far.x) {
+		console.log("case 1");
+		return { collision: false };
+	}
 
-	if (t_hit_far < 0) return { collision: false };
+	// first contact
+	const t_hit_near = Math.max(t_near.x, t_near.y);
+
+	const t_hit_far = Math.min(t_far.x, t_far.y);
+
+	if (t_hit_far < 0) {
+		console.log("case 2");
+		return { collision: false };
+	}
 
 	const contact_point = new Vector();
 	contact_point.x = ray_origin.x + t_hit_near * ray_dir.x;
@@ -88,27 +104,41 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: Rectangle): Coll
 		}
 	}
 
+	console.log("case 3");
 	return { collision: true, contact_point, contact_normal, time: t_hit_near };
 }
 
-function DynamicRectVsRect(input: Rectangle, target: Rectangle): CollisionEvent {
-	let expanded_target = new Rectangle(
+function DynamicRectVsRect(input: AABB, target: AABB, dt: number): boolean {
+	if (input.vel.x === 0 && input.vel.y === 0) return false;
+
+	const expanded_target = new AABB(
 		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
-		target.size.plus(input.size)
+		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
 
-	//if (RayVsRect(input.pos.))
+	// center of input rectangle
+	const origin = new Vector(input.pos.x + input.size.x / 2, input.pos.y + input.size.y / 2);
 
-	return { collision: false };
+	const velocity = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
+
+	const { collision, time } = RayVsRect(origin, velocity, expanded_target);
+	if (collision && time) {
+		return 0 <= time && time <= 1;
+	}
+
+	return false;
 }
 
-class Rectangle {
+class AABB {
 	pos: Vector;
 	size: Vector;
-	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
+	vel: Vector;
+
+	constructor(pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector()) {
 		this.pos = pos;
 		this.size = size;
+		this.vel = vel;
 	}
 }
 
-export { Vector, Rectangle, PointVsRect, RectVsRect, RayVsRect };
+export { Vector, AABB , PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };

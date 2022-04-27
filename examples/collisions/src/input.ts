@@ -9,6 +9,9 @@ export class Input extends ECS.Component {
 	mouse: any;
 	mouse_last_pressed: any;
 
+	lastX: number;
+	lastY: number;
+
 	mouseY: number;
 	mouseX: number;
 
@@ -45,12 +48,24 @@ export class Input extends ECS.Component {
 	}
 }
 
+function toScreenCoord(x: number, y: number, canvas: HTMLCanvasElement) {
+	const rect = canvas.getBoundingClientRect();
+	const scaleX = canvas.width / rect.width;
+	const scaleY = canvas.height / rect.height;
+	let xs = Math.round((x - rect.left) * scaleX);
+	let ys = Math.round((y - rect.top) * scaleY);
+	return [xs, ys];
+}
+
 export class InputSystem extends ECS.System {
 	keys: any;
 	mouse: any;
 
-	mouseX: number;
-	mouseY: number;
+	lastX: number = 0;
+	lastY: number = 0;
+
+	mouseX: number = 0;
+	mouseY: number = 0;
 
 	constructor(canvas: HTMLCanvasElement) {
 		super([Input]);
@@ -67,6 +82,12 @@ export class InputSystem extends ECS.System {
 		});
 
 		canvas.addEventListener("mousedown", (e) => {
+			const rect = canvas.getBoundingClientRect();
+			const scaleX = canvas.width / rect.width;
+			const scaleY = canvas.height / rect.height;
+			this.lastX = Math.round((e.clientX - rect.left) * scaleX);
+			this.lastY = Math.round((e.clientY - rect.top) * scaleY);
+
 			if (e.button == 0) {
 				this.mouse["left"] = true;
 			} else if (e.button == 2) {
@@ -101,5 +122,8 @@ export class InputSystem extends ECS.System {
 
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
+
+		input.lastX = this.lastX;
+		input.lastY = this.lastY;
 	}
 }
