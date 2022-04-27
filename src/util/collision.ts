@@ -17,13 +17,13 @@ interface CollisionEvent {
 	collision: boolean;
 	contact_point?: Vector;
 	contact_normal?: Vector;
+	exit_point?: Vector;
 	time?: number;
 }
 
-// TODO fix this function
-// beware of divide by zero in javascript vs c++
+function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): CollisionEvent {
+	const ray_dir = ray_target.minus(ray_origin);
 
-function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
 	t_near.y = (target.pos.y - ray_origin.y) / ray_dir.y;
@@ -47,26 +47,25 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 		t_far.y = tmp;
 	}
 
-	console.log("t_near", t_near.x.toFixed(1), t_near.y.toFixed(1), "t_far", t_far.x.toFixed(1), t_far.y.toFixed(1));
-
 	if (t_near.x > t_far.y || t_near.y > t_far.x) {
-		console.log("case 1");
 		return { collision: false };
 	}
 
-	// first contact
 	const t_hit_near = Math.max(t_near.x, t_near.y);
 
 	const t_hit_far = Math.min(t_far.x, t_far.y);
 
 	if (t_hit_far < 0) {
-		console.log("case 2");
 		return { collision: false };
 	}
 
 	const contact_point = new Vector();
 	contact_point.x = ray_origin.x + t_hit_near * ray_dir.x;
 	contact_point.y = ray_origin.y + t_hit_near * ray_dir.y;
+
+	const exit_point = new Vector();
+	exit_point.x = ray_origin.x + t_hit_far * ray_dir.x;
+	exit_point.y = ray_origin.y + t_hit_far * ray_dir.y;
 
 	const contact_normal = new Vector();
 
@@ -84,29 +83,26 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 		}
 	}
 
-	console.log("case 3");
-	return { collision: true, contact_point, contact_normal, time: t_hit_near };
+	return { collision: true, contact_point, contact_normal, time: t_hit_near, exit_point };
 }
 
-function DynamicRectVsRect(input: AABB, target: AABB, dt: number): boolean {
-	if (input.vel.x === 0 && input.vel.y === 0) return false;
+function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEvent {
+	if (input.vel.x === 0 && input.vel.y === 0) return {collision: false};
 
 	const expanded_target = new AABB(
 		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
 		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
 
-	// center of input rectangle
 	const origin = new Vector(input.pos.x + input.size.x / 2, input.pos.y + input.size.y / 2);
-
 	const velocity = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
 
-	const { collision, time } = RayVsRect(origin, velocity, expanded_target);
-	if (collision && time) {
-		return 0 <= time && time <= 1;
+	const event = RayVsRect(origin, velocity, expanded_target);
+	if (event.collision && event.time && event.time <= 1) {
+		return event 
 	}
 
-	return false;
+	return {collision: false};
 }
 
 class AABB {

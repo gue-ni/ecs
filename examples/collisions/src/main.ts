@@ -133,7 +133,6 @@ class CollisionSystem extends ECS.System {
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const sprite = entity.getComponent(Sprite) as Sprite;
-
 		const input = entity.getComponent(Input) as Input;
 
 		const rect = new ECS.AABB(
@@ -155,61 +154,34 @@ class CollisionSystem extends ECS.System {
 				target_vel ? new ECS.Vector(target_vel.x, target_vel.y) : new ECS.Vector()
 			);
 
-			let collision = false;
-
-			/*
 			if (velocity) {
-				//collision = ECS.DynamicRectVsRect(rect, target_rect, dt);
-
-				let ray_origin = new ECS.Vector(rect.pos.x + rect.size.x / 2, rect.pos.y + rect.size.y / 2);
-				let ray_target = new ECS.Vector(ray_origin.x + rect.vel.x * dt, ray_origin.y + rect.vel.y * dt);
-				let ray_direction = new ECS.Vector(ray_origin.x + rect.vel.x, ray_origin.y + rect.vel.y);
-
-				// velocity vector line
-				params.context.beginPath();
-				params.context.moveTo(ray_origin.x, ray_origin.y);
-				params.context.lineTo(ray_direction.x, ray_direction.y);
-				params.context.stroke();
-
-				let { collision, contact_normal, contact_point, time } = ECS.RayVsRect(ray_origin, ray_target, target_rect);
-				if (collision && time && 0 <= time && time <= 1) {
-					sprite.color = "red";
-
-					params.context.fillStyle = "blue";
-					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
-
-					contact_normal.scalarMult(10);
-					let p = contact_point.plus(contact_normal);
-
-					params.context.beginPath();
-					params.context.moveTo(contact_point.x, contact_point.y);
-					params.context.lineTo(p.x, p.y);
-					params.context.stroke();
-				}
-
+				let { collision } = ECS.DynamicRectVsRect(rect, target_rect, dt);
+				if (collision) sprite.color = "red";
 			} else {
-				collision = ECS.RectVsRect(rect, target_rect);
+				let collision = ECS.RectVsRect(rect, target_rect);
 				if (collision) sprite.color = "red";
 			}
-			*/
 		}
 
 		// line collision, just testing
-
+		/*
 		const origin = new ECS.Vector(input.lastX, input.lastY);
-		const target = new ECS.Vector(input.mouseX, input.mouseY);
+		const target = new ECS.Vector(input.mouseX , input.mouseY);
 
 		params.context.beginPath();
 		params.context.moveTo(origin.x, origin.y);
 		params.context.lineTo(target.x, target.y);
 		params.context.stroke();
 
-		let { collision, contact_normal, contact_point, time } = ECS.RayVsRect(origin, target, rect);
+		let { collision, contact_normal, exit_point, contact_point, time } = ECS.RayVsRect(origin, target, rect);
 		if (collision && time <= 1) {
 			sprite.color = "yellow";
 
 			params.context.fillStyle = "blue";
 			params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
+
+			params.context.fillStyle = "purple";
+			params.context.fillRect(exit_point.x - 2, exit_point.y - 2, 4, 4);
 
 			contact_normal.scalarMult(10);
 			let p = contact_point.plus(contact_normal);
@@ -218,6 +190,7 @@ class CollisionSystem extends ECS.System {
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
 		}
+		*/
 	}
 }
 
@@ -243,12 +216,15 @@ ecs.addSystem(new CollisionSystem());
 }
 */
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 5; i++) {
 	const entity = new ECS.Entity();
-	let v = new ECS.Vector().random().normalize().scalarMult(100);
+	let v = new ECS.Vector().random().normalize().scalarMult(50);
 	entity.addComponent(new Velocity(v.x, v.y));
-	entity.addComponent(new Position(ECS.randomFloat(0, canvas.width), ECS.randomFloat(0, canvas.height * 0.3)));
-	entity.addComponent(new Sprite(20, 20, "green"));
+	let w = 20;
+
+	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width), ECS.randomInteger(0, canvas.height)));
+
+	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());
 	entity.addComponent(new Input());
 	dummyhashgrid.push(entity);
