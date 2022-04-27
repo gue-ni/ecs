@@ -1,7 +1,7 @@
 /**
  * 
  */
-export default class Vector {
+class Vector {
 	x: number;
 	y: number;
 
@@ -79,3 +79,5 @@ export default class Vector {
 	}
 }
 
+
+export {Vector}
