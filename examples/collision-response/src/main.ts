@@ -5,7 +5,7 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const SPEED = 70;
+const SPEED = 50;
 let colliders: Map<string, ECS.AABB> = new Map();
 const quadtree = new ECS.QuadTree(
 	0,
@@ -98,24 +98,16 @@ class PhysicsSystem extends ECS.System {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
-		//const rect = entity.getComponent(RectSprite) as RectSprite;
-		//console.log("velocity", velocity.name, "position", position.name, "rect", rect.name);
-
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
 
-		/*
-		if (position.y < params.canvas.height) {
-			velocity.y += params.dt * GRAVITY;
-		}
-		*/
-
 		if (position.y <= 0 || position.y >= params.canvas.height - sprite.h) {
-			//position.y = params.canvas.height;
+			position.y = ECS.clamp(position.y, 0, params.canvas.height - sprite.h);
 			velocity.y = -velocity.y;
 		}
 
 		if (position.x <= 0 || position.x >= params.canvas.width - sprite.w) {
+			position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
 			velocity.x = -velocity.x;
 		}
 	}
@@ -147,8 +139,7 @@ class CollisionSystem extends ECS.System {
 
 			sprite.color = "green";
 		}
-
-		quadtree.debug_draw(params.context);
+		quadtree.debug_draw(params.context, "black");
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -159,19 +150,19 @@ class CollisionSystem extends ECS.System {
 
 		const rect = colliders.get(entity.id);
 		let possible = quadtree.retrieve(rect);
+		//console.log(possible.length)
 
-		// narrow phase testing
 		for (let target_rect of possible) {
-			if (target_rect == rect) continue;
+			//for (let [_,target_rect] of colliders) {
+
+			if (target_rect.id == rect.id) continue;
 
 			if (velocity) {
-				let { collision, contact_normal, exit_point, contact_point, time } = ECS.DynamicRectVsRect(
-					rect,
-					target_rect,
-					dt
-				);
+				let { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(rect, target_rect, dt);
 				if (collision) {
 					//time = ECS.clamp(time, 0, 1)
+
+					//console.log({time})
 
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
@@ -200,20 +191,19 @@ class CollisionSystem extends ECS.System {
 
 		// line collision, just testing
 
-		/*
 		const origin = new ECS.Vector(input.lastX, input.lastY);
 		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
-		params.context.strokeStyle  ="black"
+		params.context.strokeStyle = "black";
 		params.context.beginPath();
 		params.context.moveTo(origin.x, origin.y);
 		params.context.lineTo(target.x, target.y);
 		params.context.stroke();
 
 		let { collision, contact_normal, exit_point, contact_point, time } = ECS.RayVsRect(origin, target, rect);
-		if (collision && time < 1) {
-			
+		if (collision && time <= 1) {
 			sprite.color = "yellow";
+			console.log({ time: time.toFixed(2) });
 
 			params.context.fillStyle = "blue";
 			params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
@@ -221,14 +211,13 @@ class CollisionSystem extends ECS.System {
 			params.context.fillStyle = "purple";
 			params.context.fillRect(exit_point.x - 2, exit_point.y - 2, 4, 4);
 
-			contact_normal.scalarMult(10);
+			contact_normal.scalarMult(30);
 			let p = contact_point.plus(contact_normal);
 			params.context.beginPath();
 			params.context.moveTo(contact_point.x, contact_point.y);
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
 		}
-		*/
 	}
 }
 
@@ -242,26 +231,13 @@ ecs.addSystem(new InputSystem(canvas));
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
 
-/*
-{
-	const entity = new ECS.Entity();
-	entity.addComponent(new Position(0, canvas.height - 30));
-	entity.addComponent(new Sprite(canvas.width, 10, "green"));
-	entity.addComponent(new Collider());
-	entity.addComponent(new Input());
-	dummyhashgrid.push(entity);
-	ecs.addEntity(entity);
-}
-*/
-
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 5; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
-	let w = 25;
+	let w = 50;
 
 	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width - w), ECS.randomInteger(0, canvas.height - w)));
-
 	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());
 	entity.addComponent(new Input());
@@ -285,11 +261,11 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
-	if (dt > 1 / 30) dt = 1 / 30;
+	//if (dt > 1 / 30) dt = 1 / 30;
 
 	if (!paused) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "grey";
+		context.fillStyle = "#A0A0A0";
 		context.fillRect(0, 0, canvas.width, canvas.height);
 
 		ecs.update({ dt, canvas, context });

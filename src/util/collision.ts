@@ -99,6 +99,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 
 	const event = RayVsRect(origin, velocity, expanded_target);
 	if (event.collision && event.time && event.time < 1) {
+		
 		return event;
 	}
 

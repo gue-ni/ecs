@@ -2,13 +2,20 @@ import { Vector } from "./vector";
 import { AABB, Rectangle } from "./collision";
 
 class QuadTree {
+	private level: number;
 	private nodes: QuadTree[];
 	private objects: AABB[];
 	private bounds: Rectangle;
-	private level: number;
 	private max_objects: number;
 	private max_levels: number;
 
+	/**
+	 *
+	 * @param level
+	 * @param bounds
+	 * @param max_objects
+	 * @param max_levels
+	 */
 	constructor(level: number, bounds: Rectangle, max_objects = 3, max_levels = 3) {
 		this.nodes = [];
 		this.objects = [];
@@ -18,6 +25,11 @@ class QuadTree {
 		this.max_levels = max_levels;
 	}
 
+	/**
+	 *
+	 * @param aabb
+	 * @returns
+	 */
 	insert(aabb: AABB) {
 		if (this.nodes.length) {
 			let index = this.getIndex(aabb);
@@ -102,7 +114,12 @@ class QuadTree {
 		);
 	}
 
-	getIndex(aabb: AABB): number {
+	/**
+	 * TODO: make sure this function is accurate
+	 * @param aabb
+	 * @returns
+	 */
+	private getIndex(aabb: AABB): number {
 		let index = -1;
 
 		let x = aabb.pos.x;
@@ -116,47 +133,67 @@ class QuadTree {
 		let bw = this.bounds.size.x / 2;
 		let bh = this.bounds.size.y / 2;
 
-		if (x + w <= bx + bw && x >= bx && y + h <= by + bh && y >= by) {
+		if (x >= bx && x + w < bx + bw && y >= by && y + h < by + bh) {
 			// top left
-			//console.log("top left")
 			index = 0;
-		} else if (x + w <= bx + bw && x >= bx && y > by + bh && y + h < by + 2 * bh) {
-			// bottom left
-			//console.log("bottom left")
-			index = 3;
-		} else if (x > bx + bw && x + w <= bx + 2 * bw && y >= by && y + h <= by + bh) {
+		} else if (x >= bx + bw && x + w < bx + 2 * bw && y >= by && y + h < by + bh) {
 			// top right
-			//console.log("top right")
 			index = 1;
-		} else if (x > bx + bw && x + w <= bx + 2 * bw && y > by + bh && y + h <= by + 2 * bh) {
+		} else if (x >= bx + bw && x + w < bx + 2 * bw && y >= by + bh && y + h < by + 2 * bh) {
 			// bottom right
-			//console.log("bottom right")
 			index = 2;
-		} else {
-			//console.log("none of the above")
+		} else if (x >= bx && x + w < bx + bw && y >= by + bh && y + h < by + 2 * bh) {
+			// bottom left
+			index = 3;
 		}
+
 		return index;
 	}
 
+	/**
+	 *
+	 * @param aabb
+	 * @returns
+	 */
 	retrieve(aabb: AABB): AABB[] {
-		let list: AABB[] = [];
+		let list: AABB[] = [...this.objects];
 
-		let index = this.getIndex(aabb);
-		if (index != -1 && this.nodes.length) {
-			list = [...this.nodes[index].retrieve(aabb)];
+		const index = this.getIndex(aabb);
+		if (this.nodes.length) {
+			if (index != -1) {
+				list = [...list, ...this.nodes[index].retrieve(aabb)];
+			} else {
+				list = [...this.all_objects()];
+				//console.log("get all", list.length)
+			}
 		}
 
-		list = [...list, ...this.objects];
+		//console.log(`retrieve id ${aabb.id}, level ${this.level}, index ${index}, ${list.length} possible`);
 
 		return list;
 	}
 
-	debug_draw(context: CanvasRenderingContext2D, color: string = "cyan") {
+	all_objects(): AABB[] {
+		let list: AABB[] = [...this.objects];
+
+		for (let node of this.nodes) {
+			list = [...list, ...node.all_objects()];
+		}
+
+		return list;
+	}
+
+	/**
+	 *
+	 * @param context
+	 * @param color
+	 */
+	debug_draw(context: CanvasRenderingContext2D, color: string = "red") {
 		context.strokeStyle = color;
 		context.strokeRect(this.bounds.pos.x, this.bounds.pos.y, this.bounds.size.x, this.bounds.size.y);
 
 		for (const node of this.nodes) {
-			node.debug_draw(context);
+			node.debug_draw(context, color);
 		}
 	}
 }
