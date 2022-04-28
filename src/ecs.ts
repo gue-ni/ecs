@@ -1,4 +1,4 @@
-import { Entity } from "./entity";
+import { Entity, EntityID } from "./entity";
 import { System } from "./system";
 
 interface UpdateParams {

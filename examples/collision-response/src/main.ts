@@ -5,11 +5,13 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const SPEED = 100;
-let dummyhashgrid: Map<string, ECS.AABB> = new Map();
+const SPEED = 70;
+let colliders: Map<string, ECS.AABB> = new Map();
 const quadtree = new ECS.QuadTree(
 	0,
-	new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height))
+	new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height)),
+	2,
+	5
 );
 
 /**
@@ -125,11 +127,7 @@ class CollisionSystem extends ECS.System {
 	}
 
 	beforeAll(entities: ECS.Entity[], params: ECS.UpdateParams): void {
-		// TODO update pos, size and vel in AABBs
-		// TODO insert / update position of AABBs in HashGrid
-
-		dummyhashgrid = new Map();
-
+		colliders = new Map();
 		quadtree.clear();
 
 		for (const entity of entities) {
@@ -138,13 +136,14 @@ class CollisionSystem extends ECS.System {
 			const velocity = entity.getComponent(Velocity) as Velocity;
 
 			const rect = new ECS.AABB(
+				entity.id,
 				new ECS.Vector(position.x, position.y),
 				new ECS.Vector(sprite.w, sprite.h),
 				velocity ? new ECS.Vector(velocity.x, velocity.y) : new ECS.Vector()
 			);
 
 			quadtree.insert(rect);
-			dummyhashgrid.set(entity.id, rect);
+			colliders.set(entity.id, rect);
 
 			sprite.color = "green";
 		}
@@ -158,33 +157,12 @@ class CollisionSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const input = entity.getComponent(Input) as Input;
 
-		/*
-		const rect = new ECS.AABB(
-			new ECS.Vector(position.x, position.y),
-			new ECS.Vector(sprite.w, sprite.h),
-			velocity ? new ECS.Vector(velocity.x, velocity.y) : new ECS.Vector()
-		);
-		*/
-
-		const rect = dummyhashgrid.get(entity.id);
+		const rect = colliders.get(entity.id);
 		let possible = quadtree.retrieve(rect);
 
 		// narrow phase testing
 		for (let target_rect of possible) {
 			if (target_rect == rect) continue;
-
-
-			/*
-			const target_pos = target.getComponent(Position) as Position;
-			const target_sprite = target.getComponent(Sprite) as Sprite;
-			const target_vel = target.getComponent(Velocity) as Velocity;
-
-			const target_rect = new ECS.AABB(
-				new ECS.Vector(target_pos.x, target_pos.y),
-				new ECS.Vector(target_sprite.w, target_sprite.h),
-				target_vel ? new ECS.Vector(target_vel.x, target_vel.y) : new ECS.Vector()
-			);
-			*/
 
 			if (velocity) {
 				let { collision, contact_normal, exit_point, contact_point, time } = ECS.DynamicRectVsRect(
@@ -194,11 +172,11 @@ class CollisionSystem extends ECS.System {
 				);
 				if (collision) {
 					//time = ECS.clamp(time, 0, 1)
-					//console.log({time})
 
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
 
+					/*
 					params.context.fillStyle = "blue";
 					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
 
@@ -210,6 +188,7 @@ class CollisionSystem extends ECS.System {
 					params.context.moveTo(p.x, p.y);
 					params.context.lineTo(d.x, d.y);
 					params.context.stroke();
+					*/
 
 					sprite.color = "red";
 				}
@@ -279,9 +258,9 @@ for (let i = 0; i < 10; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
-	let w = 10;
+	let w = 25;
 
-	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width), ECS.randomInteger(0, canvas.height)));
+	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width - w), ECS.randomInteger(0, canvas.height - w)));
 
 	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());

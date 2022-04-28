@@ -1,4 +1,5 @@
 import { Vector } from "./vector";
+import { EntityID } from "../entity";
 
 function PointVsRect(p: Vector, r: AABB): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
@@ -88,6 +89,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	if (input.vel.x === 0 && input.vel.y === 0) return { collision: false };
 
 	const expanded_target = new AABB(
+		target.id,
 		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
 		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
@@ -114,9 +116,11 @@ class Rectangle {
 
 class AABB extends Rectangle {
 	vel: Vector;
+	id: EntityID;
 
-	constructor(pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector()) {
+	constructor(id: EntityID, pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector()) {
 		super(pos, size);
+		this.id = id;
 		this.vel = vel;
 	}
 }

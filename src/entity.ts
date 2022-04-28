@@ -7,10 +7,10 @@ interface EntityParams {
 	ttl?: number;
 }
 
-type EntityId = string;
+type EntityID = string;
 
 class Entity {
-	id: EntityId;
+	id: EntityID;
 	active: boolean;
 	ttl?: number;
 	components: Map<string, Component>;
@@ -49,4 +49,4 @@ class Entity {
 	}
 }
 
-export { Entity };
+export { Entity, EntityID };
