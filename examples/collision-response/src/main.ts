@@ -5,7 +5,7 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const SPEED = 50;
+const SPEED = 100;
 let colliders: Map<string, ECS.AABB> = new Map();
 const quadtree = new ECS.QuadTree(
 	0,
@@ -32,29 +32,13 @@ class Sprite extends ECS.Component {
 }
 
 class Position extends ECS.Component {
-	_x: number;
-	_y: number;
+	x: number;
+	y: number;
 
 	constructor(x: number, y: number) {
 		super();
-		this._x = x;
-		this._y = y;
-	}
-
-	get x() {
-		return Math.round(this._x);
-	}
-
-	get y() {
-		return Math.round(this._y);
-	}
-
-	set x(v) {
-		this._x = v;
-	}
-
-	set y(v) {
-		this._y = v;
+		this.x = x;
+		this.y = y;
 	}
 }
 
@@ -150,47 +134,33 @@ class CollisionSystem extends ECS.System {
 
 		const rect = colliders.get(entity.id);
 		let possible = quadtree.retrieve(rect);
-		//console.log(possible.length)
+
+
 
 		for (let target_rect of possible) {
-			//for (let [_,target_rect] of colliders) {
 
 			if (target_rect.id == rect.id) continue;
 
 			if (velocity) {
 				let { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(rect, target_rect, dt);
 				if (collision) {
-					//time = ECS.clamp(time, 0, 1)
-
-					//console.log({time})
+					//time = ECS.clamp(time, 0, 1);
+					console.log({time: time.toFixed(2)})
 
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
-
-					/*
-					params.context.fillStyle = "blue";
-					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
-
-					let v = contact_normal;
-					let p = contact_point;
-					v.scalarMult(10);
-					let d = p.plus(v);
-					params.context.beginPath();
-					params.context.moveTo(p.x, p.y);
-					params.context.lineTo(d.x, d.y);
-					params.context.stroke();
-					*/
 
 					sprite.color = "red";
 				}
 			} else {
 				let collision = ECS.RectVsRect(rect, target_rect);
-				if (collision) sprite.color = "red";
+				if (collision) sprite.color = "blue";
 			}
 		}
 
 		// line collision, just testing
 
+		/*
 		const origin = new ECS.Vector(input.lastX, input.lastY);
 		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
@@ -218,6 +188,7 @@ class CollisionSystem extends ECS.System {
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
 		}
+		*/
 	}
 }
 

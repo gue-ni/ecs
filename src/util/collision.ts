@@ -95,11 +95,11 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	);
 
 	const origin = new Vector(input.pos.x + input.size.x / 2, input.pos.y + input.size.y / 2);
-	const velocity = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
+	const future_location = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
 
-	const event = RayVsRect(origin, velocity, expanded_target);
-	if (event.collision && event.time && event.time < 1) {
-		
+	const event = RayVsRect(origin, future_location, expanded_target);
+	if (event.collision && event.time && event.time <= 1) {
+
 		return event;
 	}
 
