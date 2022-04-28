@@ -7,8 +7,10 @@ interface EntityParams {
 	ttl?: number;
 }
 
+type EntityId = string;
+
 class Entity {
-	id: string;
+	id: EntityId;
 	active: boolean;
 	ttl?: number;
 	components: Map<string, Component>;

@@ -21,6 +21,7 @@ interface CollisionEvent {
 	time?: number;
 }
 
+// TODO: fix t_hit_near is not always between 0 and 1
 function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): CollisionEvent {
 	const ray_dir = ray_target.minus(ray_origin);
 
@@ -31,9 +32,6 @@ function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): Collis
 	const t_far = new Vector(0, 0);
 	t_far.x = (target.pos.x + target.size.x - ray_origin.x) / ray_dir.x;
 	t_far.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
-
-	//if (!isFinite(t_far.x) || !isFinite(t_far.y)) return { collision: false };
-	//if (!isFinite(t_near.x) || !isFinite(t_near.y)) return { collision: false };
 
 	if (t_near.x > t_far.x) {
 		const tmp = t_near.x;
@@ -87,7 +85,7 @@ function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): Collis
 }
 
 function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEvent {
-	if (input.vel.x === 0 && input.vel.y === 0) return {collision: false};
+	if (input.vel.x === 0 && input.vel.y === 0) return { collision: false };
 
 	const expanded_target = new AABB(
 		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
@@ -98,23 +96,29 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	const velocity = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
 
 	const event = RayVsRect(origin, velocity, expanded_target);
-	if (event.collision && event.time && event.time <= 1) {
-		return event 
+	if (event.collision && event.time && event.time < 1) {
+		return event;
 	}
 
-	return {collision: false};
+	return { collision: false };
 }
 
-class AABB {
+class Rectangle {
 	pos: Vector;
 	size: Vector;
+	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
+		this.pos = pos;
+		this.size = size;
+	}
+}
+
+class AABB extends Rectangle {
 	vel: Vector;
 
 	constructor(pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector()) {
-		this.pos = pos;
-		this.size = size;
+		super(pos, size);
 		this.vel = vel;
 	}
 }
 
-export { Vector, AABB, PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };
+export { Rectangle, AABB, PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };

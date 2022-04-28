@@ -14,4 +14,8 @@ function normalizeToRange(val: number, minVal: number, maxVal: number, newMin: n
 	return newMin + ((val - minVal) * (newMax - newMin)) / (maxVal - minVal);
 }
 
-export { randomFloat, randomInteger };
+function clamp(val: number, min: number, max: number): number {
+	return Math.max(min, Math.min(val, max));
+}
+
+export { randomFloat, randomInteger, clamp };
