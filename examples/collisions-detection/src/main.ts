@@ -155,8 +155,28 @@ class CollisionSystem extends ECS.System {
 			);
 
 			if (velocity) {
-				let { collision } = ECS.DynamicRectVsRect(rect, target_rect, dt);
-				if (collision) sprite.color = "red";
+				let { collision, contact_normal, exit_point, contact_point } = ECS.DynamicRectVsRect(
+					rect,
+					target_rect,
+					dt
+				);
+				if (collision) {
+					params.context.fillStyle = "blue";
+					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
+
+					//contact_normal.scalarMult(10);
+					//let v = new ECS.Vector(0, 1)
+					let v = contact_normal;
+					let p = contact_point; 
+					v.scalarMult(10)
+					let d = p.plus(v);
+					params.context.beginPath();
+					params.context.moveTo(p.x, p.y);
+					params.context.lineTo(d.x, d.y);
+					params.context.stroke();
+
+					sprite.color = "red";
+				}
 			} else {
 				let collision = ECS.RectVsRect(rect, target_rect);
 				if (collision) sprite.color = "red";
@@ -164,9 +184,9 @@ class CollisionSystem extends ECS.System {
 		}
 
 		// line collision, just testing
-		/*
+
 		const origin = new ECS.Vector(input.lastX, input.lastY);
-		const target = new ECS.Vector(input.mouseX , input.mouseY);
+		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
 		params.context.beginPath();
 		params.context.moveTo(origin.x, origin.y);
@@ -190,7 +210,6 @@ class CollisionSystem extends ECS.System {
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
 		}
-		*/
 	}
 }
 
@@ -218,7 +237,7 @@ ecs.addSystem(new CollisionSystem());
 
 for (let i = 0; i < 5; i++) {
 	const entity = new ECS.Entity();
-	let v = new ECS.Vector().random().normalize().scalarMult(50);
+	let v = new ECS.Vector().random().normalize().scalarMult(100);
 	entity.addComponent(new Velocity(v.x, v.y));
 	let w = 20;
 
