@@ -5,9 +5,12 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const SPEED = 50;
+const SPEED = 100;
 let dummyhashgrid: Map<string, ECS.AABB> = new Map();
-const quadtree = new ECS.QuadTree(0, new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height)))
+const quadtree = new ECS.QuadTree(
+	0,
+	new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height))
+);
 
 /**
  * Components
@@ -126,9 +129,10 @@ class CollisionSystem extends ECS.System {
 		// TODO insert / update position of AABBs in HashGrid
 
 		dummyhashgrid = new Map();
+
 		quadtree.clear();
 
-		for (let entity of entities) {
+		for (const entity of entities) {
 			const sprite = entity.getComponent(Sprite) as Sprite;
 			const position = entity.getComponent(Position) as Position;
 			const velocity = entity.getComponent(Velocity) as Velocity;
@@ -140,17 +144,12 @@ class CollisionSystem extends ECS.System {
 			);
 
 			quadtree.insert(rect);
-
-			// insert into hashgrid
-			// update if already exists
-			// no update if no position change
 			dummyhashgrid.set(entity.id, rect);
 
 			sprite.color = "green";
 		}
 
-		quadtree.debug_draw(params.context)
-
+		quadtree.debug_draw(params.context);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -168,10 +167,12 @@ class CollisionSystem extends ECS.System {
 		*/
 
 		const rect = dummyhashgrid.get(entity.id);
+		let possible = quadtree.retrieve(rect);
 
 		// narrow phase testing
-		for (const [target_id, target_rect] of dummyhashgrid) {
-			if (target_id == entity.id) continue;
+		for (let target_rect of possible) {
+			if (target_rect == rect) continue;
+
 
 			/*
 			const target_pos = target.getComponent(Position) as Position;
@@ -192,7 +193,6 @@ class CollisionSystem extends ECS.System {
 					dt
 				);
 				if (collision) {
-
 					//time = ECS.clamp(time, 0, 1)
 					//console.log({time})
 
@@ -275,11 +275,11 @@ ecs.addSystem(new CollisionSystem());
 }
 */
 
-for (let i = 0; i < 4; i++) {
+for (let i = 0; i < 10; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
-	let w = 20;
+	let w = 10;
 
 	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width), ECS.randomInteger(0, canvas.height)));
 

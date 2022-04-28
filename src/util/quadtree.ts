@@ -1,13 +1,13 @@
 import { Vector } from "./vector";
 import { Rectangle } from "./collision";
 
-const MAX_OBJECTS = 2;
-const MAX_LEVELS = 5;
+const MAX_OBJECTS = 1;
+const MAX_LEVELS = 4;
 
 class QuadTree {
-	private nodes: QuadTree[];
-	private objects: Rectangle[];
-	private bounds: Rectangle;
+	nodes: QuadTree[];
+	objects: Rectangle[];
+	bounds: Rectangle;
 	level: number;
 
 	constructor(level: number, bounds: Rectangle) {
@@ -18,40 +18,33 @@ class QuadTree {
 	}
 
 	insert(aabb: Rectangle) {
-
-    let test = this.getIndex(aabb);
-    //console.log(`test index ${test}`)
-
-
-		if (this.nodes.length > 0) {
+		if (this.nodes.length) {
 			let index = this.getIndex(aabb);
-      //console.log(`index ${index}`)
 			if (index !== -1) {
-        //console.log(`insert at level ${this.level} into index ${index}`)
 				this.nodes[index].insert(aabb);
 				return;
 			}
 		}
 
-    //console.log(`insert at level ${this.level}`)
 		this.objects.push(aabb);
 
-		if (this.objects.length >= MAX_OBJECTS && this.level < MAX_LEVELS) {
-			if (this.nodes.length == 0) {
+		if (this.objects.length > MAX_OBJECTS && this.level < MAX_LEVELS) {
+			if (!this.nodes.length) {
 				this.split();
 			}
 
-			let oldObject = [...this.objects];
-			this.objects = [];
+			let newObjects = [];
 
-			for (let object of oldObject) {
-        let index = this.getIndex(object);
-        if (index != -1){
-          this.nodes[index].insert(object)
-        } else {
-          this.objects.push(object)
-        }
+			for (let object of this.objects) {
+				let index = this.getIndex(object);
+				if (index != -1) {
+					this.nodes[index].insert(object);
+				} else {
+					newObjects.push(object);
+				}
 			}
+
+			this.objects = newObjects;
 		}
 	}
 
@@ -59,20 +52,17 @@ class QuadTree {
 	 * clear recursivly
 	 */
 	clear() {
-    //console.log("clear")
 		this.objects = [];
 		for (let node of this.nodes) {
 			node.clear();
 		}
-    this.nodes = []
+		this.nodes = [];
 	}
 
 	/**
 	 * split into 4 children
 	 */
 	split() {
-		console.log("splitting", this.level);
-
 		let w = this.bounds.size.x / 2;
 		let h = this.bounds.size.y / 2;
 		let x = this.bounds.pos.x;
@@ -82,9 +72,9 @@ class QuadTree {
 		this.nodes[0] = new QuadTree(this.level + 1, new Rectangle(new Vector(x, y), new Vector(w, h)));
 		// top right
 		this.nodes[1] = new QuadTree(this.level + 1, new Rectangle(new Vector(x + w, y), new Vector(w, h)));
-		// bottom left
-		this.nodes[2] = new QuadTree(this.level + 1, new Rectangle(new Vector(x + w, y + h), new Vector(w, h)));
 		// bottom right
+		this.nodes[2] = new QuadTree(this.level + 1, new Rectangle(new Vector(x + w, y + h), new Vector(w, h)));
+		// bottom left
 		this.nodes[3] = new QuadTree(this.level + 1, new Rectangle(new Vector(x, y + h), new Vector(w, h)));
 	}
 
@@ -102,40 +92,45 @@ class QuadTree {
 		let bw = this.bounds.size.x / 2;
 		let bh = this.bounds.size.y / 2;
 
-		if (x + w <= bx + bw && y + h <= by + bh) {
+		if (x + w <= bx + bw && x >= bx && y + h <= by + bh && y >= by) {
 			// top left
-      //console.log("top left")
+			//console.log("top left")
 			index = 0;
-		} else if (x + w <= bx + bw && y > by + bh) {
+		} else if (x + w <= bx + bw && x >= bx && y > by + bh && y + h < by + 2 * bh) {
 			// bottom left
-      //console.log("bottom left")
-			index = 2;
-		} else if (x > bx + bw && y + h <= by + bh) {
-			// top right
-      //console.log("top right")
-			index = 1;
-		} else if (x > bx + bw && y > by + bh) {
-			// bottom right
-      //console.log("bottom right")
+			//console.log("bottom left")
 			index = 3;
+		} else if (x > bx + bw && x + w <= bx + 2 * bw && y >= by && y + h <= by + bh) {
+			// top right
+			//console.log("top right")
+			index = 1;
+		} else if (x > bx + bw && x + w <= bx + 2 * bw && y > by + bh && y + h <= by + 2 * bh) {
+			// bottom right
+			//console.log("bottom right")
+			index = 2;
+		} else {
+			//console.log("none of the above")
 		}
-
 		return index;
 	}
 
 	retrieve(aabb: Rectangle): Rectangle[] {
-		return [];
+		let list: Rectangle[] = [];
+
+		let index = this.getIndex(aabb);
+		if (index != -1 && this.nodes.length) {
+			list = [...this.nodes[index].retrieve(aabb)];
+		}
+
+		list = [...list, ...this.objects];
+
+		return list;
 	}
 
 	debug_draw(context: CanvasRenderingContext2D) {
-    let colors = ["red", "blue", "green"]
+		let colors = ["#ff8080", "#ff3333", "#e60000", "#990000"];
 		context.strokeStyle = colors[this.level];
-		context.strokeRect(
-			this.bounds.pos.x,
-			this.bounds.pos.y,
-			this.bounds.pos.x + this.bounds.size.x,
-			this.bounds.pos.y + this.bounds.size.y
-		);
+		context.strokeRect(this.bounds.pos.x, this.bounds.pos.y, this.bounds.size.x, this.bounds.size.y);
 
 		for (let node of this.nodes) {
 			node.debug_draw(context);
