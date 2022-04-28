@@ -275,7 +275,7 @@ ecs.addSystem(new CollisionSystem());
 }
 */
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 4; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
