@@ -1,4 +1,4 @@
-# Collisions 
+# Collision Response
 
 `npm install`
 
