@@ -5,7 +5,9 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const dummyhashgrid: ECS.Entity[] = [];
+const SPEED = 50;
+let dummyhashgrid: Map<string, ECS.AABB> = new Map();
+const quadtree = new ECS.QuadTree(0, new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height)))
 
 /**
  * Components
@@ -68,7 +70,7 @@ class Collider extends ECS.Component {}
  * Systems
  */
 
-class RectSystem extends ECS.System {
+class SpriteSystem extends ECS.System {
 	constructor() {
 		super([Sprite, Position]);
 	}
@@ -76,8 +78,8 @@ class RectSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const rect = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
-		params.context.fillStyle = rect.color;
-		params.context.fillRect(position.x, position.y, rect.w, rect.h);
+		params.context.strokeStyle = rect.color;
+		params.context.strokeRect(position.x, position.y, rect.w, rect.h);
 	}
 }
 
@@ -121,12 +123,34 @@ class CollisionSystem extends ECS.System {
 
 	beforeAll(entities: ECS.Entity[], params: ECS.UpdateParams): void {
 		// TODO update pos, size and vel in AABBs
-		// TODO insert / updat position of AABBs in HashGrid
+		// TODO insert / update position of AABBs in HashGrid
+
+		dummyhashgrid = new Map();
+		quadtree.clear();
 
 		for (let entity of entities) {
 			const sprite = entity.getComponent(Sprite) as Sprite;
+			const position = entity.getComponent(Position) as Position;
+			const velocity = entity.getComponent(Velocity) as Velocity;
+
+			const rect = new ECS.AABB(
+				new ECS.Vector(position.x, position.y),
+				new ECS.Vector(sprite.w, sprite.h),
+				velocity ? new ECS.Vector(velocity.x, velocity.y) : new ECS.Vector()
+			);
+
+			quadtree.insert(rect);
+
+			// insert into hashgrid
+			// update if already exists
+			// no update if no position change
+			dummyhashgrid.set(entity.id, rect);
+
 			sprite.color = "green";
 		}
+
+		quadtree.debug_draw(params.context)
+
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -135,15 +159,21 @@ class CollisionSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const input = entity.getComponent(Input) as Input;
 
+		/*
 		const rect = new ECS.AABB(
 			new ECS.Vector(position.x, position.y),
 			new ECS.Vector(sprite.w, sprite.h),
 			velocity ? new ECS.Vector(velocity.x, velocity.y) : new ECS.Vector()
 		);
+		*/
 
-		for (let target of dummyhashgrid) {
-			if (target.id == entity.id) continue;
+		const rect = dummyhashgrid.get(entity.id);
 
+		// narrow phase testing
+		for (const [target_id, target_rect] of dummyhashgrid) {
+			if (target_id == entity.id) continue;
+
+			/*
 			const target_pos = target.getComponent(Position) as Position;
 			const target_sprite = target.getComponent(Sprite) as Sprite;
 			const target_vel = target.getComponent(Velocity) as Velocity;
@@ -153,22 +183,28 @@ class CollisionSystem extends ECS.System {
 				new ECS.Vector(target_sprite.w, target_sprite.h),
 				target_vel ? new ECS.Vector(target_vel.x, target_vel.y) : new ECS.Vector()
 			);
+			*/
 
 			if (velocity) {
-				let { collision, contact_normal, exit_point, contact_point } = ECS.DynamicRectVsRect(
+				let { collision, contact_normal, exit_point, contact_point, time } = ECS.DynamicRectVsRect(
 					rect,
 					target_rect,
 					dt
 				);
 				if (collision) {
+
+					//time = ECS.clamp(time, 0, 1)
+					//console.log({time})
+
+					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
+					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
+
 					params.context.fillStyle = "blue";
 					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
 
-					//contact_normal.scalarMult(10);
-					//let v = new ECS.Vector(0, 1)
 					let v = contact_normal;
-					let p = contact_point; 
-					v.scalarMult(10)
+					let p = contact_point;
+					v.scalarMult(10);
 					let d = p.plus(v);
 					params.context.beginPath();
 					params.context.moveTo(p.x, p.y);
@@ -185,16 +221,19 @@ class CollisionSystem extends ECS.System {
 
 		// line collision, just testing
 
+		/*
 		const origin = new ECS.Vector(input.lastX, input.lastY);
 		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
+		params.context.strokeStyle  ="black"
 		params.context.beginPath();
 		params.context.moveTo(origin.x, origin.y);
 		params.context.lineTo(target.x, target.y);
 		params.context.stroke();
 
 		let { collision, contact_normal, exit_point, contact_point, time } = ECS.RayVsRect(origin, target, rect);
-		if (collision && time <= 1) {
+		if (collision && time < 1) {
+			
 			sprite.color = "yellow";
 
 			params.context.fillStyle = "blue";
@@ -210,6 +249,7 @@ class CollisionSystem extends ECS.System {
 			params.context.lineTo(p.x, p.y);
 			params.context.stroke();
 		}
+		*/
 	}
 }
 
@@ -218,7 +258,7 @@ class CollisionSystem extends ECS.System {
  */
 
 const ecs = new ECS.ECS();
-ecs.addSystem(new RectSystem());
+ecs.addSystem(new SpriteSystem());
 ecs.addSystem(new InputSystem(canvas));
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
@@ -235,9 +275,9 @@ ecs.addSystem(new CollisionSystem());
 }
 */
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 2; i++) {
 	const entity = new ECS.Entity();
-	let v = new ECS.Vector().random().normalize().scalarMult(100);
+	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
 	let w = 20;
 
@@ -246,7 +286,6 @@ for (let i = 0; i < 5; i++) {
 	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());
 	entity.addComponent(new Input());
-	dummyhashgrid.push(entity);
 
 	ecs.addEntity(entity);
 }
