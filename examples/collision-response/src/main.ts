@@ -269,7 +269,7 @@ function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
-	//if (dt > 1 / 30) dt = 1 / 30;
+	if (dt > 1 / 30) dt = 1 / 30;
 
 	if (!paused) {
 		context.clearRect(0, 0, canvas.width, canvas.height);

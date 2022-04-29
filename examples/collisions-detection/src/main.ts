@@ -136,6 +136,7 @@ class CollisionSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 
 		const rect = new ECS.AABB(
+			entity.id,
 			new ECS.Vector(position.x, position.y),
 			new ECS.Vector(sprite.w, sprite.h),
 			velocity ? new ECS.Vector(velocity.x, velocity.y) : new ECS.Vector()
@@ -149,6 +150,7 @@ class CollisionSystem extends ECS.System {
 			const target_vel = target.getComponent(Velocity) as Velocity;
 
 			const target_rect = new ECS.AABB(
+				target.id,
 				new ECS.Vector(target_pos.x, target_pos.y),
 				new ECS.Vector(target_sprite.w, target_sprite.h),
 				target_vel ? new ECS.Vector(target_vel.x, target_vel.y) : new ECS.Vector()
