@@ -1,5 +1,6 @@
 import { Vector } from "./vector";
 import { EntityID } from "../entity";
+import { clamp } from "./index";
 
 function PointVsRect(p: Vector, r: AABB): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
@@ -18,13 +19,14 @@ interface CollisionEvent {
 	collision: boolean;
 	contact_point?: Vector;
 	contact_normal?: Vector;
+	delta?: Vector;
 	exit_point?: Vector;
 	time?: number;
 }
 
 // TODO: fix t_hit_near is not always between 0 and 1
 function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): CollisionEvent {
-	const ray_dir = ray_target.minus(ray_origin);
+	const ray_dir = new Vector(ray_target.x - ray_origin.x, ray_target.y - ray_origin.y);
 
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
@@ -94,12 +96,14 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
 
+	let delta = dt;
+
 	const origin = new Vector(input.pos.x + input.size.x / 2, input.pos.y + input.size.y / 2);
-	const future_location = new Vector(origin.x + input.vel.x * dt, origin.y + input.vel.y * dt);
+	const future_location = new Vector(origin.x + input.vel.x * delta, origin.y + input.vel.y * delta);
 
 	const event = RayVsRect(origin, future_location, expanded_target);
-	if (event.collision && event.time && event.time <= 1) {
 
+	if (event.collision && event.time) {
 		return event;
 	}
 

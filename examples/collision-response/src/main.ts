@@ -127,40 +127,64 @@ class CollisionSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const input = entity.getComponent(Input) as Input;
 
 		const rect = colliders.get(entity.id);
-		let possible = quadtree.retrieve(rect);
+		const possible = quadtree.retrieve(rect);
 
-
-
-		for (let target_rect of possible) {
-
-			if (target_rect.id == rect.id) continue;
+		for (const target of possible) {
+			if (target.id == rect.id) continue;
 
 			if (velocity) {
-				let { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(rect, target_rect, dt);
-				if (collision) {
+				let { collision, contact_normal, exit_point, contact_point, time } = ECS.DynamicRectVsRect(
+					rect,
+					target,
+					dt
+				);
+				if (collision && time <= 1) {
 					//time = ECS.clamp(time, 0, 1);
-					console.log({time: time.toFixed(2)})
+					console.log({ id: entity.id, time: time.toFixed(2) });
+
 
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
 
+
+					params.context.strokeStyle = "white";
+					params.context.strokeRect(
+						target.pos.x - rect.size.x / 2,
+						target.pos.y - rect.size.y / 2,
+						target.size.x + rect.size.x,
+						target.size.y + rect.size.y
+					);
+
+					const origin = new ECS.Vector(rect.pos.x + rect.size.x / 2, rect.pos.y + rect.size.y / 2);
+					const future_location = new ECS.Vector(origin.x + rect.vel.x, origin.y + rect.vel.y);
+
+					params.context.strokeStyle = "white";
+					params.context.beginPath();
+					params.context.moveTo(origin.x, origin.y);
+					params.context.lineTo(future_location.x, future_location.y);
+					params.context.stroke();
+
+					params.context.fillStyle = "blue";
+					params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
+
+					params.context.fillStyle = "purple";
+					params.context.fillRect(exit_point.x - 2, exit_point.y - 2, 4, 4);
+
 					sprite.color = "red";
 				}
 			} else {
-				let collision = ECS.RectVsRect(rect, target_rect);
+				let collision = ECS.RectVsRect(rect, target);
 				if (collision) sprite.color = "blue";
 			}
 		}
 
-		// line collision, just testing
-
 		/*
+		// line collision, just testing
 		const origin = new ECS.Vector(input.lastX, input.lastY);
 		const target = new ECS.Vector(input.mouseX, input.mouseY);
 
@@ -173,7 +197,7 @@ class CollisionSystem extends ECS.System {
 		let { collision, contact_normal, exit_point, contact_point, time } = ECS.RayVsRect(origin, target, rect);
 		if (collision && time <= 1) {
 			sprite.color = "yellow";
-			console.log({ time: time.toFixed(2) });
+			//console.log({ time: time.toFixed(2) });
 
 			params.context.fillStyle = "blue";
 			params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
@@ -202,12 +226,23 @@ ecs.addSystem(new InputSystem(canvas));
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
 
+
+{
+	let w =  100;
+	const entity = new ECS.Entity();
+	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width - w), ECS.randomInteger(0, canvas.height - w)));
+	entity.addComponent(new Sprite(w, w, "green"));
+	entity.addComponent(new Collider());
+	entity.addComponent(new Input());
+	ecs.addEntity(entity);
+}
+
 for (let i = 0; i < 5; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
-	let w = 50;
 
+	let w =  20;
 	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width - w), ECS.randomInteger(0, canvas.height - w)));
 	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());

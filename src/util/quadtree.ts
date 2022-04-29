@@ -10,11 +10,11 @@ class QuadTree {
 	private max_levels: number;
 
 	/**
-	 *
-	 * @param level
-	 * @param bounds
-	 * @param max_objects
-	 * @param max_levels
+	 * Create Quadtree
+	 * @param level current level of quadtree
+	 * @param bounds bounds of quadtree
+	 * @param max_objects max number of objects per node
+	 * @param max_levels max number of nested nodes
 	 */
 	constructor(level: number, bounds: Rectangle, max_objects = 3, max_levels = 3) {
 		this.nodes = [];
@@ -26,13 +26,13 @@ class QuadTree {
 	}
 
 	/**
-	 *
+	 * insert AABB into quadtree
 	 * @param aabb
-	 * @returns
+	 * @returns nothing
 	 */
-	insert(aabb: AABB) {
+	insert(aabb: AABB): void {
 		if (this.nodes.length) {
-			let index = this.getIndex(aabb);
+			let index = this.getQuadrant(aabb);
 			if (index !== -1) {
 				this.nodes[index].insert(aabb);
 				return;
@@ -49,7 +49,7 @@ class QuadTree {
 			let newObjects = [];
 
 			for (let object of this.objects) {
-				let index = this.getIndex(object);
+				let index = this.getQuadrant(object);
 				if (index != -1) {
 					this.nodes[index].insert(object);
 				} else {
@@ -73,7 +73,7 @@ class QuadTree {
 	}
 
 	/**
-	 * split into 4 children
+	 * split node into 4 children
 	 */
 	split() {
 		let w = this.bounds.size.x / 2;
@@ -115,11 +115,11 @@ class QuadTree {
 	}
 
 	/**
-	 * TODO: make sure this function is accurate
+	 * get quadrant of AABB
 	 * @param aabb
-	 * @returns
+	 * @returns 0 - 3 if in quadrant, -1 if on the edge
 	 */
-	private getIndex(aabb: AABB): number {
+	private getQuadrant(aabb: AABB): number {
 		let index = -1;
 
 		let x = aabb.pos.x;
@@ -151,28 +151,29 @@ class QuadTree {
 	}
 
 	/**
-	 *
+	 * Query possible collisions for AABB
 	 * @param aabb
-	 * @returns
+	 * @returns all possible collisions
 	 */
-	retrieve(aabb: AABB): AABB[] {
+	query(aabb: AABB): AABB[] {
 		let list: AABB[] = [...this.objects];
 
-		const index = this.getIndex(aabb);
+		const index = this.getQuadrant(aabb);
 		if (this.nodes.length) {
 			if (index != -1) {
-				list = [...list, ...this.nodes[index].retrieve(aabb)];
+				list = [...list, ...this.nodes[index].query(aabb)];
 			} else {
 				list = [...this.all_objects()];
-				//console.log("get all", list.length)
 			}
 		}
-
-		//console.log(`retrieve id ${aabb.id}, level ${this.level}, index ${index}, ${list.length} possible`);
 
 		return list;
 	}
 
+	/**
+	 * Get all objects
+	 * @returns all objects contained in this and it's child nodes
+	 */
 	all_objects(): AABB[] {
 		let list: AABB[] = [...this.objects];
 
@@ -184,7 +185,7 @@ class QuadTree {
 	}
 
 	/**
-	 *
+	 * Draw Quadtree for debug purposes
 	 * @param context
 	 * @param color
 	 */
