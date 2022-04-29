@@ -5,7 +5,7 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 200;
-const SPEED = 100;
+const SPEED = 150;
 let colliders: Map<string, ECS.AABB> = new Map();
 const quadtree = new ECS.QuadTree(
 	0,
@@ -68,7 +68,7 @@ class SpriteSystem extends ECS.System {
 		const rect = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
 		params.context.strokeStyle = rect.color;
-		params.context.strokeRect(position.x, position.y, rect.w, rect.h);
+		params.context.strokeRect(Math.round(position.x), Math.round(position.y), rect.w, rect.h);
 	}
 }
 
@@ -151,7 +151,7 @@ class CollisionSystem extends ECS.System {
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
 
-
+					/*
 					params.context.strokeStyle = "white";
 					params.context.strokeRect(
 						target.pos.x - rect.size.x / 2,
@@ -174,6 +174,7 @@ class CollisionSystem extends ECS.System {
 
 					params.context.fillStyle = "purple";
 					params.context.fillRect(exit_point.x - 2, exit_point.y - 2, 4, 4);
+					*/
 
 					sprite.color = "red";
 				}
@@ -226,7 +227,7 @@ ecs.addSystem(new InputSystem(canvas));
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
 
-
+/*
 {
 	let w =  100;
 	const entity = new ECS.Entity();
@@ -236,13 +237,14 @@ ecs.addSystem(new CollisionSystem());
 	entity.addComponent(new Input());
 	ecs.addEntity(entity);
 }
+*/
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
 	const entity = new ECS.Entity();
 	let v = new ECS.Vector().random().normalize().scalarMult(SPEED);
 	entity.addComponent(new Velocity(v.x, v.y));
 
-	let w =  20;
+	let w =  30;
 	entity.addComponent(new Position(ECS.randomInteger(0, canvas.width - w), ECS.randomInteger(0, canvas.height - w)));
 	entity.addComponent(new Sprite(w, w, "green"));
 	entity.addComponent(new Collider());
