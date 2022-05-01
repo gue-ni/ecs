@@ -1,8 +1,8 @@
 {
-  "name": "collisions-example",
+  "name": "platformer",
   "version": "1.0.0",
   "description": "",
-  "main": "example.ts",
+  "main": "main.ts",
   "scripts": {
     "build": "webpack"
   },

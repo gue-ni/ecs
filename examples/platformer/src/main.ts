@@ -21,7 +21,7 @@ class Sprite extends ECS.Component {
 	h: number;
 	color: string;
 
-	constructor(w: number, h: number, color: string = "white") {
+	constructor(w: number, h: number, color: string) {
 		super();
 		this.w = w;
 		this.h = h;
@@ -42,7 +42,6 @@ class Position extends ECS.Component {
 class Velocity extends ECS.Component {
 	x: number;
 	y: number;
-
 	constructor(x: number, y: number) {
 		super();
 		this.x = x;
@@ -54,7 +53,7 @@ class Collider extends ECS.Component {
 	aabb: ECS.AABB;
 	constructor(width: number, height: number) {
 		super();
-		this.aabb = new ECS.AABB("");
+		this.aabb = new ECS.AABB("", new ECS.Vector(), new ECS.Vector(width, height));
 	}
 }
 
@@ -66,8 +65,8 @@ class SpriteSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const rect = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
-		params.context.strokeStyle = rect.color;
-		params.context.strokeRect(position.x, position.y, rect.w, rect.h);
+		params.context.fillStyle = rect.color;
+		params.context.fillRect(Math.round(position.x), Math.round(position.y), rect.w, rect.h);
 	}
 }
 
@@ -77,9 +76,9 @@ class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
-		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
@@ -113,6 +112,8 @@ class CollisionSystem extends ECS.System {
 			const collider = entity.getComponent(Collider) as Collider;
 			const sprite = entity.getComponent(Sprite) as Sprite;
 
+			sprite.color = "green";
+
 			collider.aabb.id = entity.id;
 			collider.aabb.pos.set(position.x, position.y);
 			collider.aabb.size.set(sprite.w, sprite.h);
@@ -129,6 +130,7 @@ class CollisionSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
+		const position = entity.getComponent(Position) as Position;
 		const collider = entity.getComponent(Collider) as Collider;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
@@ -146,11 +148,12 @@ class CollisionSystem extends ECS.System {
 
 				if (collision) {
 
-					// reset to before touching
-					//position.x = contact_point.x - sprite.w / 2;
-					//position.y = contact_point.y - sprite.h / 2;
-					//velocity.x = 0;
-					//velocity.y = 0;
+					/*
+					position.x = contact_point.x - sprite.w / 2;
+					position.y = contact_point.y - sprite.h / 2;
+					velocity.x = 0;
+					velocity.y = 0;
+					*/
 
 					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
@@ -167,15 +170,29 @@ class CollisionSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input]);
+		super([Input, Velocity]);
 	}
 
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {}
-}
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(Input) as Input;
+		const velocity = entity.getComponent(Velocity) as Velocity;
 
-/**
- * Setup
- */
+		const SPEED = 200;
+
+		if (input.is_key_pressed("ArrowLeft")) {
+			velocity.x = -SPEED;
+		}
+		if (input.is_key_pressed("ArrowRight")) {
+			velocity.x = SPEED;
+		}
+		if (input.is_key_pressed("ArrowUp")) {
+			velocity.y = -SPEED;
+		}
+		if (input.is_key_pressed("ArrowDown")) {
+			velocity.y = SPEED;
+		}
+	}
+}
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new InputSystem(canvas));
@@ -184,15 +201,17 @@ ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new SpriteSystem());
 
+const TILESIZE = 16;
+
 {
 	let v = new ECS.Vector().random().normalize().scalarMult(200);
 
 	const entity = new ECS.Entity();
 	entity.addComponent(new Position(50, 50));
-	entity.addComponent(new Sprite(32, 32, "blue"));
+	entity.addComponent(new Sprite(TILESIZE, TILESIZE, "green"));
 	entity.addComponent(new Velocity(0, 0));
 	entity.addComponent(new Velocity(v.x, v.y));
-	entity.addComponent(new Collider(32, 32));
+	entity.addComponent(new Collider(TILESIZE, TILESIZE));
 	entity.addComponent(new Input());
 	ecs.addEntity(entity);
 }
@@ -206,9 +225,12 @@ const boxes = [
 	[6, 3],
 	[7, 3],
 	[8, 2],
+	[9, 2],
+	[10, 2],
+	[11, 2],
 ];
 
-for (let [x, y] of boxes) {
+for (const [x, y] of boxes) {
 	const entity = new ECS.Entity();
 
 	/*
@@ -216,9 +238,9 @@ for (let [x, y] of boxes) {
 		new Position(ECS.randomInteger(0, canvas.width - 32), ECS.randomInteger(0, canvas.height - 32))
 	);
 	*/
-	entity.addComponent(new Position(x * 32, canvas.height - y * 32));
-	entity.addComponent(new Sprite(32, 32, "green"));
-	entity.addComponent(new Collider(32, 32));
+	entity.addComponent(new Position(x * TILESIZE, canvas.height - y * TILESIZE));
+	entity.addComponent(new Sprite(TILESIZE, TILESIZE, "green"));
+	entity.addComponent(new Collider(TILESIZE, TILESIZE));
 
 	let v = new ECS.Vector().random().normalize().scalarMult(200);
 	//entity.addComponent(new Velocity(v.x, v.y));
@@ -226,15 +248,6 @@ for (let [x, y] of boxes) {
 	ecs.addEntity(entity);
 }
 
-document.addEventListener("keydown", (e) => {
-	if (e.code == "KeyP") {
-		paused = !paused;
-	}
-});
-
-/**
- * Game loop
- */
 let dt: number = 0;
 let then: number = 0;
 function animate(now: number) {
@@ -253,5 +266,9 @@ function animate(now: number) {
 
 	requestAnimationFrame(animate);
 }
+
+document.addEventListener("keydown", (e) => {
+	if (e.code == "KeyP") paused = !paused;
+});
 
 animate(0);
