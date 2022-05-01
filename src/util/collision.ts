@@ -9,7 +9,7 @@ import { clamp } from "./index";
  */
 
 //const EPSILON = 0.000001;
-const EPSILON = 0.0000001;
+const EPSILON = 0.000001;
 //const EPSILON = 0;
 
 function PointVsRect(p: Vector, r: AABB): boolean {
@@ -32,6 +32,7 @@ interface CollisionEvent {
 	delta?: Vector;
 	exit_point?: Vector;
 	time?: number;
+	debug_time?: number;
 }
 
 // TODO: fix t_hit_near is not always between 0 and 1
@@ -43,6 +44,26 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	const t_far = new Vector(0, 0);
 	t_far.x = (target.pos.x + target.size.x - ray_origin.x) / ray_dir.x;
 	t_far.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
+
+	if (isNaN(t_far.x) || isNaN(t_far.y)) {
+		throw new Error("NaN");
+	}
+
+	if (isNaN(t_near.x) || isNaN(t_near.y)) {
+		throw new Error("NaN");
+	}
+
+	/*
+	if (!(isFinite(t_far.x) && isFinite(t_far.y))) {
+		console.log("t_far infinite");
+		return { collision: false };
+	}
+
+	if (!(isFinite(t_near.x) && isFinite(t_near.y))) {
+		console.log("t_near infinite");
+		return { collision: false };
+	}
+	*/
 
 	if (t_near.x > t_far.x) {
 		const tmp = t_near.x;
@@ -57,6 +78,8 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (t_near.x > t_far.y || t_near.y > t_far.x) {
+		//console.log("case 1", t_near.x, t_near.y, t_far.x, t_far.y);
+		console.log("case 1")
 		return { collision: false };
 	}
 
@@ -65,6 +88,7 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	const t_hit_far = Math.min(t_far.x, t_far.y);
 
 	if (t_hit_near > 1 || t_hit_far < 0) {
+		console.log("case 2");
 		return { collision: false };
 	}
 
@@ -93,9 +117,11 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (!isFinite(t_hit_near)) {
+		console.log("case 3");
 		return { collision: false };
 	}
 
+	console.log("case 4");
 	return { collision: true, contact_point, contact_normal, time: t_hit_near, exit_point };
 }
 
@@ -113,6 +139,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 
 	const event = RayVsRect(origin, delta, expanded_target);
 	if (event.collision && event.time && event.time <= 1) {
+		event.debug_time = event.time;
 		event.time = clamp(event.time - EPSILON, 0, 1);
 		return event;
 	}
