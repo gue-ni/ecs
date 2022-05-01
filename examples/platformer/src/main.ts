@@ -1,4 +1,5 @@
 import { randInt } from "three/src/math/MathUtils";
+import { convertToObject } from "typescript";
 import * as ECS from "../../../lib";
 import { Input, InputSystem } from "./input";
 
@@ -69,8 +70,8 @@ class SpriteSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const rect = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
-		params.context.fillStyle = rect.color;
-		params.context.fillRect(Math.round(position.x), Math.round(position.y), rect.w, rect.h);
+		params.context.strokeStyle = rect.color;
+		params.context.strokeRect(Math.round(position.x), Math.round(position.y), rect.w, rect.h);
 	}
 }
 
@@ -87,17 +88,17 @@ class PhysicsSystem extends ECS.System {
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
 
-		//const GRAVITY = 200;
-		//position.y = position.y + params.dt * GRAVITY;
+		const GRAVITY = 1000;
+		velocity.y += params.dt * GRAVITY;
 
 		if (position.y <= 0 || position.y >= params.canvas.height - sprite.h) {
 			position.y = ECS.clamp(position.y, 0, params.canvas.height - sprite.h);
-			velocity.y = -velocity.y;
+			//velocity.y = -velocity.y;
 		}
 
 		if (position.x <= 0 || position.x >= params.canvas.width - sprite.w) {
 			position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
-			velocity.x = -velocity.x;
+			//velocity.x = -velocity.x;
 		}
 	}
 }
@@ -134,41 +135,71 @@ class CollisionSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
+		if (!velocity) return;
+
 		const position = entity.getComponent(Position) as Position;
 		const collider = entity.getComponent(Collider) as Collider;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const possible = quadtree.query(collider.aabb);
 
+		const collisions = [];
+
 		for (const target of possible) {
 			if (target.id == entity.id) continue;
 
-			if (velocity) {
-				const { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(
-					collider.aabb,
-					target,
-					dt
+			const { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(collider.aabb, target, dt);
+			if (collision && time) {
+				collisions.push({ time, contact_normal, contact_point, target });
+				sprite.color = "red";
+			}
+		}
+
+		collisions.sort((a, b) => {
+			return a.time - b.time;
+		});
+
+		if (collisions.length) {
+			console.log("collisions");
+		}
+
+		const _DEBUG = true;
+
+		if (_DEBUG) {
+			const a = new ECS.Vector(
+				collider.aabb.pos.x + collider.aabb.size.x / 2,
+				collider.aabb.pos.y + collider.aabb.size.y / 2
+			);
+			const b = new ECS.Vector(a.x + collider.aabb.vel.x, a.y + collider.aabb.vel.y);
+
+			params.context.strokeStyle = "white";
+			params.context.beginPath();
+			params.context.moveTo(a.x, a.y);
+			params.context.lineTo(b.x, b.y);
+			params.context.stroke();
+		}
+
+		for (const { time, contact_normal, target, contact_point } of collisions) {
+			console.log("time", time.toFixed(2), "normal", contact_normal.x, contact_normal.y);
+			velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
+			velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
+
+			if (_DEBUG) {
+				params.context.strokeStyle = "white";
+				params.context.strokeRect(
+					target.pos.x - collider.aabb.size.x / 2,
+					target.pos.y - collider.aabb.size.y / 2,
+					target.size.x + collider.aabb.size.x,
+					target.size.y + collider.aabb.size.y
 				);
 
-				if (collision) {
+				params.context.fillStyle = "blue";
+				params.context.fillRect(contact_point.x - 2, contact_point.y - 2, 4, 4);
 
-					console.log("collision", time.toFixed(2))
-
-					/*
-					position.x = contact_point.x - sprite.w / 2;
-					position.y = contact_point.y - sprite.h / 2;
-					velocity.x = 0;
-					velocity.y = 0;
-					*/
-
-					velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
-					velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
-
-					sprite.color = "red";
-				}
-			} else {
-				const collision = ECS.RectVsRect(collider.aabb, target);
-				if (collision) sprite.color = "red";
+				/*
+				params.context.fillStyle = "purple";
+				params.context.fillRect(exit_point.x - 2, exit_point.y - 2, 4, 4);
+				*/
 			}
 		}
 	}
@@ -183,28 +214,29 @@ class MovementSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 
-		const SPEED = 200;
+		const SPEED = 100;
 
 		if (input.is_key_pressed("ArrowLeft")) {
 			velocity.x = -SPEED;
-		}
-		if (input.is_key_pressed("ArrowRight")) {
+		} else if (input.is_key_pressed("ArrowRight")) {
 			velocity.x = SPEED;
+		} else {
+			velocity.x = 0;
 		}
-		if (input.is_key_pressed("ArrowUp")) {
-			velocity.y = -SPEED;
+
+		if (input.is_key_pressed("ArrowUp", 500)) {
+			velocity.y = -SPEED * 3;
 		}
-		if (input.is_key_pressed("ArrowDown")) {
-			velocity.y = SPEED;
-		}
+
+		//console.log(velocity.x, velocity.y)
 	}
 }
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new InputSystem(canvas));
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new CollisionSystem());
+ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new SpriteSystem());
 
 const TILESIZE = 16;
@@ -223,7 +255,6 @@ const TILESIZE = 16;
 }
 
 const boxes = [
-	[1, 2],
 	[2, 2],
 	[3, 2],
 	[4, 2],
@@ -233,7 +264,10 @@ const boxes = [
 	[8, 2],
 	[9, 2],
 	[10, 2],
-	[11, 2],
+	[12, 4],
+	[13, 4],
+	[14, 2],
+	[15, 2],
 ];
 
 for (const [x, y] of boxes) {
