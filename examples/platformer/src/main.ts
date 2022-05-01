@@ -84,15 +84,21 @@ class PhysicsSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
+		const collider = entity.getComponent(Collider) as Collider;
 
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
 
 		const GRAVITY = 1000;
-		velocity.y += params.dt * GRAVITY;
+		//if (collider && !collider.contact_south){
+		if (true){
+			velocity.y += params.dt * GRAVITY;
+		}
 
-		if (position.y <= 0 || position.y >= params.canvas.height - sprite.h) {
-			position.y = ECS.clamp(position.y, 0, params.canvas.height - sprite.h);
+
+
+		if (position.y > canvas.height - sprite.h) {
+			position.y = canvas.height - sprite.h;
 			//velocity.y = -velocity.y;
 		}
 
@@ -130,7 +136,7 @@ class CollisionSystem extends ECS.System {
 
 			quadtree.insert(collider.aabb);
 		}
-		//quadtree.debug_draw(params.context, "black");
+		quadtree.debug_draw(params.context, "black");
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -142,15 +148,16 @@ class CollisionSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const possible = quadtree.query(collider.aabb);
+		console.log("possible", possible.length)
 
 		const collisions = [];
 
 		for (const target of possible) {
 			if (target.id == entity.id) continue;
 
-			const { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(collider.aabb, target, dt);
+			const { collision, contact_normal, contact_point, time , debug_time} = ECS.DynamicRectVsRect(collider.aabb, target, dt);
 			if (collision && time) {
-				collisions.push({ time, contact_normal, contact_point, target });
+				collisions.push({ time, contact_normal, contact_point, target, debug_time });
 				sprite.color = "red";
 			}
 		}
@@ -179,8 +186,13 @@ class CollisionSystem extends ECS.System {
 			params.context.stroke();
 		}
 
-		for (const { time, contact_normal, target, contact_point } of collisions) {
-			console.log("time", time.toFixed(2), "normal", contact_normal.x, contact_normal.y);
+		collider.contact_south = false;
+
+		for (const { time, contact_normal, target, contact_point, debug_time } of collisions) {
+			console.log("time", time.toFixed(3), "debug_time", debug_time.toFixed(3), "normal", contact_normal.x, contact_normal.y);
+
+			if (contact_normal.y == -1) collider.contact_south = true;
+
 			velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
 			velocity.y += contact_normal.y * Math.abs(velocity.y) * (1 - time);
 
@@ -266,7 +278,6 @@ const boxes = [
 	[10, 2],
 	[12, 4],
 	[13, 4],
-	[14, 2],
 	[15, 2],
 ];
 
