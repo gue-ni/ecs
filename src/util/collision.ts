@@ -2,6 +2,16 @@ import { Vector } from "./vector";
 import { EntityID } from "../entity";
 import { clamp } from "./index";
 
+/**
+ * https://www.youtube.com/watch?v=8JJ-4JgR7Dg
+ * https://noonat.github.io/intersect/
+ * https://gamedev.stackexchange.com/questions/144817/swept-aabb-3d-incorrect-collision-resolution-along-negative-normals
+ */
+
+//const EPSILON = 0.000001;
+const EPSILON = 0.0000001;
+//const EPSILON = 0;
+
 function PointVsRect(p: Vector, r: AABB): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
 }
@@ -25,9 +35,7 @@ interface CollisionEvent {
 }
 
 // TODO: fix t_hit_near is not always between 0 and 1
-function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): CollisionEvent {
-	const ray_dir = new Vector(ray_target.x - ray_origin.x, ray_target.y - ray_origin.y);
-
+function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
 	t_near.y = (target.pos.y - ray_origin.y) / ray_dir.y;
@@ -56,7 +64,7 @@ function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): Collis
 
 	const t_hit_far = Math.min(t_far.x, t_far.y);
 
-	if (t_hit_far < 0) {
+	if (t_hit_near > 1 || t_hit_far < 0) {
 		return { collision: false };
 	}
 
@@ -84,6 +92,10 @@ function RayVsRect(ray_origin: Vector, ray_target: Vector, target: AABB): Collis
 		}
 	}
 
+	if (!isFinite(t_hit_near)) {
+		return { collision: false };
+	}
+
 	return { collision: true, contact_point, contact_normal, time: t_hit_near, exit_point };
 }
 
@@ -96,14 +108,12 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
 
-	let delta = dt;
-
 	const origin = new Vector(input.pos.x + input.size.x / 2, input.pos.y + input.size.y / 2);
-	const future_location = new Vector(origin.x + input.vel.x * delta, origin.y + input.vel.y * delta);
+	const delta = new Vector(input.vel.x * dt, input.vel.y * dt);
 
-	const event = RayVsRect(origin, future_location, expanded_target);
-
-	if (event.collision && event.time) {
+	const event = RayVsRect(origin, delta, expanded_target);
+	if (event.collision && event.time && event.time <= 1) {
+		event.time = clamp(event.time - EPSILON, 0, 1);
 		return event;
 	}
 

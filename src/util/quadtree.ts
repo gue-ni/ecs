@@ -189,12 +189,12 @@ class QuadTree {
 	 * @param context
 	 * @param color
 	 */
-	debug_draw(context: CanvasRenderingContext2D, color: string = "red") {
+	debug_draw(context: CanvasRenderingContext2D, color: string = "red", x_offset: number = 0, y_offset: number = 0) {
 		context.strokeStyle = color;
-		context.strokeRect(this.bounds.pos.x, this.bounds.pos.y, this.bounds.size.x, this.bounds.size.y);
+		context.strokeRect(this.bounds.pos.x + x_offset, this.bounds.pos.y + y_offset, this.bounds.size.x, this.bounds.size.y);
 
 		for (const node of this.nodes) {
-			node.debug_draw(context, color);
+			node.debug_draw(context, color, x_offset, y_offset);
 		}
 	}
 }
