@@ -51,6 +51,10 @@ class Velocity extends ECS.Component {
 
 class Collider extends ECS.Component {
 	aabb: ECS.AABB;
+	contact_north: boolean = false;
+	contact_south: boolean = false;
+	contact_east: boolean = false;
+	contact_west: boolean = false;
 	constructor(width: number, height: number) {
 		super();
 		this.aabb = new ECS.AABB("", new ECS.Vector(), new ECS.Vector(width, height));
@@ -140,13 +144,15 @@ class CollisionSystem extends ECS.System {
 			if (target.id == entity.id) continue;
 
 			if (velocity) {
-				const { collision, contact_normal, contact_point, exit_point, time } = ECS.DynamicRectVsRect(
+				const { collision, contact_normal, contact_point, time } = ECS.DynamicRectVsRect(
 					collider.aabb,
 					target,
 					dt
 				);
 
 				if (collision) {
+
+					console.log("collision", time.toFixed(2))
 
 					/*
 					position.x = contact_point.x - sprite.w / 2;

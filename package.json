@@ -4,6 +4,7 @@
   "description": "A minimal Entity-Component-System for browser games",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
+  "type": "module",
   "scripts": {
     "prepare": "tsc && rollup -c",
     "build": "tsc && rollup -c",
