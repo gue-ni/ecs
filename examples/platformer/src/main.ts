@@ -91,11 +91,9 @@ class PhysicsSystem extends ECS.System {
 
 		const GRAVITY = 1000;
 		//if (collider && !collider.contact_south){
-		if (true){
+		if (true) {
 			velocity.y += params.dt * GRAVITY;
 		}
-
-
 
 		if (position.y > canvas.height - sprite.h) {
 			position.y = canvas.height - sprite.h;
@@ -136,7 +134,7 @@ class CollisionSystem extends ECS.System {
 
 			quadtree.insert(collider.aabb);
 		}
-		quadtree.debug_draw(params.context, "black");
+		quadtree.debug_draw(params.context, "#A0A0A0");
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -148,15 +146,19 @@ class CollisionSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const possible = quadtree.query(collider.aabb);
-		console.log("possible", possible.length)
+		//const possible = quadtree.all_objects();
 
 		const collisions = [];
 
 		for (const target of possible) {
 			if (target.id == entity.id) continue;
 
-			const { collision, contact_normal, contact_point, time , debug_time} = ECS.DynamicRectVsRect(collider.aabb, target, dt);
-			if (collision && time) {
+			const { collision, contact_normal, contact_point, time, debug_time } = ECS.DynamicRectVsRect(
+				collider.aabb,
+				target,
+				dt
+			);
+			if (collision) {
 				collisions.push({ time, contact_normal, contact_point, target, debug_time });
 				sprite.color = "red";
 			}
@@ -165,10 +167,6 @@ class CollisionSystem extends ECS.System {
 		collisions.sort((a, b) => {
 			return a.time - b.time;
 		});
-
-		if (collisions.length) {
-			console.log("collisions");
-		}
 
 		const _DEBUG = true;
 
@@ -189,7 +187,7 @@ class CollisionSystem extends ECS.System {
 		collider.contact_south = false;
 
 		for (const { time, contact_normal, target, contact_point, debug_time } of collisions) {
-			console.log("time", time.toFixed(3), "debug_time", debug_time.toFixed(3), "normal", contact_normal.x, contact_normal.y);
+			//console.log("time", time.toFixed(3), "debug_time", debug_time.toFixed(3), "normal", contact_normal.x, contact_normal.y);
 
 			if (contact_normal.y == -1) collider.contact_south = true;
 
@@ -309,7 +307,7 @@ function animate(now: number) {
 
 	if (!paused) {
 		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "#A0A0A0";
+		context.fillStyle = "#D3D3D3";
 		context.fillRect(0, 0, canvas.width, canvas.height);
 
 		ecs.update({ dt, canvas, context });

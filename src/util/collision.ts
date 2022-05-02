@@ -53,18 +53,6 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 		throw new Error("NaN");
 	}
 
-	/*
-	if (!(isFinite(t_far.x) && isFinite(t_far.y))) {
-		console.log("t_far infinite");
-		return { collision: false };
-	}
-
-	if (!(isFinite(t_near.x) && isFinite(t_near.y))) {
-		console.log("t_near infinite");
-		return { collision: false };
-	}
-	*/
-
 	if (t_near.x > t_far.x) {
 		const tmp = t_near.x;
 		t_near.x = t_far.x;
@@ -78,8 +66,7 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (t_near.x > t_far.y || t_near.y > t_far.x) {
-		//console.log("case 1", t_near.x, t_near.y, t_far.x, t_far.y);
-		console.log("case 1")
+		//console.log("case 1")
 		return { collision: false };
 	}
 
@@ -88,7 +75,7 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	const t_hit_far = Math.min(t_far.x, t_far.y);
 
 	if (t_hit_near > 1 || t_hit_far < 0) {
-		console.log("case 2");
+		//console.log("case 2");
 		return { collision: false };
 	}
 
@@ -117,11 +104,11 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (!isFinite(t_hit_near)) {
-		console.log("case 3");
+		//console.log("case 3");
 		return { collision: false };
 	}
 
-	console.log("case 4");
+	//console.log("case 4");
 	return { collision: true, contact_point, contact_normal, time: t_hit_near, exit_point };
 }
 
