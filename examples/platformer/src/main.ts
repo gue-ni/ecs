@@ -125,7 +125,6 @@ class CollisionSystem extends ECS.System {
 
 			collider.aabb.id = entity.id;
 			collider.aabb.pos.set(position.x, position.y);
-			collider.aabb.size.set(sprite.w, sprite.h);
 			if (velocity) {
 				collider.aabb.vel.set(velocity.x, velocity.y);
 			} else {
@@ -146,7 +145,6 @@ class CollisionSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 
 		const possible = quadtree.query(collider.aabb);
-		//const possible = quadtree.all_objects();
 
 		const collisions = [];
 
@@ -186,8 +184,7 @@ class CollisionSystem extends ECS.System {
 
 		collider.contact_south = false;
 
-		for (const { time, contact_normal, target, contact_point, debug_time } of collisions) {
-			//console.log("time", time.toFixed(3), "debug_time", debug_time.toFixed(3), "normal", contact_normal.x, contact_normal.y);
+		for (const { time, contact_normal, target, contact_point } of collisions) {
 
 			if (contact_normal.y == -1) collider.contact_south = true;
 
@@ -224,7 +221,8 @@ class MovementSystem extends ECS.System {
 		const input = entity.getComponent(Input) as Input;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 
-		const SPEED = 100;
+		const SPEED = 150;
+		const JUMP= 300;
 
 		if (input.is_key_pressed("ArrowLeft")) {
 			velocity.x = -SPEED;
@@ -235,7 +233,7 @@ class MovementSystem extends ECS.System {
 		}
 
 		if (input.is_key_pressed("ArrowUp", 500)) {
-			velocity.y = -SPEED * 3;
+			velocity.y = -JUMP;
 		}
 
 		//console.log(velocity.x, velocity.y)
