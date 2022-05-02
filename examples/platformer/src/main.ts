@@ -185,7 +185,6 @@ class CollisionSystem extends ECS.System {
 		collider.contact_south = false;
 
 		for (const { time, contact_normal, target, contact_point } of collisions) {
-
 			if (contact_normal.y == -1) collider.contact_south = true;
 
 			velocity.x += contact_normal.x * Math.abs(velocity.x) * (1 - time);
@@ -222,7 +221,7 @@ class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 
 		const SPEED = 150;
-		const JUMP= 300;
+		const JUMP = 300;
 
 		if (input.is_key_pressed("ArrowLeft")) {
 			velocity.x = -SPEED;
@@ -232,11 +231,7 @@ class MovementSystem extends ECS.System {
 			velocity.x = 0;
 		}
 
-		if (input.is_key_pressed("ArrowUp", 500)) {
-			velocity.y = -JUMP;
-		}
-
-		//console.log(velocity.x, velocity.y)
+		if (input.is_key_pressed("ArrowUp", 500)) velocity.y = -JUMP;
 	}
 }
 
@@ -275,6 +270,7 @@ const boxes = [
 	[12, 4],
 	[13, 4],
 	[15, 2],
+	[6, 6],
 ];
 
 for (const [x, y] of boxes) {

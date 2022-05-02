@@ -32,7 +32,7 @@ class QuadTree {
 	 */
 	insert(aabb: AABB): void {
 		if (this.nodes.length) {
-			let index = this.getQuadrant(aabb);
+			let index = this.get_quadrant(aabb);
 			if (index !== -1) {
 				this.nodes[index].insert(aabb);
 				return;
@@ -49,7 +49,7 @@ class QuadTree {
 			let newObjects = [];
 
 			for (let object of this.objects) {
-				let index = this.getQuadrant(object);
+				let index = this.get_quadrant(object);
 				if (index != -1) {
 					this.nodes[index].insert(object);
 				} else {
@@ -119,7 +119,7 @@ class QuadTree {
 	 * @param aabb
 	 * @returns 0 - 3 if in quadrant, -1 if on the edge
 	 */
-	private getQuadrant(aabb: AABB): number {
+	private get_quadrant(aabb: AABB): number {
 		let index = -1;
 
 		let x = aabb.pos.x;
@@ -158,12 +158,12 @@ class QuadTree {
 	query(aabb: AABB): AABB[] {
 		let list: AABB[] = [...this.objects];
 
-		const index = this.getQuadrant(aabb);
+		const index = this.get_quadrant(aabb);
 		if (this.nodes.length) {
 			if (index != -1) {
 				list = [...list, ...this.nodes[index].query(aabb)];
 			} else {
-				list = [...this.all_objects()];
+				list = [...this.all()];
 			}
 		}
 
@@ -174,11 +174,11 @@ class QuadTree {
 	 * Get all objects
 	 * @returns all objects contained in this and it's child nodes
 	 */
-	all_objects(): AABB[] {
+	all(): AABB[] {
 		let list: AABB[] = [...this.objects];
 
 		for (let node of this.nodes) {
-			list = [...list, ...node.all_objects()];
+			list = [...list, ...node.all()];
 		}
 
 		return list;

@@ -35,7 +35,13 @@ interface CollisionEvent {
 	debug_time?: number;
 }
 
-// TODO: fix t_hit_near is not always between 0 and 1
+/**
+ * 
+ * @param ray_origin 
+ * @param ray_dir 
+ * @param target 
+ * @returns 
+ */
 function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
 	const t_near = new Vector(0, 0);
 	t_near.x = (target.pos.x - ray_origin.x) / ray_dir.x;
