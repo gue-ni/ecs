@@ -8,9 +8,10 @@ import { clamp } from "./index";
  * https://gamedev.stackexchange.com/questions/144817/swept-aabb-3d-incorrect-collision-resolution-along-negative-normals
  */
 
-//const EPSILON = 0.000001;
+// tutorial
 const EPSILON = 0.000001;
-//const EPSILON = 0;
+
+//const EPSILON = 1e-8;
 
 function PointVsRect(p: Vector, r: AABB): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
@@ -36,11 +37,11 @@ interface CollisionEvent {
 }
 
 /**
- * 
- * @param ray_origin 
- * @param ray_dir 
- * @param target 
- * @returns 
+ *
+ * @param ray_origin
+ * @param ray_dir
+ * @param target
+ * @returns
  */
 function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent {
 	const t_near = new Vector(0, 0);
@@ -52,11 +53,11 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	t_far.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
 
 	if (isNaN(t_far.x) || isNaN(t_far.y)) {
-		throw new Error("NaN");
+		return { collision: false };
 	}
 
 	if (isNaN(t_near.x) || isNaN(t_near.y)) {
-		throw new Error("NaN");
+		return { collision: false };
 	}
 
 	if (t_near.x > t_far.x) {
