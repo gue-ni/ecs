@@ -1,5 +1,4 @@
-import * as ECS from "../../../lib";
-import { Input, InputSystem } from "./input";
+import * as ECS from "../../../src";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -33,6 +32,10 @@ class Position extends ECS.Component {
 		this.x = x;
 		this.y = y;
 	}
+}
+
+class Dash extends ECS.Component {
+	duration: number = 0;
 }
 
 class Velocity extends ECS.Component {
@@ -103,25 +106,52 @@ class PhysicsSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([Input, Velocity]);
+		super([ECS.Input, Velocity, Dash]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const input = entity.getComponent(Input) as Input;
+		const input = entity.getComponent(ECS.Input) as ECS.Input;
+		const dash = entity.getComponent(Dash) as Dash;
 		const velocity = entity.getComponent(Velocity) as Velocity;
 
 		const SPEED = 200;
+		const DASH_FACTOR = 4;
 		const JUMP = 300;
 
+		if (!input.is_key_pressed("Space")) {
+			dash.duration += params.dt;
+			dash.duration = Math.min(dash.duration, 0.1);
+		}
+
 		if (input.is_key_pressed("ArrowLeft")) {
-			velocity.x = -SPEED;
+			if (input.is_key_pressed("Space") && dash.duration > 0) {
+				console.log("dash left", dash.duration);
+				dash.duration -= params.dt;
+				velocity.x = -SPEED * DASH_FACTOR;
+			} else {
+				velocity.x = -SPEED;
+			}
 		} else if (input.is_key_pressed("ArrowRight")) {
-			velocity.x = SPEED;
+			if (input.is_key_pressed("Space") && dash.duration > 0) {
+				console.log("dash right", dash.duration);
+				dash.duration -= params.dt;
+				velocity.x = SPEED * DASH_FACTOR;
+			} else {
+				velocity.x = SPEED;
+			}
 		} else {
 			velocity.x = 0;
 		}
 
-		if (input.is_key_pressed("ArrowUp", 500)) velocity.y = -JUMP;
+		if (input.is_key_pressed("ArrowUp", 500)) {
+			if (input.is_key_pressed("Space") && dash.duration > 0) {
+				console.log("dash up")
+				dash.duration -= params.dt;
+				velocity.y = -SPEED * 3;
+			} else {
+				velocity.y = -JUMP;
+			}
+		}
 	}
 }
 
@@ -189,10 +219,10 @@ class CollisionSystem extends ECS.System {
 			return a.time - b.time;
 		});
 
-		if (entity.getComponent(Input)) {
+		if (entity.getComponent(ECS.Input)) {
 			//console.log(collisions.map((e) => e.time.toFixed(2)))
 			//console.log(collisions.map((e) => `${e.contact_normal.x},${e.contact_normal.y},${e.time.toFixed(2)}`))
-			console.log("south", collider.contact_south, "east", collider.contact_east, "west", collider.contact_west);
+			//console.log("south", collider.contact_south, "east", collider.contact_east, "west", collider.contact_west);
 		}
 
 		const _DEBUG = true;
@@ -245,7 +275,7 @@ class CollisionSystem extends ECS.System {
 }
 
 const ecs = new ECS.ECS();
-ecs.addSystem(new InputSystem(canvas));
+ecs.addSystem(new ECS.InputSystem(canvas));
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new CollisionSystem());
 ecs.addSystem(new PhysicsSystem());
@@ -258,9 +288,9 @@ const TILESIZE = 16;
 	entity.addComponent(new Position(50, 50));
 	entity.addComponent(new Sprite(TILESIZE, TILESIZE, "green"));
 	entity.addComponent(new Velocity(0, 0));
-	let offset = 2;
+	entity.addComponent(new Dash());
 	entity.addComponent(new Collider(TILESIZE, TILESIZE));
-	entity.addComponent(new Input());
+	entity.addComponent(new ECS.Input());
 	ecs.addEntity(entity);
 }
 

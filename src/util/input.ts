@@ -1,19 +1,22 @@
-import * as ECS from "../../../lib";
+import { Component } from "../component";
+import { System } from "../system";
+import { Entity } from "../entity";
+import { UpdateParams } from "../ecs";
 
 type MouseButton = "left" | "right";
 
-export class Input extends ECS.Component {
+class Input extends Component {
 	pressed: any;
 	last_pressed: any;
 
 	mouse: any;
 	mouse_last_pressed: any;
 
-	lastX: number;
-	lastY: number;
+	lastX: number = 0;
+	lastY: number = 0;
 
-	mouseY: number;
-	mouseX: number;
+	mouseY: number = 0;
+	mouseX: number = 0;
 
 	doubleJumpAllowed: boolean = false;
 
@@ -42,9 +45,9 @@ export class Input extends ECS.Component {
 				this.mouse_last_pressed[side] = Date.now();
 				return true;
 			}
-		} else {
-			return false;
 		}
+
+		return false;
 	}
 }
 
@@ -57,7 +60,7 @@ function toScreenCoord(x: number, y: number, canvas: HTMLCanvasElement) {
 	return [xs, ys];
 }
 
-export class InputSystem extends ECS.System {
+class InputSystem extends System {
 	keys: any;
 	mouse: any;
 
@@ -114,7 +117,7 @@ export class InputSystem extends ECS.System {
 		});
 	}
 
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+	updateEntity(entity: Entity, params: UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 
 		input.pressed = { ...this.keys };
@@ -127,3 +130,5 @@ export class InputSystem extends ECS.System {
 		input.lastY = this.lastY;
 	}
 }
+
+export { Input, InputSystem, MouseButton };

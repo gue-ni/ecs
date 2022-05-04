@@ -132,9 +132,9 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	const delta = new Vector(input.vel.x * dt, input.vel.y * dt);
 
 	const event = RayVsRect(origin, delta, expanded_target);
-	if (event.collision && event.time && event.time <= 1) {
-		event.debug_time = event.time;
-		event.time = clamp(event.time - EPSILON, 0, 1);
+	if (event.collision && event.time !== undefined && -0.01 < event.time && event.time <= 1) {
+		//event.debug_time = event.time;
+		//event.time = clamp(event.time - EPSILON, 0, 1);
 		return event;
 	}
 
