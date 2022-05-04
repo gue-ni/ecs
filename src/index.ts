@@ -7,4 +7,4 @@ export { randomFloat, randomInteger, clamp } from "./util/index";
 export { QuadTree } from "./util/quadtree";
 export { Component } from "./component";
 export { State, HTMLElementState, FiniteStateMachine } from "./fsm";
-export {Input, InputSystem, MouseButton} from "./util/input";
+export { Input, InputSystem, MouseButton } from "./systems/input";
