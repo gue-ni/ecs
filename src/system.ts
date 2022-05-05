@@ -1,6 +1,6 @@
 import { ECS, UpdateParams } from "./ecs";
 import { Entity } from "./entity";
-import { Component, ComponentConstructor } from "./component";
+import { ComponentConstructor } from "./component";
 
 abstract class System {
 	private requiredComponents: ComponentConstructor[];
