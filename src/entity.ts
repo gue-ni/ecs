@@ -1,4 +1,4 @@
-import { Component, ComponentConstructor } from "./component";
+import { Component, ComponentConstructor, ComponentType, getComponentType } from "./component";
 
 let _entities = 0;
 
@@ -13,18 +13,18 @@ class Entity {
 	id: EntityID;
 	active: boolean;
 	ttl?: number;
-	components: Map<number, Component>;
+	components: Map<ComponentType, Component>;
 
 	constructor(params?: EntityParams) {
 		params = params || {};
 		this.active = true;
-		this.components = new Map<number, Component>();
+		this.components = new Map<ComponentType, Component>();
 		this.id = params.id || (+new Date()).toString(16) + _entities++;
 		this.ttl = params.ttl;
 	}
 
 	addComponent(component: Component): Entity {
-		this.components.set((component.constructor as ComponentConstructor).type, component);
+		this.components.set(getComponentType(component), component);
 		return this;
 	}
 

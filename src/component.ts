@@ -1,9 +1,11 @@
 // https://github.com/jakeklassen/ecs
 
-let component_id = 0;
+let _component_types = 0;
+
+type ComponentType = number;
 
 interface IComponent {
-	readonly type: number;
+	readonly type: ComponentType;
 }
 
 type Constructor<T> = abstract new (...args: any[]) => T;
@@ -11,11 +13,11 @@ type Constructor<T> = abstract new (...args: any[]) => T;
 type ComponentConstructor = Constructor<Component> & IComponent;
 
 abstract class Component {
-	protected static _type: number;
+	protected static _type: ComponentType;
 
-	public static get type(): number {
+	public static get type(): ComponentType {
 		if (this._type == null) {
-			this._type = component_id++;
+			this._type = _component_types++;
 		}
 		return this._type;
 	}
@@ -23,8 +25,8 @@ abstract class Component {
 	destroy() {}
 }
 
-function getComponentType(component: Component): number {
+function getComponentType(component: Component): ComponentType {
 	return (component.constructor as ComponentConstructor).type;
 }
 
-export { Component, IComponent, ComponentConstructor, getComponentType };
+export { Component, IComponent, ComponentConstructor, ComponentType, getComponentType };

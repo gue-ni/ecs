@@ -1,4 +1,4 @@
-# lofi-ecs
+# ECS - Entity Component System
 
 A simple entity-component-system for HTML5 games. 
 
