@@ -1,10 +1,9 @@
 import { ECS, UpdateParams } from "./ecs";
 import { Entity } from "./entity";
-
-
+import { Component, ComponentConstructor } from "./component";
 
 abstract class System {
-	private requiredComponents: any[];
+	private requiredComponents: ComponentConstructor[];
 
 	ecs?: ECS;
 
@@ -19,8 +18,9 @@ abstract class System {
 	}
 
 	_componentMatch(entity: Entity): boolean {
-		for (let component of this.requiredComponents) {
-			if (!entity.components.has(component.name)) return false;
+		// TODO improve this
+		for (let required of this.requiredComponents) {
+			if (!entity.components.has(required.type)) return false;
 		}
 		return true;
 	}

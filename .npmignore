@@ -1,6 +1,6 @@
 .vscode/
-src/
 dist/
+lib/
 examples/
 learn/
 node_modules/

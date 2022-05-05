@@ -4,6 +4,8 @@
 		"module": "commonjs",
 		"lib": ["es5", "DOM", "esnext"],
 		"sourceMap": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		 "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
 	}
 }

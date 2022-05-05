@@ -1,14 +1,30 @@
-import { Entity } from "./entity";
+// https://github.com/jakeklassen/ecs
+
+let component_id = 0;
+
+interface IComponent {
+	readonly type: number;
+}
+
+type Constructor<T> = abstract new (...args: any[]) => T;
+
+type ComponentConstructor = Constructor<Component> & IComponent;
 
 abstract class Component {
-		entity: Entity | undefined;
+	protected static _type: number;
 
-	get name(): string {
-		// https://www.beyondjava.net/constructor-name
-		return this.constructor.name;
+	public static get type(): number {
+		if (this._type == null) {
+			this._type = component_id++;
+		}
+		return this._type;
 	}
 
 	destroy() {}
 }
 
-export { Component };
+function getComponentType(component: Component): number {
+	return (component.constructor as ComponentConstructor).type;
+}
+
+export { Component, IComponent, ComponentConstructor, getComponentType };

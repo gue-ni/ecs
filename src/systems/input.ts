@@ -18,8 +18,6 @@ class Input extends Component {
 	mouseY: number = 0;
 	mouseX: number = 0;
 
-	doubleJumpAllowed: boolean = false;
-
 	constructor() {
 		super();
 		this.pressed = {};
@@ -28,6 +26,7 @@ class Input extends Component {
 		this.mouse = {};
 		this.mouse_last_pressed = {};
 	}
+
 
 	is_key_pressed(key: string, delay?: number): boolean {
 		if (this.pressed[key]) {
@@ -46,18 +45,8 @@ class Input extends Component {
 				return true;
 			}
 		}
-
 		return false;
 	}
-}
-
-function toScreenCoord(x: number, y: number, canvas: HTMLCanvasElement) {
-	const rect = canvas.getBoundingClientRect();
-	const scaleX = canvas.width / rect.width;
-	const scaleY = canvas.height / rect.height;
-	let xs = Math.round((x - rect.left) * scaleX);
-	let ys = Math.round((y - rect.top) * scaleY);
-	return [xs, ys];
 }
 
 class InputSystem extends System {
@@ -119,9 +108,10 @@ class InputSystem extends System {
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
+		//console.log(input)
 
-		input.pressed = { ...this.keys };
 		input.mouse = { ...this.mouse };
+		input.pressed = { ...this.keys };
 
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;

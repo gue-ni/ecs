@@ -6,7 +6,9 @@
 		"declaration": true,
 		"outDir": "lib",
 		"sourceMap": true,
-		"strict": true
+		"strict": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
 	},
 	"include": ["src", "test"],
 	"exclude": ["node_modules"]
