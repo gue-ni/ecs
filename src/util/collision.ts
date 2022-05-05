@@ -33,6 +33,8 @@ interface CollisionEvent {
 	time: number;
 }
 
+const _DEBUG = false;
+
 /**
  *
  * @param ray_origin
@@ -50,10 +52,12 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	t_far.y = (target.pos.y + target.size.y - ray_origin.y) / ray_dir.y;
 
 	if (isNaN(t_far.x) || isNaN(t_far.y)) {
+		if (_DEBUG) console.log("case 0");
 		return null;
 	}
 
 	if (isNaN(t_near.x) || isNaN(t_near.y)) {
+		if (_DEBUG) console.log("case 0");
 		return null;
 	}
 
@@ -70,7 +74,7 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (t_near.x > t_far.y || t_near.y > t_far.x) {
-		//console.log("case 1")
+		if (_DEBUG) console.log("case 1");
 		return null;
 	}
 
@@ -79,7 +83,7 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	const t_hit_far = Math.min(t_far.x, t_far.y);
 
 	if (t_hit_near > 1 || t_hit_far < 0) {
-		//console.log("case 2");
+		if (_DEBUG) console.log("case 2");
 		return null;
 	}
 
@@ -108,11 +112,11 @@ function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): Collision
 	}
 
 	if (!isFinite(t_hit_near)) {
-		//console.log("case 3");
+		if (_DEBUG) console.log("case 3");
 		return null;
 	}
 
-	//console.log("case 4");
+	if (_DEBUG) console.log("case 4");
 	return { contact_point, contact_normal, time: t_hit_near, exit_point };
 }
 
@@ -129,8 +133,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	const delta = new Vector(input.vel.x * dt, input.vel.y * dt);
 
 	const event = RayVsRect(origin, delta, expanded_target);
-	if (event && event.time !== undefined && -0.01 < event.time && event.time <= 1) {
-		//event.debug_time = event.time;
+	if (event && event.time !== undefined && -0.0001 < event.time && event.time <= 1) {
 		//event.time = clamp(event.time - EPSILON, 0, 1);
 		return event;
 	}

@@ -1,4 +1,4 @@
-export class State {
+class State {
 	name: string;
 	previous: State | undefined;
 
@@ -6,12 +6,12 @@ export class State {
 		this.name = name;
 	}
 
-	exit()  {}
+	exit() {}
 
-	enter()  {}
+	enter() {}
 }
 
-export class HTMLElementState extends State {
+class HTMLElementState extends State {
 	el: HTMLElement | null;
 	visible: string;
 	constructor(name: string, selector: string, visible: string = "block") {
@@ -29,7 +29,7 @@ export class HTMLElementState extends State {
 	}
 }
 
-export class FiniteStateMachine {
+class FiniteStateMachine {
 	current: State | undefined;
 	states: Map<string, State>;
 
@@ -50,8 +50,8 @@ export class FiniteStateMachine {
 		const state = this.states.get(name);
 		if (!state) throw new Error(`State "${name}" does not exist!`);
 
-		state.previous = previous
-		state.enter()
+		state.previous = previous;
+		state.enter();
 		this.current = state;
 	}
 
@@ -63,3 +63,5 @@ export class FiniteStateMachine {
 		this.setState(previous.name);
 	}
 }
+
+export { State, FiniteStateMachine, HTMLElementState };

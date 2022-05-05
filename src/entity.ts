@@ -41,8 +41,8 @@ class Entity {
 		}
 	}
 
-	getComponent(component: ComponentConstructor): Component | undefined {
-		return this.components.get(component.type);
+	getComponent<T extends Component>(component: ComponentConstructor): T | undefined {
+		return this.components.get(component.type) as T;
 	}
 
 	_destroy() {

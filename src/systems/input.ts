@@ -107,7 +107,7 @@ class InputSystem extends System {
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
-		const input = entity.getComponent(Input) as Input;
+		const input = entity.getComponent<Input>(Input)!;
 		//console.log(input)
 
 		input.mouse = { ...this.mouse };
