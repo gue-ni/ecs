@@ -10,17 +10,22 @@ interface EntityParams {
 type EntityID = string;
 
 class Entity {
-	id: EntityID;
+	readonly id: EntityID;
 	active: boolean;
 	ttl?: number;
-	components: Map<ComponentType, Component>;
+	readonly components = new Map<ComponentType, Component>();
 
-	constructor(params?: EntityParams) {
-		params = params || {};
+	constructor(params: EntityParams = {}) {
 		this.active = true;
-		this.components = new Map<ComponentType, Component>();
 		this.id = params.id || (+new Date()).toString(16) + _entities++;
 		this.ttl = params.ttl;
+	}
+
+	addComponents(...components: Component[]): Entity {
+		for (let component of components) {
+			this.addComponent(component);
+		}
+		return this;
 	}
 
 	addComponent(component: Component): Entity {
@@ -28,7 +33,7 @@ class Entity {
 		return this;
 	}
 
-	removeComponent(component: ComponentConstructor): void {
+	removeComponent(component: ComponentConstructor) {
 		const removed = this.components.get(component.type);
 		if (removed) {
 			removed.destroy();
@@ -40,7 +45,7 @@ class Entity {
 		return this.components.get(component.type);
 	}
 
-	_destroy(): void {
+	_destroy() {
 		for (let [_, component] of this.components) {
 			component.destroy();
 		}

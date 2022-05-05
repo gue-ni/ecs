@@ -5,15 +5,10 @@ A simple entity-component-system for HTML5 games.
 ## TODO
 
 *	improve design
-* add collision system
 
 ## Usage
 
-```JavaScript
-import * as ECS from "./ecs.min.js"
-```
 
-or
 
 
 ```TypeScript
