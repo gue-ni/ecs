@@ -1,7 +1,9 @@
-/**
- * 
- */
-class Vector {
+interface IVector {
+	x: number;
+	y: number;
+}
+
+class Vector implements IVector {
 	x: number;
 	y: number;
 
@@ -10,15 +12,15 @@ class Vector {
 		this.y = y;
 	}
 
-	static min(v1: Vector, v2: Vector){
-		return new Vector(Math.min(v1.x, v2.x), Math.min(v1.y, v2.y))
+	static min(v1: Vector, v2: Vector) {
+		return new Vector(Math.min(v1.x, v2.x), Math.min(v1.y, v2.y));
 	}
 
-	static max(v1: Vector, v2: Vector){
-		return new Vector(Math.max(v1.x, v2.x), Math.max(v1.y, v2.y))
+	static max(v1: Vector, v2: Vector) {
+		return new Vector(Math.max(v1.x, v2.x), Math.max(v1.y, v2.y));
 	}
 
-	set(x: number, y: number){
+	set(x: number, y: number) {
 		this.x = x;
 		this.y = y;
 	}
@@ -41,9 +43,9 @@ class Vector {
 		return new Vector(this.x / vector.x, this.y / vector.y);
 	}
 
-  times(vector: Vector): Vector {
-    return new Vector(this.x * vector.x, this.y * vector.y);
-  }
+	times(vector: Vector): Vector {
+		return new Vector(this.x * vector.x, this.y * vector.y);
+	}
 
 	magnitude(): number {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
@@ -79,5 +81,4 @@ class Vector {
 	}
 }
 
-
-export {Vector}
+export { Vector, IVector };

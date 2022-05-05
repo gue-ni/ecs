@@ -1,6 +1,7 @@
 import { Component } from "../component";
+import { IVector } from "../util/vector";
 
-class VectorComponent extends Component {
+class VectorComponent extends Component implements IVector {
 	x: number;
 	y: number;
 	constructor(x: number, y: number) {
