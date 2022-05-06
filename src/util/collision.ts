@@ -1,5 +1,5 @@
 import { Vector } from "./vector";
-import { EntityID } from "../entity";
+import { Entity } from "../entity";
 import { clamp } from "./index";
 
 /**
@@ -124,7 +124,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	if (input.vel.x === 0 && input.vel.y === 0) return null;
 
 	const expanded_target = new AABB(
-		target.id,
+		target.entity,
 		new Vector(target.pos.x - input.size.x / 2, target.pos.y - input.size.y / 2),
 		new Vector(target.size.x + input.size.x, target.size.y + input.size.y)
 	);
@@ -141,6 +141,11 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 	return null;
 }
 
+enum ColliderType {
+	SOLID,
+	CUSTOM
+}
+
 class Rectangle {
 	pos: Vector;
 	size: Vector;
@@ -152,13 +157,31 @@ class Rectangle {
 
 class AABB extends Rectangle {
 	vel: Vector;
-	id: EntityID;
+	entity: Entity | null;
+	type: ColliderType;
 
-	constructor(id: EntityID, pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector()) {
+	constructor(entity: Entity | null, pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector(), type: ColliderType = ColliderType.SOLID) {
 		super(pos, size);
-		this.id = id;
+		this.entity = entity;
 		this.vel = vel;
+		this.type = type;
+	}
+
+	get minX() {
+		return this.pos.x;
+	}
+
+	get maxX() {
+		return this.pos.x + this.size.x;
+	}
+
+	get minY() {
+		return this.pos.y;
+	}
+
+	get maxY() {
+		return this.pos.y + this.size.y;
 	}
 }
 
-export { Rectangle, AABB, PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };
+export { Rectangle, ColliderType, AABB, CollisionEvent, PointVsRect, RectVsRect, RayVsRect, DynamicRectVsRect };

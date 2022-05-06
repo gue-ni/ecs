@@ -8,10 +8,11 @@ let paused = false;
 const JUMP = 400;
 const ACCELERATION = 3;
 const MIN_SPEED = 100;
-const MAX_SPEED = 170;
+const MAX_SPEED = 190;
 const GRAVITY = 1500;
 const DASH_SPEED = 700;
 const DASH_DURATION = 100;
+const DASH_RELOAD = 3000;
 
 const quadtree = new ECS.QuadTree(
 	0,
@@ -78,8 +79,15 @@ class PhysicsSystem extends ECS.System {
 			velocity.y += params.dt * GRAVITY;
 		}
 
+		/*
 		if (position.y > canvas.height - sprite.h) {
 			position.y = canvas.height - sprite.h;
+		}
+		*/
+
+		if (position.y > canvas.height) {
+			position.y = 0 - sprite.h;
+			velocity.y = 0;
 		}
 
 		position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
@@ -108,6 +116,10 @@ class MovementSystem extends ECS.System {
 
 		if (collider.south) {
 			jump.count = 0;
+			console.log("standing")
+		} else {
+
+			console.log("jumping")
 		}
 
 		const execute_dash = (dir: number) => {
@@ -124,10 +136,10 @@ class MovementSystem extends ECS.System {
 
 			setTimeout(() => {
 				dash.value = 1;
-			}, 4000);
+			}, DASH_RELOAD);
 		};
 
-		if (!dash.dashing && !collider.south) {
+		if (!dash.dashing ) {
 			if (input.is_double_pressed("ArrowLeft", 250)) {
 				console.log("double pressed ArrowLeft");
 				execute_dash(-1);
@@ -179,7 +191,7 @@ const TILESIZE = 16;
 			new Jump(),
 			new ECS.Player(),
 			new ECS.Input(),
-			new ECS.Position(50, 50),
+			new ECS.Position(canvas.width / 2, 50),
 			new ECS.Velocity(0, 0),
 			new ECS.Collider(TILESIZE, TILESIZE)
 		)
@@ -197,8 +209,6 @@ const boxes = [
 	[0, 1],
 	[1, 1],
 	[2, 1],
-	[3, 1],
-	[4, 1],
 	[5, 1],
 	[6, 1],
 	[7, 1],

@@ -4,8 +4,8 @@ import { System } from "./system";
 interface UpdateParams {
 	dt: number;
 	now?: number;
-	canvas?: HTMLCanvasElement;
-	context?: CanvasRenderingContext2D;
+	canvas: HTMLCanvasElement;
+	context: CanvasRenderingContext2D;
 	ecs?: ECS;
 }
 

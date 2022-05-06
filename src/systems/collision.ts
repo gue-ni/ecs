@@ -1,6 +1,6 @@
 import { Component } from "../component";
 import { System } from "../system";
-import { AABB, DynamicRectVsRect } from "../util/collision";
+import { AABB, ColliderType, CollisionEvent, DynamicRectVsRect } from "../util/collision";
 import { Vector } from "../util/vector";
 import { Entity } from "../entity";
 import { UpdateParams } from "../ecs";
@@ -9,14 +9,22 @@ import { QuadTree } from "../util/quadtree";
 
 class Collider extends Component {
 	aabb: AABB;
+
 	offset: Vector;
+
 	north: boolean = false;
 	south: boolean = false;
 	east: boolean = false;
 	west: boolean = false;
-	constructor(width: number, height: number, offset: Vector = new Vector()) {
+
+	constructor(
+		width: number,
+		height: number,
+		colliderType: ColliderType = ColliderType.SOLID,
+		offset: Vector = new Vector()
+	) {
 		super();
-		this.aabb = new AABB("", new Vector(), new Vector(width, height));
+		this.aabb = new AABB(null, new Vector(), new Vector(width, height), new Vector(), colliderType);
 		this.offset = offset;
 	}
 }
@@ -36,7 +44,7 @@ class CollisionSystem extends System {
 			const velocity = entity.getComponent(Velocity) as Velocity;
 			const collider = entity.getComponent(Collider) as Collider;
 
-			collider.aabb.id = entity.id;
+			collider.aabb.entity = entity;
 			collider.aabb.pos.set(position.x + collider.offset.x, position.y + collider.offset.y);
 			if (velocity) {
 				collider.aabb.vel.set(velocity.x, velocity.y);
@@ -67,18 +75,11 @@ class CollisionSystem extends System {
 
 		const collisions = [];
 
-		collider.south = collider.east = collider.west = collider.north = false;
-
 		for (let i = 0; i < possible.length; i++) {
-			if (possible[i].id == entity.id) continue;
+			if (possible[i].entity === entity) continue;
 
 			const collision = DynamicRectVsRect(collider.aabb, possible[i], params.dt);
 			if (collision) {
-				if (collision.contact_normal.y === -1) collider.south = true;
-				if (collision.contact_normal.y === +1) collider.north = true;
-				if (collision.contact_normal.x === -1) collider.east = true;
-				if (collision.contact_normal.x === +1) collider.west = true;
-
 				collisions.push({ i, time: collision.time });
 			}
 		}
@@ -87,49 +88,41 @@ class CollisionSystem extends System {
 			return a.time - b.time;
 		});
 
-		const _DEBUG = false;
-
-		if (_DEBUG) {
-			const a = new Vector(
-				collider.aabb.pos.x + collider.aabb.size.x / 2,
-				collider.aabb.pos.y + collider.aabb.size.y / 2
-			);
-			const b = new Vector(a.x + collider.aabb.vel.x, a.y + collider.aabb.vel.y);
-			context.strokeStyle = "white";
-			context.beginPath();
-			context.moveTo(a.x, a.y);
-			context.lineTo(b.x, b.y);
-			context.stroke();
-		}
+		collider.south = collider.east = collider.west = collider.north = false;
 
 		for (let { i } of collisions) {
 			const collision = DynamicRectVsRect(collider.aabb, possible[i], params.dt);
 
 			if (collision) {
-				velocity.x += collision.contact_normal.x * Math.abs(velocity.x) * (1 - collision.time);
-				velocity.y += collision.contact_normal.y * Math.abs(velocity.y) * (1 - collision.time);
-				collider.aabb.vel.set(velocity.x, velocity.y);
+				switch (possible[i].type) {
+					case ColliderType.SOLID: {
+						if (collision.contact_normal.y < 0) collider.south = true;
+						if (collision.contact_normal.y > 0) collider.north = true;
+						if (collision.contact_normal.x < 0) collider.east = true;
+						if (collision.contact_normal.x > 0) collider.west = true;
 
-				if (_DEBUG) {
-					context.strokeStyle = "white";
-					context.strokeRect(
-						possible[i].pos.x - collider.aabb.size.x / 2,
-						possible[i].pos.y - collider.aabb.size.y / 2,
-						possible[i].size.x + collider.aabb.size.x,
-						possible[i].size.y + collider.aabb.size.y
-					);
+						velocity.x += collision.contact_normal.x * Math.abs(velocity.x) * (1 - collision.time);
+						velocity.y += collision.contact_normal.y * Math.abs(velocity.y) * (1 - collision.time);
+						collider.aabb.vel.set(velocity.x, velocity.y);
+						break;
+					}
 
-					context.fillStyle = "blue";
-					context.fillRect(collision.contact_point.x - 2, collision.contact_point.y - 2, 4, 4);
+					case ColliderType.CUSTOM: {
+						if (possible[i].entity){
+							this.customCollisionResponse(collision, entity, possible[i].entity!);
+						}
+						break;
+					}
 
-					/*
-					context.fillStyle = "purple";
-					context.fillRect(collision.exit_point.x - 2, collision.exit_point.y - 2, 4, 4);
-					*/
+					default: {
+						throw new Error("not implemented");
+					}
 				}
 			}
 		}
 	}
+
+	customCollisionResponse(collision: CollisionEvent, entity: Entity, target: Entity) {}
 }
 
 export { Collider, CollisionSystem };

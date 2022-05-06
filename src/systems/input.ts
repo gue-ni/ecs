@@ -78,6 +78,8 @@ class InputSystem extends System {
 	last_keyup: any = {};
 	time_since_last_keydown: any = {};
 
+	locked:any = {}
+
 	lastX: number = 0;
 	lastY: number = 0;
 
@@ -91,8 +93,11 @@ class InputSystem extends System {
 		this.mouse = {};
 
 		window.addEventListener("keydown", (e) => {
+
 			this.keys[e.code] = true;
 			this.keydown[e.code] = true;
+
+
 			const now = Date.now();
 			const last = this.last_keydown[e.code] ?? now;
 			this.time_since_last_keydown[e.code] = now - last;

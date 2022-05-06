@@ -9,7 +9,7 @@ export { Vector } from "./util/vector";
 export { QuadTree } from "./util/quadtree";
 export { randomFloat, randomInteger, clamp, lerp } from "./util/index";
 export { State, ElementState, FiniteStateMachine } from "./util/fsm";
-export { AABB, Rectangle, RectVsRect, PointVsRect, RayVsRect, DynamicRectVsRect } from "./util/collision";
+export { AABB, Rectangle, ColliderType, RectVsRect, PointVsRect, RayVsRect, DynamicRectVsRect, CollisionEvent } from "./util/collision";
 
 // useful systems & components
 export { Input, InputSystem, MouseButton } from "./systems/input";

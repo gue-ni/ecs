@@ -1,7 +1,14 @@
 import { Vector } from "./vector";
 import { AABB, Rectangle } from "./collision";
 
-class QuadTree {
+interface BroadPhase {
+	insert(aabb: AABB): void;
+	query(aabb: AABB): AABB[];
+	all(): AABB[];
+	clear(): void;
+}
+
+class QuadTree implements BroadPhase {
 	private level: number;
 	private nodes: QuadTree[];
 	private objects: AABB[];
@@ -191,7 +198,12 @@ class QuadTree {
 	 */
 	debug_draw(context: CanvasRenderingContext2D, color: string = "red", x_offset: number = 0, y_offset: number = 0) {
 		context.strokeStyle = color;
-		context.strokeRect(this.bounds.pos.x + x_offset, this.bounds.pos.y + y_offset, this.bounds.size.x, this.bounds.size.y);
+		context.strokeRect(
+			this.bounds.pos.x + x_offset,
+			this.bounds.pos.y + y_offset,
+			this.bounds.size.x,
+			this.bounds.size.y
+		);
 
 		for (const node of this.nodes) {
 			node.debug_draw(context, color, x_offset, y_offset);
