@@ -32,9 +32,9 @@ class CollisionSystem extends System {
 		this.quadtree.clear();
 
 		for (const entity of entities) {
-			const position = entity.getComponent<Position>(Position)!;
-			const velocity = entity.getComponent<Velocity>(Velocity);
-			const collider = entity.getComponent<Collider>(Collider)!;
+			const position = entity.getComponent(Position) as Position;
+			const velocity = entity.getComponent(Velocity) as Velocity;
+			const collider = entity.getComponent(Collider) as Collider;
 
 			collider.aabb.id = entity.id;
 			collider.aabb.pos.set(position.x + collider.offset.x, position.y + collider.offset.y);
@@ -47,16 +47,16 @@ class CollisionSystem extends System {
 			this.quadtree.insert(collider.aabb);
 		}
 		if (params.context) {
-			this.quadtree.debug_draw(params.context, "#A0A0A0");
+			//this.quadtree.debug_draw(params.context, "#A0A0A0");
 		}
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
-		const velocity = entity.getComponent<Velocity>(Velocity);
+		const velocity = entity.getComponent(Velocity) as Velocity;
 		if (!velocity) return;
 
 		const context = params.context!;
-		const collider = entity.getComponent<Collider>(Collider)!;
+		const collider = entity.getComponent(Collider) as Collider;
 
 		/*
 		TODO: fix bug
@@ -87,7 +87,7 @@ class CollisionSystem extends System {
 			return a.time - b.time;
 		});
 
-		const _DEBUG = true;
+		const _DEBUG = false;
 
 		if (_DEBUG) {
 			const a = new Vector(

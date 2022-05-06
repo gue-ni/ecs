@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Platformer</title>
+		<title>2D Platformer</title>
 		<style>
 			html,
 			body {
@@ -23,7 +23,6 @@
 			}
 
 			#canvas {
-				padding: 1em;
 				width: 640px;
 				height: 360px;
 
@@ -36,9 +35,17 @@
 	</head>
 	<body>
 		<div class="container">
-			<canvas id="canvas" width="320" height="180"></canvas>
-			<script src="main.js"></script>
-			<p>hello world</p>
+			<div>
+				<h1>2D Platformer</h1>
+				<canvas id="canvas" width="320" height="180"></canvas>
+				<p id="fps-display"><span> fps</span></p>
+				<p>
+					Use the arrow keys for movement. While jumping, you can double press for dash.
+				</p>
+
+			</div>
 		</div>
+		<p></p>
+		<script src="main.js"></script>
 	</body>
 </html>

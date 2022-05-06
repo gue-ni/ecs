@@ -5,12 +5,24 @@ const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRende
 
 let paused = false;
 
+const JUMP = 400;
+const ACCELERATION = 3;
+const MIN_SPEED = 100;
+const MAX_SPEED = 170;
+const GRAVITY = 1500;
+const DASH_SPEED = 700;
+const DASH_DURATION = 100;
+
 const quadtree = new ECS.QuadTree(
 	0,
 	new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height)),
 	2,
 	5
 );
+
+class Speed extends ECS.Component {
+	interpolate: number = 0;
+}
 
 class Sprite extends ECS.Component {
 	w: number;
@@ -25,16 +37,27 @@ class Sprite extends ECS.Component {
 	}
 }
 
+class Gravity extends ECS.Component {}
+
+class Jump extends ECS.Component {
+	count: number = 2;
+}
+
+class Dash extends ECS.Component {
+	value: number = 1;
+	dashing: boolean = false;
+}
+
 class SpriteSystem extends ECS.System {
 	constructor() {
 		super([Sprite, ECS.Position]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const rect = entity.getComponent<Sprite>(Sprite);
-		const position = entity.getComponent<ECS.Position>(ECS.Position);
+		const rect = entity.getComponent(Sprite) as Sprite;
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		params.context.strokeStyle = rect.color;
-		params.context.strokeRect(Math.round(position.x), Math.round(position.y), rect.w, rect.h);
+		params.context.strokeRect(Math.round(position.x) - 0.5, Math.round(position.y) - 0.5, rect.w, rect.h);
 	}
 }
 
@@ -44,15 +67,16 @@ class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const sprite = entity.getComponent<Sprite>(Sprite);
-		const position = entity.getComponent<ECS.Position>(ECS.Position);
-		const velocity = entity.getComponent<ECS.Position>(ECS.Velocity);
+		const sprite = entity.getComponent(Sprite) as Sprite;
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
 
-		const GRAVITY = 1000;
-		velocity.y += params.dt * GRAVITY;
+		if (entity.getComponent(Gravity)) {
+			velocity.y += params.dt * GRAVITY;
+		}
 
 		if (position.y > canvas.height - sprite.h) {
 			position.y = canvas.height - sprite.h;
@@ -64,28 +88,73 @@ class PhysicsSystem extends ECS.System {
 
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([ECS.Input, ECS.Velocity, ECS.Collider]);
+		super([ECS.Input, ECS.Velocity, ECS.Collider, Speed, Dash, Jump]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const input = entity.getComponent<ECS.Input>(ECS.Input);
-		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity);
-		const collider = entity.getComponent<ECS.Collider>(ECS.Collider);
+		const input = entity.getComponent(ECS.Input) as ECS.Input;
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
+		const speed = entity.getComponent(Speed) as Speed;
+		const dash = entity.getComponent(Dash) as Dash;
+		const jump = entity.getComponent(Jump) as Jump;
 
-		const SPEED = 200;
-		const JUMP = 350;
+		const SPEED = ECS.lerp(MIN_SPEED, MAX_SPEED, ECS.clamp(speed.interpolate, 0, 1));
 
-		if (input.is_key_pressed("ArrowLeft")) {
-			velocity.x = -SPEED;
-		} else if (input.is_key_pressed("ArrowRight")) {
-			velocity.x = SPEED;
-		} else {
-			velocity.x = 0;
+		if (input.is_key_pressed("ArrowUp", 250) && jump.count < 1) {
+			velocity.y = -JUMP;
+			jump.count++;
 		}
 
-		if (input.is_key_pressed("ArrowUp", 100) && collider.south) {
-			velocity.y = -JUMP;
-			console.log("jump")
+		if (collider.south) {
+			jump.count = 0;
+		}
+
+		const execute_dash = (dir: number) => {
+			entity.removeComponent(Gravity);
+
+			dash.dashing = true;
+			velocity.set(dir * DASH_SPEED, 0);
+
+			setTimeout(() => {
+				dash.dashing = false;
+				velocity.set(0, 0);
+				entity.addComponent(new Gravity());
+			}, DASH_DURATION);
+
+			setTimeout(() => {
+				dash.value = 1;
+			}, 4000);
+		};
+
+		if (!dash.dashing && !collider.south) {
+			if (input.is_double_pressed("ArrowLeft", 250)) {
+				console.log("double pressed ArrowLeft");
+				execute_dash(-1);
+				return;
+			}
+			if (input.is_double_pressed("ArrowRight", 250)) {
+				console.log("double pressed ArrowRight");
+				execute_dash(1);
+				return;
+			}
+		}
+
+		if (!dash.dashing) {
+			if (input.is_key_pressed("ArrowLeft")) {
+				speed.interpolate += params.dt * ACCELERATION;
+				velocity.x = -SPEED;
+			} else if (input.is_key_pressed("ArrowRight")) {
+				speed.interpolate += params.dt * ACCELERATION;
+				velocity.x = SPEED;
+			} else {
+				speed.interpolate = 0;
+				if (collider.south) {
+					velocity.x = 0;
+				} else {
+					velocity.x = velocity.x * 0.95; // simulate air resistance
+				}
+			}
 		}
 	}
 }
@@ -100,15 +169,21 @@ ecs.addSystem(new SpriteSystem());
 const TILESIZE = 16;
 
 {
-	const entity = new ECS.Entity().addComponents(
-		new Sprite(TILESIZE, TILESIZE, "green"),
-		new ECS.Input(),
-		new ECS.Position(50, 50),
-		new ECS.Velocity(0, 0),
-		new ECS.Collider(TILESIZE, TILESIZE)
+	// player
+	ecs.addEntity(
+		new ECS.Entity().addComponents(
+			new Sprite(TILESIZE, TILESIZE, "red"),
+			new Speed(),
+			new Gravity(),
+			new Dash(),
+			new Jump(),
+			new ECS.Player(),
+			new ECS.Input(),
+			new ECS.Position(50, 50),
+			new ECS.Velocity(0, 0),
+			new ECS.Collider(TILESIZE, TILESIZE)
+		)
 	);
-
-	ecs.addEntity(entity);
 }
 
 const boxes = [
@@ -149,6 +224,7 @@ const boxes = [
 	[19, 2],
 	[19, 3],
 	[19, 4],
+	[5, 3],
 ];
 
 for (const [x, y] of boxes) {
@@ -160,12 +236,21 @@ for (const [x, y] of boxes) {
 	ecs.addEntity(entity);
 }
 
+const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
+
 let dt: number = 0;
 let then: number = 0;
+let timer = 0;
 function animate(now: number) {
 	now *= 0.001;
 	dt = now - then;
 	then = now;
+
+	if ((timer += dt) > 1) {
+		timer = 0;
+		fps.innerText = `${(1 / dt).toFixed(2)}`;
+	}
+
 	if (dt > 1 / 30) dt = 1 / 30;
 
 	if (!paused) {

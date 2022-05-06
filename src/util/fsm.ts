@@ -11,7 +11,7 @@ class State {
 	enter() {}
 }
 
-class HTMLElementState extends State {
+class ElementState extends State {
 	el: HTMLElement | null;
 	visible: string;
 	constructor(name: string, selector: string, visible: string = "block") {
@@ -64,4 +64,4 @@ class FiniteStateMachine {
 	}
 }
 
-export { State, FiniteStateMachine, HTMLElementState };
+export { State, FiniteStateMachine, ElementState };

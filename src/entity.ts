@@ -41,8 +41,14 @@ class Entity {
 		}
 	}
 
+	/*
 	getComponent<T extends Component>(component: ComponentConstructor): T | undefined {
 		return this.components.get(component.type) as T;
+	}
+	*/
+
+	getComponent(component: ComponentConstructor): Component {
+		return this.components.get(component.type)!;
 	}
 
 	_destroy() {

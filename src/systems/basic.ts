@@ -1,5 +1,5 @@
 import { Component } from "../component";
-import { IVector } from "../util/vector";
+import { IVector, Vector } from "../util/vector";
 
 class VectorComponent extends Component implements IVector {
 	x: number;
@@ -9,10 +9,21 @@ class VectorComponent extends Component implements IVector {
 		this.x = x;
 		this.y = y;
 	}
+
+	get vector() {
+		return new Vector(this.x, this.y);
+	}
+
+	set(x: number, y: number){
+		this.x = x;
+		this.y = y;
+	}
 }
 
 class Velocity extends VectorComponent {}
 
 class Position extends VectorComponent {}
 
-export { Position, Velocity };
+class Player extends Component {}
+
+export { Position, Velocity, Player };

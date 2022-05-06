@@ -14,8 +14,13 @@ function normalizeToRange(val: number, minVal: number, maxVal: number, newMin: n
 	return newMin + ((val - minVal) * (newMax - newMin)) / (maxVal - minVal);
 }
 
+function lerp(min: number, max: number, factor: number) {
+	factor = clamp(factor, 0, 1);
+	return min * (1 - factor) + max * factor;
+}
+
 function clamp(val: number, min: number, max: number): number {
 	return Math.max(min, Math.min(val, max));
 }
 
-export { randomFloat, randomInteger, clamp };
+export { randomFloat, randomInteger, clamp, lerp };

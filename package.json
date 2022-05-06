@@ -1,9 +1,9 @@
 {
   "name": "lofi-ecs",
-  "version": "3.0.6",
+  "version": "3.0.12",
   "description": "A minimal Entity-Component-System for browser games",
   "main": "lib/index.js",
-  "types": "./src/index.ts",
+  "types": "lib/index.d.ts",
   "scripts": {
     "prepare": "tsc && rollup -c",
     "build": "tsc && rollup -c",
