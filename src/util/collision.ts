@@ -37,10 +37,10 @@ const _DEBUG = false;
 
 /**
  *
- * @param ray_origin
- * @param ray_dir
- * @param target
- * @returns
+ * @param ray_origin origin of ray
+ * @param ray_dir ray direction, not normalized
+ * @param target AABB to collide with
+ * @returns 
  */
 function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent | null {
 	const t_near = new Vector(0, 0);
@@ -143,7 +143,8 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 
 enum ColliderType {
 	SOLID,
-	CUSTOM
+	CUSTOM,
+	CUSTOM_SOLID,
 }
 
 class Rectangle {
@@ -153,6 +154,11 @@ class Rectangle {
 		this.pos = pos;
 		this.size = size;
 	}
+
+	debug_draw(context: CanvasRenderingContext2D, color: string = "red", x_offset: number = 0, y_offset: number = 0) {
+		context.strokeStyle = color;
+		context.strokeRect(this.pos.x + x_offset - 0.5, this.pos.y + y_offset - 0.5, this.size.x, this.size.y);
+	}
 }
 
 class AABB extends Rectangle {
@@ -160,7 +166,13 @@ class AABB extends Rectangle {
 	entity: Entity | null;
 	type: ColliderType;
 
-	constructor(entity: Entity | null, pos: Vector = new Vector(), size: Vector = new Vector(), vel: Vector = new Vector(), type: ColliderType = ColliderType.SOLID) {
+	constructor(
+		entity: Entity | null,
+		pos: Vector = new Vector(),
+		size: Vector = new Vector(),
+		vel: Vector = new Vector(),
+		type: ColliderType = ColliderType.SOLID
+	) {
 		super(pos, size);
 		this.entity = entity;
 		this.vel = vel;

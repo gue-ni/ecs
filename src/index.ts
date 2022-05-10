@@ -14,4 +14,4 @@ export { AABB, Rectangle, ColliderType, RectVsRect, PointVsRect, RayVsRect, Dyna
 // useful systems & components
 export { Input, InputSystem, MouseButton } from "./systems/input";
 export { Collider, CollisionSystem } from "./systems/collision";
-export { Position, Velocity, Player } from "./systems/basic";
+export { Position, Velocity, Player, VectorComponent } from "./systems/basic";

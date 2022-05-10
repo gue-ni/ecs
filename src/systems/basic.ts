@@ -26,4 +26,4 @@ class Position extends VectorComponent {}
 
 class Player extends Component {}
 
-export { Position, Velocity, Player };
+export { Position, Velocity, Player, VectorComponent };

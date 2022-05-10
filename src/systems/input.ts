@@ -36,7 +36,9 @@ class Input extends Component {
 
 	is_key_pressed(key: string, delay?: number): boolean {
 		if (this.pressed[key]) {
-			if (!delay || !this.last_pressed[key] || Date.now() - this.last_pressed[key] > delay) {
+			if (!delay) return true;
+
+			if (this.last_pressed[key] == undefined || Date.now() - this.last_pressed[key] > delay) {
 				this.last_pressed[key] = Date.now();
 				return true;
 			}

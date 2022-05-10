@@ -7,12 +7,11 @@ let paused = false;
 
 const JUMP = 400;
 const ACCELERATION = 3;
-const MIN_SPEED = 100;
-const MAX_SPEED = 190;
+const SPEED = 130;
 const GRAVITY = 1500;
 const DASH_SPEED = 700;
 const DASH_DURATION = 100;
-const DASH_RELOAD = 3000;
+const DASH_RELOAD = 1000;
 
 const quadtree = new ECS.QuadTree(
 	0,
@@ -20,10 +19,6 @@ const quadtree = new ECS.QuadTree(
 	2,
 	5
 );
-
-class Speed extends ECS.Component {
-	interpolate: number = 0;
-}
 
 class Sprite extends ECS.Component {
 	w: number;
@@ -38,15 +33,19 @@ class Sprite extends ECS.Component {
 	}
 }
 
+class Acceleration extends ECS.VectorComponent {}
+
 class Gravity extends ECS.Component {}
 
-class Jump extends ECS.Component {
-	count: number = 2;
-}
-
-class Dash extends ECS.Component {
-	value: number = 1;
+class Controller extends ECS.Component {
+	block_special: boolean = false;
+	allowed_jumps: number = 2;
+	interpolate: number = 0;
 	dashing: boolean = false;
+	allowed_dashes: number = 1;
+	dash_allowed: boolean = true;
+	goal: ECS.Vector = new ECS.Vector(0, 0);
+	current: ECS.Vector = new ECS.Vector();
 }
 
 class SpriteSystem extends ECS.System {
@@ -69,14 +68,15 @@ class PhysicsSystem extends ECS.System {
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
+		//const acceleration = entity.getComponent(Acceleration) as Acceleration;
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
-		position.x = position.x + params.dt * velocity.x;
-		position.y = position.y + params.dt * velocity.y;
+		position.x += velocity.x * params.dt;
+		position.y += velocity.y * params.dt;
 
 		if (entity.getComponent(Gravity)) {
-			velocity.y += params.dt * GRAVITY;
+			velocity.y += GRAVITY * params.dt;
 		}
 
 		/*
@@ -94,87 +94,131 @@ class PhysicsSystem extends ECS.System {
 	}
 }
 
+class CollisionSystem extends ECS.CollisionSystem {
+	customCollisionResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity): void {
+		console.log("custom");
+	}
+}
+
+const BUTTONS = {
+	LEFT: "ArrowLeft",
+	RIGHT: "ArrowRight",
+	UP: "ArrowUp",
+	DOWN: "ArrowDown",
+	JUMP: "ArrowUp",
+	DASH: "Space",
+};
+
 class MovementSystem extends ECS.System {
 	constructor() {
-		super([ECS.Input, ECS.Velocity, ECS.Collider, Speed, Dash, Jump]);
+		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent(ECS.Input) as ECS.Input;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
-		const speed = entity.getComponent(Speed) as Speed;
-		const dash = entity.getComponent(Dash) as Dash;
-		const jump = entity.getComponent(Jump) as Jump;
-
-		const SPEED = ECS.lerp(MIN_SPEED, MAX_SPEED, ECS.clamp(speed.interpolate, 0, 1));
-
-		if (input.is_key_pressed("ArrowUp", 250) && jump.count < 1) {
-			velocity.y = -JUMP;
-			jump.count++;
-		}
+		const controller = entity.getComponent(Controller) as Controller;
 
 		if (collider.south) {
-			jump.count = 0;
-			console.log("standing")
-		} else {
-
-			console.log("jumping")
+			controller.allowed_jumps = 2;
+			controller.allowed_dashes = 1;
 		}
 
-		const execute_dash = (dir: number) => {
-			entity.removeComponent(Gravity);
+		//console.log("jump count", controller.jump_count)
 
-			dash.dashing = true;
-			velocity.set(dir * DASH_SPEED, 0);
+		const approach = (goal: number, current: number, delta: number) => {
+			let diff = goal - current;
 
-			setTimeout(() => {
-				dash.dashing = false;
-				velocity.set(0, 0);
-				entity.addComponent(new Gravity());
-			}, DASH_DURATION);
+			if (diff > delta) {
+				return current + delta;
+			}
+			if (diff < -delta) {
+				return current - delta;
+			}
 
-			setTimeout(() => {
-				dash.value = 1;
-			}, DASH_RELOAD);
+			return goal;
 		};
 
-		if (!dash.dashing ) {
-			if (input.is_double_pressed("ArrowLeft", 250)) {
-				console.log("double pressed ArrowLeft");
-				execute_dash(-1);
+		if (input.is_key_pressed(BUTTONS.RIGHT)) {
+			controller.goal.x = 1;
+		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
+			controller.goal.x = -1;
+		} else {
+			//controller.goal.x = 0;
+			if (collider.south) controller.goal.x = 0;
+		}
+
+		if (input.is_key_pressed(BUTTONS.UP)) {
+			controller.goal.y = -1;
+		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
+			controller.goal.y = 1;
+		} else {
+			controller.goal.y = 0;
+		}
+
+		const acceleration_factor = 20;
+		controller.current.x = approach(controller.goal.x, controller.current.x, dt * acceleration_factor);
+		controller.current.y = approach(controller.goal.y, controller.current.y, dt * acceleration_factor);
+
+		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && !controller.block_special) {
+			//const dash_direction = controller.current.clone().normalize().scalarMult(500);
+
+			const dash_direction = new ECS.Vector(
+				Math.sign(velocity.x),
+				Math.sign(controller.current.y)
+			)
+				.normalize()
+				.scalarMult(500);
+
+			if (!dash_direction.isNaN()) {
+				//console.log("dashing...", controller.current, velocity);
+
+				controller.dashing = true;
+				controller.allowed_dashes--;
+				controller.block_special = true;
+
+				velocity.set(dash_direction.x, dash_direction.y);
+
+				entity.removeComponent(Gravity);
+
+				setTimeout(() => {
+					controller.block_special = false;
+				}, 300);
+
+				setTimeout(() => {
+					velocity.set(0, 0);
+					controller.dashing = false;
+					entity.addComponent(new Gravity());
+				}, 100);
+
 				return;
-			}
-			if (input.is_double_pressed("ArrowRight", 250)) {
-				console.log("double pressed ArrowRight");
-				execute_dash(1);
-				return;
+			} else {
+				//console.log("dash failed", dash_direction);
 			}
 		}
 
-		if (!dash.dashing) {
-			if (input.is_key_pressed("ArrowLeft")) {
-				speed.interpolate += params.dt * ACCELERATION;
-				velocity.x = -SPEED;
-			} else if (input.is_key_pressed("ArrowRight")) {
-				speed.interpolate += params.dt * ACCELERATION;
-				velocity.x = SPEED;
-			} else {
-				speed.interpolate = 0;
-				if (collider.south) {
-					velocity.x = 0;
-				} else {
-					velocity.x = velocity.x * 0.95; // simulate air resistance
-				}
-			}
+		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0 && !controller.block_special) {
+			velocity.y = -JUMP;
+			controller.allowed_jumps--;
+			controller.block_special = true;
+
+			setTimeout(() => {
+				controller.block_special = false;
+			}, 300);
 		}
+
+		if (!controller.dashing) {
+			velocity.x = SPEED * controller.current.x;
+		} 
+		
 	}
 }
 
 const ecs = new ECS.ECS();
 ecs.addSystem(new ECS.InputSystem(canvas));
 ecs.addSystem(new MovementSystem());
-ecs.addSystem(new ECS.CollisionSystem(quadtree));
+ecs.addSystem(new CollisionSystem(quadtree));
 ecs.addSystem(new PhysicsSystem());
 ecs.addSystem(new SpriteSystem());
 
@@ -185,10 +229,9 @@ const TILESIZE = 16;
 	ecs.addEntity(
 		new ECS.Entity().addComponents(
 			new Sprite(TILESIZE, TILESIZE, "red"),
-			new Speed(),
 			new Gravity(),
-			new Dash(),
-			new Jump(),
+			new Controller(),
+			new Acceleration(0, 0),
 			new ECS.Player(),
 			new ECS.Input(),
 			new ECS.Position(canvas.width / 2, 50),
@@ -209,14 +252,14 @@ const boxes = [
 	[0, 1],
 	[1, 1],
 	[2, 1],
+	[3, 1],
+	[4, 1],
 	[5, 1],
 	[6, 1],
 	[7, 1],
 	[8, 1],
 	[9, 1],
 	[10, 1],
-	[10, 2],
-	[10, 3],
 	[11, 1],
 	[12, 1],
 	[13, 1],
@@ -234,14 +277,13 @@ const boxes = [
 	[19, 2],
 	[19, 3],
 	[19, 4],
-	[5, 3],
 ];
 
 for (const [x, y] of boxes) {
 	const entity = new ECS.Entity().addComponents(
 		new ECS.Position(x * TILESIZE, canvas.height - y * TILESIZE),
 		new Sprite(TILESIZE, TILESIZE, "green"),
-		new ECS.Collider(TILESIZE, TILESIZE)
+		new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.SOLID)
 	);
 	ecs.addEntity(entity);
 }

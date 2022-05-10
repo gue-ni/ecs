@@ -20,6 +20,10 @@ class Vector implements IVector {
 		return new Vector(Math.max(v1.x, v2.x), Math.max(v1.y, v2.y));
 	}
 
+	isNaN(): boolean {
+		return isNaN(this.x) || isNaN(this.y);
+	}
+
 	set(x: number, y: number) {
 		this.x = x;
 		this.y = y;
@@ -29,6 +33,10 @@ class Vector implements IVector {
 		this.x *= scalar;
 		this.y *= scalar;
 		return this;
+	}
+
+	clone(): Vector {
+		return new Vector(this.x, this.y);
 	}
 
 	plus(vector: Vector): Vector {

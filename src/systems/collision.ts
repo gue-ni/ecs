@@ -96,21 +96,16 @@ class CollisionSystem extends System {
 			if (collision) {
 				switch (possible[i].type) {
 					case ColliderType.SOLID: {
-						if (collision.contact_normal.y < 0) collider.south = true;
-						if (collision.contact_normal.y > 0) collider.north = true;
-						if (collision.contact_normal.x < 0) collider.east = true;
-						if (collision.contact_normal.x > 0) collider.west = true;
-
-						velocity.x += collision.contact_normal.x * Math.abs(velocity.x) * (1 - collision.time);
-						velocity.y += collision.contact_normal.y * Math.abs(velocity.y) * (1 - collision.time);
-						collider.aabb.vel.set(velocity.x, velocity.y);
+						this.resolveCollision(collision, velocity, collider);
 						break;
 					}
 
+					case ColliderType.CUSTOM_SOLID: {
+						this.resolveCollision(collision, velocity, collider);
+					}
+
 					case ColliderType.CUSTOM: {
-						if (possible[i].entity){
-							this.customCollisionResponse(collision, entity, possible[i].entity!);
-						}
+						if (possible[i].entity) this.customCollisionResponse(collision, entity, possible[i].entity!);
 						break;
 					}
 
@@ -120,6 +115,17 @@ class CollisionSystem extends System {
 				}
 			}
 		}
+	}
+
+	resolveCollision(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
+		if (collision.contact_normal.y < 0) collider.south = true;
+		if (collision.contact_normal.y > 0) collider.north = true;
+		if (collision.contact_normal.x < 0) collider.east = true;
+		if (collision.contact_normal.x > 0) collider.west = true;
+
+		velocity.x += collision.contact_normal.x * Math.abs(velocity.x) * (1 - collision.time);
+		velocity.y += collision.contact_normal.y * Math.abs(velocity.y) * (1 - collision.time);
+		collider.aabb.vel.set(velocity.x, velocity.y);
 	}
 
 	customCollisionResponse(collision: CollisionEvent, entity: Entity, target: Entity) {}
