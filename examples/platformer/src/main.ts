@@ -1,17 +1,28 @@
 import * as ECS from "../../../src";
+import {
+	Sprite,
+	Respawn,
+	Health,
+	Gravity,
+	Bouncy,
+	Spike,
+	Collectible,
+	CollectibleType,
+	Controller,
+} from "./components";
+import { Factory } from "./factory";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 let paused = false;
 
-const JUMP = 400;
-const ACCELERATION = 3;
+const JUMP = 200;
+const BOUNCE = 400;
 const SPEED = 130;
-const GRAVITY = 1500;
-const DASH_SPEED = 700;
+const GRAVITY = 700;
+const DASH_SPEED = 400;
 const DASH_DURATION = 100;
-const DASH_RELOAD = 1000;
 
 const quadtree = new ECS.QuadTree(
 	0,
@@ -20,33 +31,38 @@ const quadtree = new ECS.QuadTree(
 	5
 );
 
-class Sprite extends ECS.Component {
-	w: number;
-	h: number;
-	color: string;
+const game = new ECS.FiniteStateMachine();
+game.addState(new ECS.State("play"));
+game.addState(new ECS.State("dead"));
+game.addState(new ECS.State("loading"));
 
-	constructor(w: number, h: number, color: string) {
-		super();
-		this.w = w;
-		this.h = h;
-		this.color = color;
+class Sound {
+	_audioCtx: AudioContext;
+	constructor() {
+		let AudioContext = window.AudioContext;
+		this._audioCtx = new AudioContext();
+	}
+
+	play(duration: number, frequency: number, volume: number = 1) {
+		let oscillator = this._audioCtx.createOscillator();
+		let gainNode = this._audioCtx.createGain();
+		let v = 1;
+
+		duration = duration / 1000;
+		oscillator.frequency.value = frequency;
+		gainNode.gain.setValueAtTime(volume, this._audioCtx.currentTime);
+		gainNode.gain.linearRampToValueAtTime(volume, this._audioCtx.currentTime + duration * 0.8);
+		gainNode.gain.linearRampToValueAtTime(0, this._audioCtx.currentTime + duration * 1);
+		oscillator.connect(gainNode);
+		gainNode.connect(this._audioCtx.destination);
+		oscillator.type = "triangle";
+
+		oscillator.start(this._audioCtx.currentTime);
+		oscillator.stop(this._audioCtx.currentTime + duration);
 	}
 }
 
-class Acceleration extends ECS.VectorComponent {}
-
-class Gravity extends ECS.Component {}
-
-class Controller extends ECS.Component {
-	block_special: boolean = false;
-	allowed_jumps: number = 2;
-	interpolate: number = 0;
-	dashing: boolean = false;
-	allowed_dashes: number = 1;
-	dash_allowed: boolean = true;
-	goal: ECS.Vector = new ECS.Vector(0, 0);
-	current: ECS.Vector = new ECS.Vector();
-}
+const sound = new Sound();
 
 class SpriteSystem extends ECS.System {
 	constructor() {
@@ -54,10 +70,12 @@ class SpriteSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const rect = entity.getComponent(Sprite) as Sprite;
+		const sprite = entity.getComponent(Sprite) as Sprite;
+		if (!sprite.visible) return;
+
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		params.context.strokeStyle = rect.color;
-		params.context.strokeRect(Math.round(position.x) - 0.5, Math.round(position.y) - 0.5, rect.w, rect.h);
+		params.context.strokeStyle = sprite.color;
+		params.context.strokeRect(Math.round(position.x) - 0.5, Math.round(position.y) - 0.5, sprite.w, sprite.h);
 	}
 }
 
@@ -85,18 +103,83 @@ class PhysicsSystem extends ECS.System {
 		}
 		*/
 
-		if (position.y > canvas.height) {
-			position.y = 0 - sprite.h;
-			velocity.y = 0;
-		}
-
 		position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
 	}
 }
 
 class CollisionSystem extends ECS.CollisionSystem {
-	customCollisionResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity): void {
-		console.log("custom");
+	customSolidResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity): void {
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+
+		if (velocity && velocity.y > 10 && Math.abs(collision.contact_normal.y) > 0 && target.getComponent(Bouncy)) {
+			velocity.y = -BOUNCE;
+
+			sound.play(100, 190, 0.5);
+		}
+	}
+
+	customResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity): void {
+		const health = entity.getComponent(Health) as Health;
+
+		if (health && health.value != 0 && target.getComponent(Spike)) {
+			sound.play(200, 50, 0.5);
+			health.value = 0;
+		}
+
+		const collectible = target.getComponent(Collectible) as Collectible;
+		if (collectible) {
+			switch (collectible.t) {
+				case CollectibleType.DASH: {
+					const controller = entity.getComponent(Controller) as Controller;
+					controller.allowed_dashes = 1;
+					ecs.removeEntity(target);
+					break;
+				}
+			}
+		}
+
+		/*
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		if (velocity && velocity.vector.magnitude() > 200){
+			let newVelocity = velocity.vector.clone()
+			newVelocity.scalarMult(-0.5)
+			velocity.x = newVelocity.x;
+			velocity.y = newVelocity.y;
+		}
+		*/
+	}
+}
+
+class HealthSystem extends ECS.System {
+	constructor() {
+		super([ECS.Position, ECS.Velocity, Respawn, Health]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const health = entity.getComponent(Health) as Health;
+		const respawn = entity.getComponent(Respawn) as Respawn;
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
+
+		if (position.y > canvas.height + TILESIZE * 3) {
+			health.value = 0;
+		}
+
+		if (health.value <= 0) {
+			if (!respawn.waiting) {
+				const sprite = entity.getComponent(Sprite) as Sprite;
+				sprite.visible = false;
+
+				setTimeout(() => {
+					const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+					velocity.set(0, 0);
+					position.set(respawn.x, respawn.y);
+					health.value = 100;
+					respawn.waiting = false;
+					sprite.visible = true;
+				}, 700);
+			}
+			respawn.waiting = true;
+		}
 	}
 }
 
@@ -161,18 +244,19 @@ class MovementSystem extends ECS.System {
 		controller.current.x = approach(controller.goal.x, controller.current.x, dt * acceleration_factor);
 		controller.current.y = approach(controller.goal.y, controller.current.y, dt * acceleration_factor);
 
-		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && !controller.block_special) {
-			//const dash_direction = controller.current.clone().normalize().scalarMult(500);
+		if (
+			input.is_key_pressed(BUTTONS.DASH) &&
+			controller.allowed_dashes > 0 &&
+			!controller.block_special &&
+			!collider.south
+		) {
 
-			const dash_direction = new ECS.Vector(
-				Math.sign(velocity.x),
-				Math.sign(controller.current.y)
-			)
+			const dash_direction = new ECS.Vector(Math.sign(velocity.x), Math.sign(controller.current.y))
 				.normalize()
-				.scalarMult(500);
+				.scalarMult(DASH_SPEED);
 
 			if (!dash_direction.isNaN()) {
-				//console.log("dashing...", controller.current, velocity);
+				sound.play(150, 200, 0.5);
 
 				controller.dashing = true;
 				controller.allowed_dashes--;
@@ -188,9 +272,14 @@ class MovementSystem extends ECS.System {
 
 				setTimeout(() => {
 					velocity.set(0, 0);
+					controller.goal.set(0, 0);
+					controller.current.set(0, 0);
 					controller.dashing = false;
+				}, DASH_DURATION);
+
+				setTimeout(() => {
 					entity.addComponent(new Gravity());
-				}, 100);
+				}, 200);
 
 				return;
 			} else {
@@ -199,6 +288,8 @@ class MovementSystem extends ECS.System {
 		}
 
 		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0 && !controller.block_special) {
+			sound.play(150, 150, 0.5);
+
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
 			controller.block_special = true;
@@ -210,8 +301,7 @@ class MovementSystem extends ECS.System {
 
 		if (!controller.dashing) {
 			velocity.x = SPEED * controller.current.x;
-		} 
-		
+		}
 	}
 }
 
@@ -220,26 +310,49 @@ ecs.addSystem(new ECS.InputSystem(canvas));
 ecs.addSystem(new MovementSystem());
 ecs.addSystem(new CollisionSystem(quadtree));
 ecs.addSystem(new PhysicsSystem());
+ecs.addSystem(new HealthSystem());
 ecs.addSystem(new SpriteSystem());
 
-const TILESIZE = 16;
+const TILESIZE = 8;
 
-{
-	// player
-	ecs.addEntity(
-		new ECS.Entity().addComponents(
-			new Sprite(TILESIZE, TILESIZE, "red"),
-			new Gravity(),
-			new Controller(),
-			new Acceleration(0, 0),
-			new ECS.Player(),
-			new ECS.Input(),
-			new ECS.Position(canvas.width / 2, 50),
-			new ECS.Velocity(0, 0),
-			new ECS.Collider(TILESIZE, TILESIZE)
-		)
-	);
-}
+const PLAYER_SIZE = 16;
+
+fetch("assets/level-1.json")
+	.then((res) => res.json())
+	.then((json) => {
+		for (const { x, y, type } of json) {
+			let pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
+
+			switch (type) {
+				case "player": {
+					ecs.addEntity(Factory.createPlayer(pos));
+					break;
+				}
+
+				case "tile": {
+					ecs.addEntity(Factory.createTile(pos));
+					break;
+				}
+
+				case "dash": {
+					ecs.addEntity(Factory.createDash(pos));
+					break;
+				}
+
+				case "bounce": {
+					ecs.addEntity(Factory.createBounce(pos));
+					break;
+				}
+
+				case "spike": {
+					ecs.addEntity(Factory.createSpike(pos));
+					break;
+				}
+			}
+		}
+
+		animate(0);
+	});
 
 const boxes = [
 	[0, 3],
@@ -279,15 +392,6 @@ const boxes = [
 	[19, 4],
 ];
 
-for (const [x, y] of boxes) {
-	const entity = new ECS.Entity().addComponents(
-		new ECS.Position(x * TILESIZE, canvas.height - y * TILESIZE),
-		new Sprite(TILESIZE, TILESIZE, "green"),
-		new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.SOLID)
-	);
-	ecs.addEntity(entity);
-}
-
 const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
 
 let dt: number = 0;
@@ -319,5 +423,3 @@ function animate(now: number) {
 document.addEventListener("keydown", (e) => {
 	if (e.code == "KeyP") paused = !paused;
 });
-
-animate(0);
