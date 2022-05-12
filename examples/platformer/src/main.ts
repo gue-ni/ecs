@@ -101,7 +101,7 @@ class Game {
 		console.log("setup");
 
 		this.ecs.addSystem(new ECS.InputSystem(canvas));
-		this.ecs.addSystem(new MovementSystem());
+		//this.ecs.addSystem(new MovementSystem());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new HealthSystem());
@@ -136,7 +136,7 @@ class Game {
 			context.fillStyle = "#D3D3D3";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
-			this.ecs.update({ dt: this.dt, canvas, context, sound: this.sound });
+			this.ecs.update({ dt: this.dt, canvas, context, sound: this.sound, game: this });
 		}
 
 		requestAnimationFrame(this.animateBind);

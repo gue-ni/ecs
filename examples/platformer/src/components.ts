@@ -19,6 +19,8 @@ export class Respawn extends ECS.VectorComponent {
 	waiting: boolean = false;
 }
 
+export class Tile extends ECS.Component {}
+
 export class Health extends ECS.Component {
 	value: number = 100;
 }

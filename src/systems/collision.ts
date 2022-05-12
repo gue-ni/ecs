@@ -90,11 +90,34 @@ class CollisionSystem extends System {
 
 		collider.south = collider.east = collider.west = collider.north = false;
 
+		let bounce = new Vector();
+
 		for (let { i } of collisions) {
 			const collision = DynamicRectVsRect(collider.aabb, possible[i], params.dt);
-
 			if (collision) {
 				switch (possible[i].type) {
+					case ColliderType.BOUNCE: {
+						if (collision.contact_normal.x != 0) {
+							if (collision.contact_normal.x > 0) {
+								bounce.x = Math.min(bounce.x, velocity.x);
+							} else {
+								bounce.x = Math.max(bounce.x, velocity.x);
+							}
+							//console.log(velocity.x, bounce.x);
+						}
+
+						if (collision.contact_normal.y != 0) {
+							if (collision.contact_normal.y > 0) {
+								bounce.y = Math.min(bounce.y, velocity.y);
+							} else {
+								bounce.y = Math.max(bounce.y, velocity.y);
+							}
+						}
+
+						this.solidResponse(collision, velocity, collider);
+						break;
+					}
+
 					case ColliderType.SOLID: {
 						this.solidResponse(collision, velocity, collider);
 						break;
@@ -102,7 +125,8 @@ class CollisionSystem extends System {
 
 					case ColliderType.CUSTOM_SOLID: {
 						this.solidResponse(collision, velocity, collider);
-						if (possible[i].entity) this.customSolidResponse(collision, entity, possible[i].entity!, params);
+						if (possible[i].entity)
+							this.customSolidResponse(collision, entity, possible[i].entity!, params);
 						break;
 					}
 
@@ -117,6 +141,18 @@ class CollisionSystem extends System {
 				}
 			}
 		}
+
+		let bounce_factor = 0.7;
+
+		if (bounce.x != 0 || bounce.y != 0) {
+			console.log({ bounce });
+
+			bounce.x = Math.abs(bounce.x) > Math.abs(bounce.y) ? bounce.x : 0;
+			bounce.y = Math.abs(bounce.y) > Math.abs(bounce.x) ? bounce.y : 0;
+
+			velocity.x -= bounce.x * bounce_factor;
+			velocity.y -= bounce.y * bounce_factor;
+		}
 	}
 
 	solidResponse(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
@@ -130,8 +166,12 @@ class CollisionSystem extends System {
 		collider.aabb.vel.set(velocity.x, velocity.y);
 	}
 
+	bouncyResponse(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
+		this.solidResponse(collision, velocity, collider);
+	}
+
 	customResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
-	
+
 	customSolidResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
 }
 

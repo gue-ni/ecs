@@ -143,6 +143,7 @@ function DynamicRectVsRect(input: AABB, target: AABB, dt: number): CollisionEven
 
 enum ColliderType {
 	SOLID,
+	BOUNCE,
 	CUSTOM,
 	CUSTOM_SOLID,
 }

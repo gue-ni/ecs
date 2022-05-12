@@ -7,7 +7,7 @@ interface UpdateParams {
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
 	ecs?: ECS;
-	[key: string]: unknown;
+	[key: string]: unknown; // accept any kind of further object
 }
 
 class ECS {

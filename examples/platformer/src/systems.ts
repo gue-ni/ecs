@@ -9,6 +9,7 @@ import {
 	Collectible,
 	CollectibleType,
 	Controller,
+	Tile,
 } from "./components";
 
 import { Sound } from "./main";
@@ -39,8 +40,8 @@ export class SpriteSystem extends ECS.System {
 		if (!sprite.visible) return;
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		params.context.strokeStyle = sprite.color;
-		params.context.strokeRect(Math.round(position.x) - 0.5, Math.round(position.y) - 0.5, sprite.w, sprite.h);
+		params.context.fillStyle = sprite.color;
+		params.context.fillRect(Math.round(position.x) - 0.5, Math.round(position.y) - 0.5, sprite.w, sprite.h);
 	}
 }
 
@@ -55,12 +56,19 @@ export class PhysicsSystem extends ECS.System {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
+
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
 
+
+		let G = 700;
+		velocity.y += G * params.dt;
+
+		/*
 		if (entity.getComponent(Gravity)) {
 			velocity.y += GRAVITY * params.dt;
 		}
+		*/
 
 		/*
 		if (position.y > canvas.height - sprite.h) {
@@ -73,17 +81,35 @@ export class PhysicsSystem extends ECS.System {
 }
 
 export class CollisionSystem extends ECS.CollisionSystem {
-	customSolidResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity, params: ECS.UpdateParams): void {
+	customSolidResponse(
+		collision: ECS.CollisionEvent,
+		entity: ECS.Entity,
+		target: ECS.Entity,
+		params: ECS.UpdateParams
+	): void {
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
 		if (velocity && velocity.y > 10 && Math.abs(collision.contact_normal.y) > 0 && target.getComponent(Bouncy)) {
 			velocity.y = -BOUNCE;
-
 			(params.sound as Sound).play(100, 190, 0.5);
 		}
+
+		/*
+		if (target.getComponent(Tile)) {
+			if (Math.abs(collision.contact_normal.x) > 0 && Math.abs(velocity.x) > 10) {
+				console.log("x collision", velocity.x);
+				velocity.x += 200 * collision.contact_normal.x;
+			}
+		}
+		*/
 	}
 
-	customResponse(collision: ECS.CollisionEvent, entity: ECS.Entity, target: ECS.Entity, params: ECS.UpdateParams): void {
+	customResponse(
+		collision: ECS.CollisionEvent,
+		entity: ECS.Entity,
+		target: ECS.Entity,
+		params: ECS.UpdateParams
+	): void {
 		const health = entity.getComponent(Health) as Health;
 
 		if (health && health.value != 0 && target.getComponent(Spike)) {
@@ -158,7 +184,6 @@ export class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 		const controller = entity.getComponent(Controller) as Controller;
-
 
 		if (collider.south) {
 			controller.allowed_jumps = 2;
@@ -255,7 +280,8 @@ export class MovementSystem extends ECS.System {
 			}, 300);
 		}
 
-		if (!controller.dashing) {
+		if (!controller.dashing && collider.south) {
+		//if (!controller.dashing) {
 			velocity.x = SPEED * controller.current.x;
 		}
 	}
