@@ -27,7 +27,7 @@ export class Factory {
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite(TILESIZE, TILESIZE, "green"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.SOLID)
+			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM_SOLID)
 		);
 	}
 

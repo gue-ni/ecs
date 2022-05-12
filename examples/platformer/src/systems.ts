@@ -13,22 +13,22 @@ import {
 	Forces,
 } from "./components";
 
-import { Sound } from "./main";
+import { Game, Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 400;
 const SPEED = 110;
 const GRAVITY = 700;
 const DASH_SPEED = 400;
-const DASH_DURATION = 100;
+const DASH_DURATION = 200;
 
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
 	UP: "ArrowUp",
 	DOWN: "ArrowDown",
-	JUMP: "ArrowUp",
-	DASH: "Space",
+	JUMP: "KeyC",
+	DASH: "KeyX",
 };
 
 export class SpriteSystem extends ECS.System {
@@ -102,14 +102,9 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			(params.sound as Sound).play(100, 190, 0.5);
 		}
 
-		/*
-		if (target.getComponent(Tile)) {
-			if (Math.abs(collision.contact_normal.x) > 0 && Math.abs(velocity.x) > 10) {
-				console.log("x collision", velocity.x);
-				velocity.x += 200 * collision.contact_normal.x;
-			}
+		if (velocity && velocity.y > 0 && Math.abs(collision.contact_normal.y) > 0 && target.getComponent(Tile)) {
+			//(params.sound as Sound).play(100, 100, 0.5);
 		}
-		*/
 	}
 
 	customResponse(
@@ -168,6 +163,14 @@ export class HealthSystem extends ECS.System {
 				const sprite = entity.getComponent(Sprite) as Sprite;
 				sprite.visible = false;
 
+				let game = params.game as Game;
+				game.clearLevel();
+
+				setTimeout(() => {
+					game.loadLevel(game.data);
+				}, 700);
+
+				/*
 				setTimeout(() => {
 					const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 					velocity.set(0, 0);
@@ -176,6 +179,7 @@ export class HealthSystem extends ECS.System {
 					respawn.waiting = false;
 					sprite.visible = true;
 				}, 700);
+				*/
 			}
 			respawn.waiting = true;
 		}
@@ -194,99 +198,73 @@ export class ForceMovement extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 		const forces = entity.getComponent(Forces) as Forces;
 
-		let xdir = 0;
+		const dir = new ECS.Vector();
 
 		if (input.is_key_pressed(BUTTONS.RIGHT)) {
-			xdir = 1;
+			dir.x = 1;
 		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
-			xdir = -1;
+			dir.x = -1;
+		} else if (input.is_key_pressed(BUTTONS.UP)) {
+			dir.y = -1;
+		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
+			dir.y = 1;
 		}
 
 		const acceleration = 200;
-		const decceleration = collider.south ? 300 : 50;
+		const decceleration = 50;
 
-		let targetSpeed = xdir * SPEED;
+		let targetSpeed = dir.x * SPEED;
 
 		let speedDiff = targetSpeed - velocity.x;
 		let accelRate = Math.abs(targetSpeed) > 0.01 ? acceleration : decceleration;
 
 		let velPower = 0.9;
 
-		let movement = Math.pow(Math.abs(speedDiff) * accelRate, velPower) * Math.sign(speedDiff);
-
-		//console.log("movement", movement, "diff", Math.abs(speedDiff), "target", targetSpeed)
-
-		forces.x += movement;
-
-		/*
-		if (xdir == 0) {
-
-			let f = 2;
-			if (!collider.south){
-				f = 0.1
-			}
-
-			//let amount = Math.min(Math.abs(velocity.x), 0.2)
-			let amount = velocity.x;
-			amount *= f;
-			console.log("amount", amount.toFixed(2));
-			forces.x += amount;
+		if (dir.x != 0) {
+			const movement = Math.pow(Math.abs(speedDiff) * accelRate, velPower) * Math.sign(speedDiff);
+			forces.x += movement;
+		} else {
+			const drag_coefficient = collider.south ? 4.5 : 0.01;
+			const drag = Math.sign(velocity.x) * Math.pow(velocity.x, 2) * drag_coefficient;
+			forces.x -= drag;
 		}
-		*/
 
 		if (collider.south) {
-			controller.allowed_jumps = 2;
+			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
 		}
 
 		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0) {
-			(params.sound as Sound).play(150, 150, 0.5);
-
+			(params.sound as Sound).play(100, 190, 0.5);
+			velocity.y = 0;
 			forces.y = -150000;
 			controller.allowed_jumps--;
 		}
 
-		if (
-			input.is_key_pressed(BUTTONS.DASH) &&
-			controller.allowed_dashes > 0 &&
-			!controller.block_special &&
-			!collider.south
-		) {
-			const dash_force = new ECS.Vector(Math.sign(velocity.x), Math.sign(controller.current.y))
-				.normalize()
-				.scalarMult(150000);
+		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && !collider.south) {
+			const dash_force = new ECS.Vector(Math.sign(dir.x), Math.sign(dir.y)).normalize().scalarMult(200_000);
 
 			if (!dash_force.isNaN()) {
-				(params.sound as Sound).play(150, 200, 0.5);
+				(params.sound as Sound).play(200, 220, 1.5);
+				entity.removeComponent(Gravity);
 
 				controller.dashing = true;
 				controller.allowed_dashes--;
-				controller.block_special = true;
 
+				velocity.set(0, 0);
 				forces.set(dash_force.x, dash_force.y);
-
-				entity.removeComponent(Gravity);
-
-				setTimeout(() => {
-					controller.block_special = false;
-				}, 300);
 
 				setTimeout(() => {
 					forces.set(0, 0);
+					velocity.set(0, 0);
 					controller.goal.set(0, 0);
 					controller.current.set(0, 0);
 					controller.dashing = false;
-				}, DASH_DURATION);
-
-				setTimeout(() => {
 					entity.addComponent(new Gravity());
-				}, 200);
-
+				}, DASH_DURATION);
 				return;
 			}
 		}
-
-
 	}
 }
 

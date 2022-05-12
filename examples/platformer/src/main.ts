@@ -55,11 +55,12 @@ interface GameParams extends ECS.UpdateParams {
 	sound: Sound;
 }
 
-class Game {
+export class Game {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 	ecs: ECS.ECS = new ECS.ECS();
 	dt: number = 0;
 	then: number = 0;
+	data: any;
 
 	sound: Sound = new Sound();
 
@@ -97,6 +98,10 @@ class Game {
 		}
 	}
 
+	clearLevel() {
+		this.ecs.clearEntities();
+	}
+
 	setup() {
 		console.log("setup");
 
@@ -111,7 +116,9 @@ class Game {
 		fetch("assets/level-1.json")
 			.then((res) => res.json())
 			.then((json) => {
-				this.loadLevel(json);
+				this.data = json;
+				//this.loadLevel(json);
+				this.loadLevel(this.data);
 			});
 
 		this.animate(0);
@@ -136,7 +143,7 @@ class Game {
 			context.fillStyle = "#D3D3D3";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
-			this.ecs.update({ dt: this.dt, canvas, context, sound: this.sound, game: this });
+			this.ecs.update({ dt: this.dt, canvas, ecs: this.ecs, context, sound: this.sound, game: this });
 		}
 
 		requestAnimationFrame(this.animateBind);
