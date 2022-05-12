@@ -11,7 +11,7 @@ import {
 	Controller,
 } from "./components";
 import { Factory } from "./factory";
-import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, HealthSystem } from "./systems";
+import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, HealthSystem, ForceMovement } from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -101,7 +101,7 @@ class Game {
 		console.log("setup");
 
 		this.ecs.addSystem(new ECS.InputSystem(canvas));
-		//this.ecs.addSystem(new MovementSystem());
+		this.ecs.addSystem(new ForceMovement());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new HealthSystem());

@@ -10,6 +10,7 @@ import {
 	CollectibleType,
 	Controller,
 	Tile,
+	Forces,
 } from "./components";
 
 import { Sound } from "./main";
@@ -47,22 +48,29 @@ export class SpriteSystem extends ECS.System {
 
 export class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([ECS.Position, ECS.Velocity, Sprite]);
+		super([ECS.Position, ECS.Velocity, Sprite, Forces]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
-		//const acceleration = entity.getComponent(Acceleration) as Acceleration;
+		const forces = entity.getComponent(Forces) as Forces;
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
 
+		velocity.x += (forces.x / forces.mass) * params.dt;
+		velocity.y += (forces.y / forces.mass) * params.dt;
 
-		let G = 700;
-		velocity.y += G * params.dt;
+		const G = 700;
+		/*
+		if (entity.getComponent(Gravity)) {
+			velocity.y += G * params.dt;
+		}
+		*/
+
+		forces.set(0, entity.getComponent(Gravity) ? G * forces.mass : 0);
 
 		/*
 		if (entity.getComponent(Gravity)) {
@@ -174,6 +182,114 @@ export class HealthSystem extends ECS.System {
 	}
 }
 
+export class ForceMovement extends ECS.System {
+	constructor() {
+		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller, Forces]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const input = entity.getComponent(ECS.Input) as ECS.Input;
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
+		const controller = entity.getComponent(Controller) as Controller;
+		const forces = entity.getComponent(Forces) as Forces;
+
+		let xdir = 0;
+
+		if (input.is_key_pressed(BUTTONS.RIGHT)) {
+			xdir = 1;
+		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
+			xdir = -1;
+		}
+
+		const acceleration = 200;
+		const decceleration = collider.south ? 300 : 50;
+
+		let targetSpeed = xdir * SPEED;
+
+		let speedDiff = targetSpeed - velocity.x;
+		let accelRate = Math.abs(targetSpeed) > 0.01 ? acceleration : decceleration;
+
+		let velPower = 0.9;
+
+		let movement = Math.pow(Math.abs(speedDiff) * accelRate, velPower) * Math.sign(speedDiff);
+
+		//console.log("movement", movement, "diff", Math.abs(speedDiff), "target", targetSpeed)
+
+		forces.x += movement;
+
+		/*
+		if (xdir == 0) {
+
+			let f = 2;
+			if (!collider.south){
+				f = 0.1
+			}
+
+			//let amount = Math.min(Math.abs(velocity.x), 0.2)
+			let amount = velocity.x;
+			amount *= f;
+			console.log("amount", amount.toFixed(2));
+			forces.x += amount;
+		}
+		*/
+
+		if (collider.south) {
+			controller.allowed_jumps = 2;
+			controller.allowed_dashes = 1;
+		}
+
+		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0) {
+			(params.sound as Sound).play(150, 150, 0.5);
+
+			forces.y = -150000;
+			controller.allowed_jumps--;
+		}
+
+		if (
+			input.is_key_pressed(BUTTONS.DASH) &&
+			controller.allowed_dashes > 0 &&
+			!controller.block_special &&
+			!collider.south
+		) {
+			const dash_force = new ECS.Vector(Math.sign(velocity.x), Math.sign(controller.current.y))
+				.normalize()
+				.scalarMult(150000);
+
+			if (!dash_force.isNaN()) {
+				(params.sound as Sound).play(150, 200, 0.5);
+
+				controller.dashing = true;
+				controller.allowed_dashes--;
+				controller.block_special = true;
+
+				forces.set(dash_force.x, dash_force.y);
+
+				entity.removeComponent(Gravity);
+
+				setTimeout(() => {
+					controller.block_special = false;
+				}, 300);
+
+				setTimeout(() => {
+					forces.set(0, 0);
+					controller.goal.set(0, 0);
+					controller.current.set(0, 0);
+					controller.dashing = false;
+				}, DASH_DURATION);
+
+				setTimeout(() => {
+					entity.addComponent(new Gravity());
+				}, 200);
+
+				return;
+			}
+		}
+
+
+	}
+}
+
 export class MovementSystem extends ECS.System {
 	constructor() {
 		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller]);
@@ -226,6 +342,7 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = approach(controller.goal.x, controller.current.x, params.dt * acceleration_factor);
 		controller.current.y = approach(controller.goal.y, controller.current.y, params.dt * acceleration_factor);
 
+		/*
 		if (
 			input.is_key_pressed(BUTTONS.DASH) &&
 			controller.allowed_dashes > 0 &&
@@ -279,9 +396,10 @@ export class MovementSystem extends ECS.System {
 				controller.block_special = false;
 			}, 300);
 		}
+		*/
 
 		if (!controller.dashing && collider.south) {
-		//if (!controller.dashing) {
+			//if (!controller.dashing) {
 			velocity.x = SPEED * controller.current.x;
 		}
 	}

@@ -1,6 +1,11 @@
 
 import * as ECS from "../../../src";
 
+export class Forces extends ECS.VectorComponent {
+
+		mass: number = 10;
+}
+
 export class Sprite extends ECS.Component {
 	w: number;
 	h: number;

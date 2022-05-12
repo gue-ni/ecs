@@ -1,6 +1,6 @@
 
 import * as ECS from "../../../src";
-import { Sprite, Respawn, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile } from "./components";
+import { Sprite, Respawn, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, Forces } from "./components";
 
 const TILESIZE = 8;
 
@@ -10,6 +10,7 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Sprite(size.x, size.y, "red"),
 			new Gravity(),
+			new Forces(0,0),
 			new Controller(),
 			new Health(),
 			new ECS.Player(),
@@ -26,7 +27,7 @@ export class Factory {
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite(TILESIZE, TILESIZE, "green"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.BOUNCE)
+			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.SOLID)
 		);
 	}
 
