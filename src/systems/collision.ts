@@ -96,16 +96,18 @@ class CollisionSystem extends System {
 			if (collision) {
 				switch (possible[i].type) {
 					case ColliderType.SOLID: {
-						this.resolveCollision(collision, velocity, collider);
+						this.solidResponse(collision, velocity, collider);
 						break;
 					}
 
 					case ColliderType.CUSTOM_SOLID: {
-						this.resolveCollision(collision, velocity, collider);
+						this.solidResponse(collision, velocity, collider);
+						if (possible[i].entity) this.customSolidResponse(collision, entity, possible[i].entity!, params);
+						break;
 					}
 
 					case ColliderType.CUSTOM: {
-						if (possible[i].entity) this.customCollisionResponse(collision, entity, possible[i].entity!);
+						if (possible[i].entity) this.customResponse(collision, entity, possible[i].entity!, params);
 						break;
 					}
 
@@ -117,7 +119,7 @@ class CollisionSystem extends System {
 		}
 	}
 
-	resolveCollision(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
+	solidResponse(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
 		if (collision.contact_normal.y < 0) collider.south = true;
 		if (collision.contact_normal.y > 0) collider.north = true;
 		if (collision.contact_normal.x < 0) collider.east = true;
@@ -128,7 +130,9 @@ class CollisionSystem extends System {
 		collider.aabb.vel.set(velocity.x, velocity.y);
 	}
 
-	customCollisionResponse(collision: CollisionEvent, entity: Entity, target: Entity) {}
+	customResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
+	
+	customSolidResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
 }
 
 export { Collider, CollisionSystem };

@@ -7,6 +7,7 @@ interface UpdateParams {
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
 	ecs?: ECS;
+	[key: string]: unknown;
 }
 
 class ECS {
@@ -49,7 +50,7 @@ class ECS {
 	}
 
 	clearSystems(): void {
-		this.systems = []
+		this.systems = [];
 	}
 
 	removeEntity(entity: Entity): void {
@@ -81,7 +82,7 @@ class ECS {
 				if (entity.ttl <= 0) this.removeEntity(entity);
 			}
 		}
-		
+
 		for (const system of this.systems) {
 			let entities = this.entities.filter((entity) => this._matching(entity, system));
 			system.updateSystem(entities, params);
