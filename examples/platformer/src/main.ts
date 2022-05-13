@@ -120,7 +120,7 @@ export class Game {
 		console.log("setup");
 
 		this.ecs.addSystem(new ECS.InputSystem(canvas));
-		this.ecs.addSystem(new ForceMovement());
+		this.ecs.addSystem(new MovementSystem());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new HealthSystem());

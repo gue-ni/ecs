@@ -49,9 +49,7 @@ export class Collectible extends ECS.Component {
 }
 
 export class Controller extends ECS.Component {
-	block_special: boolean = false;
 	allowed_jumps: number = 2;
-	interpolate: number = 0;
 	dashing: boolean = false;
 	allowed_dashes: number = 1;
 	dash_allowed: boolean = true;

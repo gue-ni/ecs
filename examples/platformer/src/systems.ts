@@ -281,7 +281,7 @@ export class MovementSystem extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 
 		if (collider.south) {
-			controller.allowed_jumps = 2;
+			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
 		}
 
@@ -305,7 +305,6 @@ export class MovementSystem extends ECS.System {
 		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
 			controller.goal.x = -1;
 		} else {
-			//controller.goal.x = 0;
 			if (collider.south) controller.goal.x = 0;
 		}
 
@@ -321,38 +320,27 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = approach(controller.goal.x, controller.current.x, params.dt * acceleration_factor);
 		controller.current.y = approach(controller.goal.y, controller.current.y, params.dt * acceleration_factor);
 
-		/*
-		if (
-			input.is_key_pressed(BUTTONS.DASH) &&
-			controller.allowed_dashes > 0 &&
-			!controller.block_special &&
-			!collider.south
-		) {
-			const dash_direction = new ECS.Vector(Math.sign(velocity.x), Math.sign(controller.current.y))
+		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && !collider.south) {
+			const dash_direction = new ECS.Vector(Math.sign(controller.current.x), Math.sign(controller.current.y))
 				.normalize()
-				.scalarMult(DASH_SPEED);
+				.scalarMult(300);
 
 			if (!dash_direction.isNaN()) {
 				(params.sound as Sound).play(150, 200, 0.5);
 
 				controller.dashing = true;
 				controller.allowed_dashes--;
-				controller.block_special = true;
 
 				velocity.set(dash_direction.x, dash_direction.y);
 
 				entity.removeComponent(Gravity);
 
 				setTimeout(() => {
-					controller.block_special = false;
-				}, 300);
-
-				setTimeout(() => {
 					velocity.set(0, 0);
 					controller.goal.set(0, 0);
 					controller.current.set(0, 0);
 					controller.dashing = false;
-				}, DASH_DURATION);
+				}, 150);
 
 				setTimeout(() => {
 					entity.addComponent(new Gravity());
@@ -364,21 +352,14 @@ export class MovementSystem extends ECS.System {
 			}
 		}
 
-		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0 && !controller.block_special) {
+		if (input.is_key_pressed(BUTTONS.JUMP, 300) && controller.allowed_jumps > 0) {
 			(params.sound as Sound).play(150, 150, 0.5);
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
-			controller.block_special = true;
-
-			setTimeout(() => {
-				controller.block_special = false;
-			}, 300);
 		}
-		*/
 
-		if (!controller.dashing && collider.south) {
-			//if (!controller.dashing) {
+		if (!controller.dashing) {
 			velocity.x = SPEED * controller.current.x;
 		}
 	}
