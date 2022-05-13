@@ -11,7 +11,15 @@ import {
 	Controller,
 } from "./components";
 import { Factory } from "./factory";
-import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, HealthSystem, ForceMovement } from "./systems";
+import {
+	SpriteSystem,
+	PhysicsSystem,
+	CollisionSystem,
+	MovementSystem,
+	HealthSystem,
+	ForceMovement,
+	ParticleSystem,
+} from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -51,18 +59,37 @@ export class Sound {
 	}
 }
 
-interface GameParams extends ECS.UpdateParams {
-	sound: Sound;
+export class ScreenShake {
+	OFFSET_X = 0;
+	OFFSET_Y = 0;
+
+	private static magnitude: number = 2;
+	private static duration: number = 0.2;
+	private time: number = 0;
+
+	update(dt: number) {
+		if ((this.time -= dt) > 0) {
+			this.OFFSET_X = ECS.randomInteger(-ScreenShake.magnitude, ScreenShake.magnitude);
+			this.OFFSET_Y = ECS.randomInteger(-ScreenShake.magnitude, ScreenShake.magnitude);
+		} else {
+			this.OFFSET_X = 0;
+			this.OFFSET_Y = 0;
+		}
+	}
+
+	shake() {
+		this.time = ScreenShake.duration;
+	}
 }
 
 export class Game {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 	ecs: ECS.ECS = new ECS.ECS();
-	dt: number = 0;
 	then: number = 0;
 	level: number = 1;
 	data: any;
 
+	shake: ScreenShake = new ScreenShake();
 	sound: Sound = new Sound();
 
 	loadLevel() {
@@ -124,6 +151,7 @@ export class Game {
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new HealthSystem());
+		this.ecs.addSystem(new ParticleSystem());
 		this.ecs.addSystem(new SpriteSystem());
 
 		// load level
@@ -139,7 +167,7 @@ export class Game {
 
 	animate(now: number) {
 		now *= 0.001;
-		this.dt = now - this.then;
+		let dt = now - this.then;
 		this.then = now;
 
 		/*
@@ -149,14 +177,24 @@ export class Game {
 		}
 		*/
 
-		if (this.dt > 1 / 30) this.dt = 1 / 30;
+		if (dt > 1 / 30) dt = 1 / 30;
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			context.fillStyle = "#D3D3D3";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
-			this.ecs.update({ dt: this.dt, canvas, ecs: this.ecs, context, sound: this.sound, game: this });
+			this.shake.update(dt);
+
+			this.ecs.update({
+				dt: dt,
+				canvas,
+				ecs: this.ecs,
+				context,
+				sound: this.sound,
+				game: this,
+				shaker: this.shake,
+			});
 		}
 
 		requestAnimationFrame(this.animateBind);

@@ -1,16 +1,17 @@
 
 import * as ECS from "../../../src";
-import { Sprite, Respawn, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, Forces } from "./components";
+import { Sprite, Respawn, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, Forces, ParticleEmitter } from "./components";
 
 const TILESIZE = 8;
 
 export class Factory {
 	static createPlayer(pos: ECS.Vector): ECS.Entity {
-		let size = new ECS.Vector(10, 16);
+		let size = new ECS.Vector(8, 8);
 		return new ECS.Entity().addComponents(
 			new Sprite(size.x, size.y, "red"),
 			new Gravity(),
 			new Forces(0,0),
+			new ParticleEmitter(),
 			new Controller(),
 			new Health(),
 			new ECS.Player(),
@@ -53,7 +54,7 @@ export class Factory {
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite(TILESIZE, TILESIZE, "blue"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM)
+			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM_SOLID)
 		);
 
 

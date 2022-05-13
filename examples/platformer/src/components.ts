@@ -1,9 +1,7 @@
-
 import * as ECS from "../../../src";
 
 export class Forces extends ECS.VectorComponent {
-
-		mass: number = 10;
+	mass: number = 10;
 }
 
 export class Sprite extends ECS.Component {
@@ -37,7 +35,7 @@ export class Gravity extends ECS.Component {}
 export class Bouncy extends ECS.Component {}
 
 export class Spike extends ECS.Component {
-  name: string = "spike"
+	name: string = "spike";
 }
 
 export enum CollectibleType {
@@ -57,3 +55,41 @@ export class Controller extends ECS.Component {
 	current: ECS.Vector = new ECS.Vector();
 }
 
+export class ParticleEmitter extends ECS.Component {
+	dash: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.2,
+		maxTTL: 0.5,
+		minSize: 1,
+		maxSize: 2,
+		gravity: -100,
+		emitterRadius: 4,
+		maxCount: 500,
+		particlesPerSecond: 100,
+		speed: 0,
+	});
+
+	jump: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 0.2,
+		minSize: 1,
+		maxSize: 2,
+		gravity: -100,
+		maxCount: 500,
+		particlesPerSecond: 100,
+		speed: 0,
+	});
+
+	explosion: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 0.2,
+		minSize: 1,
+		maxSize: 4,
+		gravity: -200,
+		emitterRadius: 4,
+		maxCount: 10,
+		particlesPerSecond: 1000,
+		speed: 100,
+		active: false,
+		finiteParticles: true,
+	});
+}
