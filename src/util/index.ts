@@ -10,6 +10,19 @@ function normalize(val: number, min: number, max: number) {
 	return (val - min) / (max - min);
 }
 
+function approach(goal: number, current: number, delta: number) {
+	let diff = goal - current;
+
+	if (diff > delta) {
+		return current + delta;
+	}
+	if (diff < -delta) {
+		return current - delta;
+	}
+
+	return goal;
+}
+
 function normalizeToRange(val: number, minVal: number, maxVal: number, newMin: number, newMax: number) {
 	return newMin + ((val - minVal) * (newMax - newMin)) / (maxVal - minVal);
 }
@@ -23,4 +36,4 @@ function clamp(val: number, min: number, max: number): number {
 	return Math.max(min, Math.min(val, max));
 }
 
-export { randomFloat, randomInteger, clamp, lerp };
+export { randomFloat, randomInteger, clamp, lerp, approach };

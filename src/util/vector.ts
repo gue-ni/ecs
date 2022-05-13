@@ -1,3 +1,5 @@
+import { randomFloat } from "./index";
+
 interface IVector {
 	x: number;
 	y: number;
@@ -78,6 +80,13 @@ class Vector implements IVector {
 	random(): Vector {
 		this.x = Math.random();
 		this.y = Math.random();
+		return this;
+	}
+
+	random_unit_vector(): Vector  {
+		const phi = randomFloat(0, Math.PI * 2)
+		this.x = Math.cos(phi)
+		this.y = Math.sin(phi)
 		return this;
 	}
 
