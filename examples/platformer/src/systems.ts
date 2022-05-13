@@ -167,7 +167,7 @@ export class HealthSystem extends ECS.System {
 				game.clearLevel();
 
 				setTimeout(() => {
-					game.loadLevel(game.data);
+					game.loadLevel();
 				}, 700);
 
 				/*
@@ -216,6 +216,7 @@ export class ForceMovement extends ECS.System {
 		let targetSpeed = dir.x * SPEED;
 
 		let speedDiff = targetSpeed - velocity.x;
+
 		let accelRate = Math.abs(targetSpeed) > 0.01 ? acceleration : decceleration;
 
 		let velPower = 0.9;
@@ -224,7 +225,7 @@ export class ForceMovement extends ECS.System {
 			const movement = Math.pow(Math.abs(speedDiff) * accelRate, velPower) * Math.sign(speedDiff);
 			forces.x += movement;
 		} else {
-			const drag_coefficient = collider.south ? 4.5 : 0.01;
+			const drag_coefficient = collider.south ? 5 : 0.01;
 			const drag = Math.sign(velocity.x) * Math.pow(velocity.x, 2) * drag_coefficient;
 			forces.x -= drag;
 		}

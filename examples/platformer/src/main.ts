@@ -60,13 +60,14 @@ export class Game {
 	ecs: ECS.ECS = new ECS.ECS();
 	dt: number = 0;
 	then: number = 0;
+	level: number = 1;
 	data: any;
 
 	sound: Sound = new Sound();
 
-	loadLevel(json: any) {
+	loadLevel() {
 		const TILESIZE = 8;
-		for (const { x, y, type } of json) {
+		for (const { x, y, type } of this.data) {
 			let pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
 
 			switch (type) {
@@ -98,6 +99,19 @@ export class Game {
 		}
 	}
 
+	nextLevel() {
+		this.clearLevel();
+
+		this.level++;
+
+		fetch(`assets/level-${this.level}.json`)
+			.then((res) => res.json())
+			.then((json) => {
+				this.data = json;
+				this.loadLevel();
+			});
+	}
+
 	clearLevel() {
 		this.ecs.clearEntities();
 	}
@@ -117,8 +131,7 @@ export class Game {
 			.then((res) => res.json())
 			.then((json) => {
 				this.data = json;
-				//this.loadLevel(json);
-				this.loadLevel(this.data);
+				this.loadLevel();
 			});
 
 		this.animate(0);
