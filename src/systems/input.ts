@@ -6,9 +6,12 @@ import { Player } from "./basic";
 
 type MouseButton = "left" | "right" | "middle";
 
+const pressed: any = {}
+const last_pressed: any = {};
+
 class Input extends Component {
-	pressed: any;
-	last_pressed: any;
+	//pressed: any;
+	//last_pressed: any;
 
 	keydown: any = {};
 	keyup: any = {};
@@ -27,19 +30,21 @@ class Input extends Component {
 
 	constructor() {
 		super();
+		/*
 		this.pressed = {};
 		this.last_pressed = {};
+		*/
 
 		this.mouse = {};
 		this.mouse_last_pressed = {};
 	}
 
 	is_key_pressed(key: string, delay?: number): boolean {
-		if (this.pressed[key]) {
+		if (pressed[key]) {
 			if (!delay) return true;
 
-			if (this.last_pressed[key] == undefined || Date.now() - this.last_pressed[key] > delay) {
-				this.last_pressed[key] = Date.now();
+			if (last_pressed[key] == undefined || Date.now() - last_pressed[key] > delay) {
+				last_pressed[key] = Date.now();
 				return true;
 			}
 		}
@@ -71,7 +76,7 @@ class Input extends Component {
 }
 
 class InputSystem extends System {
-	keys: any;
+	//keys: any;
 	mouse: any;
 
 	keydown: any = {};
@@ -91,12 +96,14 @@ class InputSystem extends System {
 	constructor(canvas: HTMLCanvasElement) {
 		super([Input, Player]);
 
-		this.keys = {};
+		//this.keys = {};
 		this.mouse = {};
 
 		window.addEventListener("keydown", (e) => {
 
-			this.keys[e.code] = true;
+			//this.keys[e.code] = true;
+			
+			pressed[e.code] = true;
 			this.keydown[e.code] = true;
 
 
@@ -107,7 +114,8 @@ class InputSystem extends System {
 		});
 
 		window.addEventListener("keyup", (e) => {
-			delete this.keys[e.code];
+			//delete this.keys[e.code];
+			delete pressed[e.code];
 			this.keyup[e.code] = true;
 
 			const now = Date.now();
@@ -159,7 +167,7 @@ class InputSystem extends System {
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
 
-		input.pressed = { ...this.keys };
+		//input.pressed = { ...this.keys };
 		input.last_keydown = { ...this.last_keydown };
 		input.last_keyup = { ...this.last_keyup };
 		input.time_since_last_keydown = { ...this.time_since_last_keydown };
