@@ -310,11 +310,12 @@ export class MovementSystem extends ECS.System {
 			controller.allowed_dashes = 1;
 		}
 
-		let dir = new ECS.Vector()
+		const dir = new ECS.Vector()
+
 
 		if (input.is_key_pressed(BUTTONS.RIGHT)) {
 			controller.goal.x = 1;
-			dir.x = 1
+			dir.x = 1;
 		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
 			controller.goal.x = -1;
 			dir.x = -1;
@@ -327,8 +328,8 @@ export class MovementSystem extends ECS.System {
 			controller.goal.y = -1;
 			dir.y = -1;
 		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
-			controller.goal.y = 1;
 			dir.y = 1;
+			controller.goal.y = 1;
 		} else {
 			controller.goal.y = 0;
 		}
@@ -338,11 +339,11 @@ export class MovementSystem extends ECS.System {
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * acceleration_factor);
 
 		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && !collider.south) {
-			//let x = Math.abs(controller.current.x) > Math.abs(controller.current.y) ? controller.current.x : 0;
-			//let y = Math.abs(controller.current.y) > Math.abs(controller.current.x) ? controller.current.y : 0;
-			//const dash_direction = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(300);
+			let x = Math.abs(dir.x) > Math.abs(dir.y) ? dir.x : 0;
+			let y = Math.abs(dir.y) > Math.abs(dir.x) ? dir.y : 0;
+			const dash_direction = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(300);
 
-			const dash_direction = dir.normalize().scalarMult(300);
+			//const dash_direction = controller.goal.copy().normalize().scalarMult(300);
 
 			if (!dash_direction.isNaN()) {
 				(params.sound as Sound).play(150, 200, 0.5);
@@ -363,6 +364,7 @@ export class MovementSystem extends ECS.System {
 					entity.addComponent(new Gravity());
 				}, 150);
 
+				
 				setTimeout(() => {}, 250);
 
 				return;
