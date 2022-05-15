@@ -6,19 +6,10 @@ import { Player } from "./basic";
 
 type MouseButton = "left" | "right" | "middle";
 
-const pressed: any = {}
-const last_pressed: any = {};
+const KEY_DOWN: any = {};
+const LAST_PRESSED: any = {};
 
 class Input extends Component {
-	//pressed: any;
-	//last_pressed: any;
-
-	keydown: any = {};
-	keyup: any = {};
-	last_keydown: any = {};
-	last_keyup: any = {};
-	time_since_last_keydown: any = {};
-
 	mouse: any;
 	mouse_last_pressed: any;
 
@@ -30,34 +21,17 @@ class Input extends Component {
 
 	constructor() {
 		super();
-		/*
-		this.pressed = {};
-		this.last_pressed = {};
-		*/
 
 		this.mouse = {};
 		this.mouse_last_pressed = {};
 	}
 
-	is_key_pressed(key: string, delay?: number): boolean {
-		if (pressed[key]) {
-			if (!delay) return true;
+	is_key_pressed(key: string, params: { delay?: number; reset?: boolean }): boolean {
+		if (KEY_DOWN[key]) {
+			if (!params.delay) return true;
 
-			if (last_pressed[key] == undefined || Date.now() - last_pressed[key] > delay) {
-				last_pressed[key] = Date.now();
-				return true;
-			}
-		}
-		return false;
-	}
-
-	is_double_pressed(key: string, time_between: number): boolean {
-		if (this.keydown[key] && this.last_keyup[key]) {
-			if (this.last_keyup[key] < this.last_keydown[key] - this.time_since_last_keydown[key]) {
-				return false;
-			}
-
-			if (this.time_since_last_keydown[key] && this.time_since_last_keydown[key] < time_between) {
+			if (LAST_PRESSED[key] == undefined || Date.now() - LAST_PRESSED[key] > params.delay) {
+				LAST_PRESSED[key] = Date.now();
 				return true;
 			}
 		}
@@ -79,13 +53,7 @@ class InputSystem extends System {
 	//keys: any;
 	mouse: any;
 
-	keydown: any = {};
-	keyup: any = {};
-	last_keydown: any = {};
-	last_keyup: any = {};
-	time_since_last_keydown: any = {};
-
-	locked:any = {}
+	locked: any = {};
 
 	lastX: number = 0;
 	lastY: number = 0;
@@ -96,31 +64,16 @@ class InputSystem extends System {
 	constructor(canvas: HTMLCanvasElement) {
 		super([Input, Player]);
 
-		//this.keys = {};
 		this.mouse = {};
 
 		window.addEventListener("keydown", (e) => {
+			if (e.repeat) return;
 
-			//this.keys[e.code] = true;
-			
-			pressed[e.code] = true;
-			this.keydown[e.code] = true;
-
-
-			const now = Date.now();
-			const last = this.last_keydown[e.code] ?? now;
-			this.time_since_last_keydown[e.code] = now - last;
-			this.last_keydown[e.code] = now;
+			KEY_DOWN[e.code] = true;
 		});
 
 		window.addEventListener("keyup", (e) => {
-			//delete this.keys[e.code];
-			delete pressed[e.code];
-			this.keyup[e.code] = true;
-
-			const now = Date.now();
-			const last = this.last_keyup[e.code] ?? now;
-			this.last_keyup[e.code] = now;
+			delete KEY_DOWN[e.code];
 		});
 
 		canvas.addEventListener("mousedown", (e) => {
@@ -160,6 +113,7 @@ class InputSystem extends System {
 		});
 	}
 
+
 	updateEntity(entity: Entity, params: UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;
 
@@ -167,17 +121,8 @@ class InputSystem extends System {
 		input.mouseX = this.mouseX;
 		input.mouseY = this.mouseY;
 
-		//input.pressed = { ...this.keys };
-		input.last_keydown = { ...this.last_keydown };
-		input.last_keyup = { ...this.last_keyup };
-		input.time_since_last_keydown = { ...this.time_since_last_keydown };
-		input.keydown = { ...this.keydown };
-		input.keyup = { ...this.keyup };
-
 		input.lastX = this.lastX;
 		input.lastY = this.lastY;
-
-		this.keydown = {};
 	}
 }
 

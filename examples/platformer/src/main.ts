@@ -16,7 +16,7 @@ import {
 	PhysicsSystem,
 	CollisionSystem,
 	MovementSystem,
-	HealthSystem,
+	LevelSystem,
 	ForceMovement,
 	ParticleSystem,
 } from "./systems";
@@ -92,14 +92,14 @@ export class Game {
 	shake: ScreenShake = new ScreenShake();
 	sound: Sound = new Sound();
 
-	loadLevel() {
+	loadLevel(player_pos?: ECS.Vector) {
 		const TILESIZE = 8;
 		for (const { x, y, type } of this.data) {
-			let pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
+			const pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
 
 			switch (type) {
 				case "player": {
-					this.ecs.addEntity(Factory.createPlayer(pos));
+					this.ecs.addEntity(Factory.createPlayer(player_pos || pos));
 					break;
 				}
 
@@ -126,21 +126,18 @@ export class Game {
 		}
 	}
 
-	nextLevel() {
-		this.clearLevel();
-
-		this.level++;
-
-		fetch(`assets/level-${this.level}.json`)
-			.then((res) => res.json())
-			.then((json) => {
-				this.data = json;
-				this.loadLevel();
-			});
-	}
+	
 
 	clearLevel() {
 		this.ecs.clearEntities();
+
+		/*
+		for (const entity of this.ecs.entities) {
+			if (!entity.getComponent(ECS.Player)) {
+				this.ecs.removeEntity(entity);
+			}
+		}
+		*/
 	}
 
 	setup() {
@@ -150,7 +147,7 @@ export class Game {
 		this.ecs.addSystem(new MovementSystem());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
-		this.ecs.addSystem(new HealthSystem());
+		this.ecs.addSystem(new LevelSystem());
 		this.ecs.addSystem(new ParticleSystem());
 		this.ecs.addSystem(new SpriteSystem());
 
