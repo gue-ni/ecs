@@ -47,12 +47,12 @@ export class Collectible extends ECS.Component {
 }
 
 export class Controller extends ECS.Component {
-	allowed_jumps: number = 2;
 	dashing: boolean = false;
 	jumping: boolean = false;
+	allowed_jumps: number = 2;
 	allowed_dashes: number = 1;
 	dash_allowed: boolean = true;
-	goal: ECS.Vector = new ECS.Vector(0, 0);
+	goal: ECS.Vector = new ECS.Vector();
 	current: ECS.Vector = new ECS.Vector();
 }
 

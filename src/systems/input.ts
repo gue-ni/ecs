@@ -26,11 +26,11 @@ class Input extends Component {
 		this.mouse_last_pressed = {};
 	}
 
-	is_key_pressed(key: string, params: { delay?: number; reset?: boolean }): boolean {
+	is_key_pressed(key: string, delay?: number): boolean {
 		if (KEY_DOWN[key]) {
-			if (!params.delay) return true;
+			if (!delay) return true;
 
-			if (LAST_PRESSED[key] == undefined || Date.now() - LAST_PRESSED[key] > params.delay) {
+			if (LAST_PRESSED[key] == undefined || Date.now() - LAST_PRESSED[key] > delay) {
 				LAST_PRESSED[key] = Date.now();
 				return true;
 			}
@@ -112,7 +112,6 @@ class InputSystem extends System {
 			this.mouseY = Math.round((e.clientY - rect.top) * scaleY);
 		});
 	}
-
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
 		const input = entity.getComponent(Input) as Input;

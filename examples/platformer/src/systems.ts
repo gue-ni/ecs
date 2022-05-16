@@ -11,7 +11,7 @@ import {
 	ParticleEmitter,
 } from "./components";
 
-import { Game, Shake , Sound } from "./main";
+import { Game, Shake, Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 400;
@@ -359,17 +359,17 @@ export class MovementSystem extends ECS.System {
 
 		const input_dir = new ECS.Vector();
 
-		if (input.is_key_pressed(BUTTONS.RIGHT, {})) {
+		if (input.is_key_pressed(BUTTONS.RIGHT)) {
 			controller.goal.x = input_dir.x = 1;
-		} else if (input.is_key_pressed(BUTTONS.LEFT, {})) {
+		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
 			controller.goal.x = input_dir.x = -1;
 		} else {
 			if (collider.south) controller.goal.x = 0;
 		}
 
-		if (input.is_key_pressed(BUTTONS.UP, {})) {
+		if (input.is_key_pressed(BUTTONS.UP)) {
 			controller.goal.y = input_dir.y = -1;
-		} else if (input.is_key_pressed(BUTTONS.DOWN, {})) {
+		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
 			controller.goal.y = input_dir.y = 1;
 		} else {
 			controller.goal.y = 0;
@@ -379,7 +379,7 @@ export class MovementSystem extends ECS.System {
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (
-			input.is_key_pressed(BUTTONS.DASH, {}) &&
+			input.is_key_pressed(BUTTONS.DASH) &&
 			controller.allowed_dashes > 0 &&
 			!collider.south &&
 			controller.dash_allowed
@@ -407,16 +407,13 @@ export class MovementSystem extends ECS.System {
 				}, DASH_DURATION);
 
 				controller.dash_allowed = false;
-				setTimeout(() => {
-					controller.dash_allowed = true;
-				}, 200);
-
+				setTimeout(() => (controller.dash_allowed = true), 200);
 				return;
 			}
 		}
 
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, { delay: 300 }) &&
+			input.is_key_pressed(BUTTONS.JUMP, 300) &&
 			controller.allowed_jumps > 0 &&
 			!controller.dashing &&
 			collider.south
@@ -425,13 +422,12 @@ export class MovementSystem extends ECS.System {
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
+
 			controller.jumping = true;
+			setTimeout(() => (controller.jumping = false), 50);
 
 			controller.dash_allowed = false;
-			setTimeout(() => {
-				controller.dash_allowed = true;
-				controller.jumping = false;
-			}, 150);
+			setTimeout(() => (controller.dash_allowed = true), 150);
 		}
 
 		if (!controller.dashing) {
