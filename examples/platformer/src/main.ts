@@ -51,7 +51,7 @@ export class Sound {
 	}
 }
 
-export class ScreenShake {
+export class Shake {
 	OFFSET_X = 0;
 	OFFSET_Y = 0;
 
@@ -61,8 +61,8 @@ export class ScreenShake {
 
 	update(dt: number) {
 		if ((this.time -= dt) > 0) {
-			this.OFFSET_X = ECS.randomInteger(-ScreenShake.magnitude, ScreenShake.magnitude);
-			this.OFFSET_Y = ECS.randomInteger(-ScreenShake.magnitude, ScreenShake.magnitude);
+			this.OFFSET_X = ECS.randomInteger(-Shake.magnitude, Shake.magnitude);
+			this.OFFSET_Y = ECS.randomInteger(-Shake.magnitude, Shake.magnitude);
 		} else {
 			this.OFFSET_X = 0;
 			this.OFFSET_Y = 0;
@@ -70,24 +70,77 @@ export class ScreenShake {
 	}
 
 	shake() {
-		this.time = ScreenShake.duration;
+		this.time = Shake.duration;
 	}
 }
+
+const pixel = (x: number, y: number, image: ImageData) => {
+	let index = y * (image.width * 4) + x * 4;
+	let r = image.data[index + 0];
+	let g = image.data[index + 1];
+	let b = image.data[index + 2];
+	let a = image.data[index + 3];
+	return [r, g, b, a];
+};
 
 export class Game {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 	ecs: ECS.ECS = new ECS.ECS();
 	then: number = 0;
 	level: number = 1;
+	max_level: number = 3;
 	data: any;
 
-	shake: ScreenShake = new ScreenShake();
+	shake: Shake = new Shake();
 	sound: Sound = new Sound();
 
-	loadLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
+	static fetchLevelData(url: string) {
+		return new Promise((resolve, reject) => {
+			const objects = [];
+
+			const image = new Image();
+			image.src = url;
+			image.onerror = (e) => reject(e);
+
+			image.onload = () => {
+				const c = document.createElement("canvas");
+				c.width = image.width;
+				c.height = image.height;
+				const ctx = c.getContext("2d");
+				ctx.drawImage(image, 0, 0);
+				const data = ctx.getImageData(0, 0, image.width, image.height);
+
+				for (let x = 0; x < image.width; x++) {
+					for (let y = 0; y < image.height; y++) {
+						const [r, g, b, a] = pixel(x, y, data);
+						if (r == 255 && g == 255 && b == 255) continue;
+
+						const object = { x, y, type: "" };
+
+						if (r == 255 && g == 0 && b == 0) {
+							object.type = "player";
+						} else if (r == 0 && g == 255 && b == 0) {
+							object.type = "tile";
+						} else if (r == 0 && g == 0 && b == 255) {
+							object.type = "spike";
+						} else if (r == 0 && g == 255 && b == 255) {
+							object.type = "bounce";
+						} else if (r == 255 && g == 0 && b == 255) {
+							object.type = "dash";
+						}
+						objects.push(object);
+					}
+				}
+
+				resolve(objects);
+			};
+		});
+	}
+
+	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
 		const TILESIZE = 8;
 		for (const { x, y, type } of this.data) {
-			const pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
+			const pos = new ECS.Vector(x * TILESIZE, y * TILESIZE);
 
 			switch (type) {
 				case "player": {
@@ -120,19 +173,9 @@ export class Game {
 
 	clearLevel() {
 		this.ecs.clearEntities();
-
-		/*
-		for (const entity of this.ecs.entities) {
-			if (!entity.getComponent(ECS.Player)) {
-				this.ecs.removeEntity(entity);
-			}
-		}
-		*/
 	}
 
 	setup() {
-		console.log("setup");
-
 		this.ecs.addSystem(new ECS.InputSystem(canvas));
 		this.ecs.addSystem(new MovementSystem());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
@@ -141,15 +184,15 @@ export class Game {
 		this.ecs.addSystem(new ParticleSystem());
 		this.ecs.addSystem(new SpriteSystem());
 
-		// load level
-		fetch("assets/level-1.json")
-			.then((res) => res.json())
+		Game.fetchLevelData("assets/level-1.png")
 			.then((json) => {
 				this.data = json;
-				this.loadLevel();
+				this.createLevel();
+				this.animate(0);
+			})
+			.catch((e) => {
+				console.log("failed to load level", e);
 			});
-
-		this.animate(0);
 	}
 
 	animate(now: number) {

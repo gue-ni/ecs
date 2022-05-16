@@ -4,7 +4,7 @@
   "description": "",
   "main": "main.ts",
   "scripts": {
-    "build": "python parse.py && webpack"
+    "build": "webpack"
   },
   "author": "",
   "license": "ISC",

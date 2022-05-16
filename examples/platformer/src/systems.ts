@@ -1,3 +1,4 @@
+import { convertToObject } from "typescript";
 import * as ECS from "../../../src";
 import {
 	Sprite,
@@ -12,14 +13,16 @@ import {
 	ParticleEmitter,
 } from "./components";
 
-import { Game, ScreenShake as ScreenShaker, Sound } from "./main";
+import { Game, Shake as ScreenShaker, Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 400;
 const SPEED = 110;
-const GRAVITY = 700;
+const GRAVITY = 650;
 const DASH_SPEED = 300;
 const DASH_DURATION = 150;
+const DRAG_FACTOR = 0.4;
+const ACCELERATION = 20;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
@@ -46,7 +49,8 @@ export class ParticleSystem extends ECS.System {
 
 		if (controller.dashing) {
 			emitter.dash.active = true;
-		} else if (!controller.dashing && velocity && velocity.vector.magnitude() > 100) {
+			//} else if (!controller.dashing && velocity && velocity.vector.magnitude() > 100) {
+		} else if (controller.jumping) {
 			emitter.jump.active = true;
 		} else {
 			emitter.dash.active = false;
@@ -164,58 +168,69 @@ export class CollisionSystem extends ECS.CollisionSystem {
 
 let waiting = false;
 
+const pixel = (x: number, y: number, image: ImageData) => {
+	let index = y * (image.width * 4) + x * 4;
+	let r = image.data[index + 0];
+	let g = image.data[index + 1];
+	let b = image.data[index + 2];
+	let a = image.data[index + 3];
+	return [r, g, b, a];
+};
+
 export class SpawnSystem extends ECS.System {
 	constructor() {
 		super([ECS.Position, Respawn, Health, Sprite, ECS.Player]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		if (waiting) {
-			console.log("waiting");
-			return;
-		}
+		if (waiting) return;
 
 		const health = entity.getComponent(Health) as Health;
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
-		const game = params.game as Game;
-
 		if (position.y > params.canvas.height + 16 * 3) {
 			health.value = 0;
+			return;
 		}
 
-		if (position.x > params.canvas.width || position.x < 0) {
+		const game = params.game as Game;
+
+		if (position.x + sprite.w > params.canvas.width || position.x < 0) {
 			const old_player_pos = position.vector.copy();
 			const old_player_vel = velocity.vector.copy();
 
-			let level = 0;
+			let new_level = 0;
 			if (position.x > 0) {
-				level = game.level + 1;
+				new_level = game.level + 1;
 				old_player_pos.x = 0;
 			} else {
-				level = game.level - 1;
+				new_level = game.level - 1;
 				old_player_pos.x = params.canvas.width - sprite.w;
 			}
 
-			if (level == 0) {
+			if (new_level == 0) {
 				position.x = 0;
-				console.log("level is 0");
+				velocity.x = 0;
+				return;
+			} else if (new_level > game.max_level) {
+				position.x = params.canvas.width - sprite.w;
+				velocity.x = 0;
 				return;
 			}
+
 			waiting = true;
 
-			fetch(`assets/level-${level}.json`)
-				.then((res) => res.json())
+			Game.fetchLevelData(`assets/level-${new_level}.png`)
 				.then((json) => {
 					game.clearLevel();
-					game.level = level;
+					game.level = new_level;
 					game.data = json;
-					console.log("loaded level", level);
+					console.log("loaded level", new_level);
 
 					setTimeout(() => {
-						game.loadLevel(old_player_pos, old_player_vel);
+						game.createLevel(old_player_pos, old_player_vel);
 						waiting = false;
 					}, 100);
 				})
@@ -225,6 +240,8 @@ export class SpawnSystem extends ECS.System {
 					waiting = false;
 					position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
 				});
+
+			return;
 		}
 
 		if (health.value <= 0) {
@@ -232,9 +249,11 @@ export class SpawnSystem extends ECS.System {
 			waiting = true;
 			game.clearLevel();
 			setTimeout(() => {
-				game.loadLevel();
+				game.createLevel();
 				waiting = false;
 			}, 700);
+
+			return;
 		}
 	}
 }
@@ -358,9 +377,8 @@ export class MovementSystem extends ECS.System {
 			controller.goal.y = 0;
 		}
 
-		const acceleration_factor = 50;
-		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * acceleration_factor);
-		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * acceleration_factor);
+		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
+		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (
 			input.is_key_pressed(BUTTONS.DASH, {}) &&
@@ -393,7 +411,7 @@ export class MovementSystem extends ECS.System {
 				controller.dash_allowed = false;
 				setTimeout(() => {
 					controller.dash_allowed = true;
-				}, 300);
+				}, 200);
 
 				return;
 			}
@@ -409,11 +427,13 @@ export class MovementSystem extends ECS.System {
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
+			controller.jumping = true;
 
 			controller.dash_allowed = false;
 			setTimeout(() => {
 				controller.dash_allowed = true;
-			}, 300);
+				controller.jumping = false;
+			}, 150);
 		}
 
 		if (!controller.dashing) {
@@ -421,7 +441,7 @@ export class MovementSystem extends ECS.System {
 
 			if (!collider.south && input_dir.x == 0 && input_dir.y == 0) {
 				// simulate air resistance
-				velocity.x = velocity.x * 0.5;
+				velocity.x = velocity.x * DRAG_FACTOR;
 			}
 		}
 	}

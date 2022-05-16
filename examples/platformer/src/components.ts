@@ -49,6 +49,7 @@ export class Collectible extends ECS.Component {
 export class Controller extends ECS.Component {
 	allowed_jumps: number = 2;
 	dashing: boolean = false;
+	jumping: boolean = false;
 	allowed_dashes: number = 1;
 	dash_allowed: boolean = true;
 	goal: ECS.Vector = new ECS.Vector(0, 0);
@@ -70,12 +71,12 @@ export class ParticleEmitter extends ECS.Component {
 
 	jump: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.1,
-		maxTTL: 0.2,
+		maxTTL: 0.4,
 		minSize: 1,
 		maxSize: 2,
 		gravity: -100,
-		maxCount: 500,
-		particlesPerSecond: 100,
+		maxCount: 50,
+		particlesPerSecond: 150,
 		speed: 0,
 	});
 
