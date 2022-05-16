@@ -83,10 +83,7 @@ const pixel = (x: number, y: number, image: ImageData) => {
 	return [r, g, b, a];
 };
 
-
-
 export class Game {
-	animateBind: FrameRequestCallback = this.animate.bind(this);
 	ecs: ECS.ECS = new ECS.ECS();
 	then: number = 0;
 	level: number = 1;
@@ -95,6 +92,8 @@ export class Game {
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
+
+	animateBind: FrameRequestCallback = this.animate.bind(this);
 
 	static fetchLevelData(url: string) {
 		return new Promise((resolve, reject) => {
@@ -213,7 +212,8 @@ export class Game {
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
-			context.fillStyle = "#D3D3D3";
+			//context.fillStyle = "#D3D3D3";
+			context.fillStyle = "#000";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			this.shake.update(dt);

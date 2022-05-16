@@ -3,11 +3,20 @@ import { Sprite, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, 
 
 const TILESIZE = 8;
 
+const TILE = new Image();
+TILE.src = "assets/tile.png";
+
+const SPIKE = new Image();
+SPIKE.src = "assets/spikes.png";
+
+const CHARACTER = new Image();
+CHARACTER.src = "assets/character.png";
+
 export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
-		let size = new ECS.Vector(8, 8);
+		const size = new ECS.Vector(16, 16);
 		return new ECS.Entity().addComponents(
-			new Sprite(size.x, size.y, "red"),
+			new Sprite({ width: size.x, height: size.y, image: CHARACTER }),
 			new Gravity(),
 			new ParticleEmitter(),
 			new Controller(),
@@ -16,7 +25,7 @@ export class Factory {
 			new ECS.Input(),
 			new ECS.Position(pos.x, pos.y),
 			new ECS.Velocity(vel.x, vel.y),
-			new ECS.Collider(size.x, size.y)
+			new ECS.Collider({ width: 8, height: size.y, offset: new ECS.Vector(4,0) })
 		);
 	}
 
@@ -24,8 +33,12 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite(TILESIZE, TILESIZE, "green"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM_SOLID)
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: TILE }),
+			new ECS.Collider({
+				width: TILESIZE,
+				height: TILESIZE,
+				colliderType: ECS.ColliderType.CUSTOM_SOLID,
+			})
 		);
 	}
 
@@ -33,8 +46,8 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Collectible(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite(TILESIZE, TILESIZE, "purple"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM)
+			new Sprite({ width: TILESIZE, height: TILESIZE, color: "purple" }),
+			new ECS.Collider({ width: TILESIZE, height: TILESIZE, colliderType: ECS.ColliderType.CUSTOM })
 		);
 	}
 
@@ -42,8 +55,8 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Bouncy(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite(TILESIZE, TILESIZE, "turquoise"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM_SOLID)
+			new Sprite({ width: TILESIZE, height: TILESIZE, color: "turquoise" }),
+			new ECS.Collider({ width: TILESIZE, height: TILESIZE, colliderType: ECS.ColliderType.CUSTOM_SOLID })
 		);
 	}
 
@@ -51,8 +64,13 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite(TILESIZE, TILESIZE, "blue"),
-			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM_SOLID)
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPIKE }),
+			new ECS.Collider({
+				width: TILESIZE,
+				height: 2,
+				colliderType: ECS.ColliderType.CUSTOM_SOLID,
+				offset: new ECS.Vector(0, 6),
+			})
 		);
 	}
 

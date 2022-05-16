@@ -20,7 +20,7 @@ const GRAVITY = 650;
 const DASH_SPEED = 300;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
-const ACCELERATION = 20;
+const ACCELERATION = 40;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
@@ -43,7 +43,7 @@ export class ParticleSystem extends ECS.System {
 
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
-		let p = new ECS.Vector(position.x + sprite.w / 2, position.y + sprite.h / 2);
+		let p = new ECS.Vector(position.x + sprite.width / 2, position.y + sprite.height / 2);
 
 		if (controller.dashing) {
 			emitter.dash.active = true;
@@ -70,16 +70,31 @@ export class SpriteSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		if (!sprite.visible) return;
 
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const shaker = params.shaker as Shake;
 
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		params.context.fillStyle = sprite.color;
-		params.context.fillRect(
-			Math.round(position.x + shaker.OFFSET_X) - 0.5,
-			Math.round(position.y + shaker.OFFSET_Y) - 0.5,
-			sprite.w,
-			sprite.h
-		);
+		const x = Math.round(position.x + shaker.OFFSET_X);
+		const y = Math.round(position.y + shaker.OFFSET_Y);
+
+		if (sprite.image) {
+			const frame_x = 0;
+			const frame_y = 0;
+
+			params.context.drawImage(
+				sprite.image,
+				frame_x * sprite.width,
+				frame_y * sprite.height,
+				sprite.width,
+				sprite.height,
+				x,
+				y,
+				sprite.width,
+				sprite.height
+			);
+		} else {
+			params.context.fillStyle = sprite.color;
+			params.context.fillRect(x - 0.5, y - 0.5, sprite.width, sprite.height);
+		}
 	}
 }
 
@@ -138,9 +153,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 
 			(params.shaker as Shake).shake();
 
-			setTimeout(() => {
-				health.value = 0;
-			}, 500);
+			setTimeout(() => (health.value = 0), 700);
 		}
 	}
 
@@ -195,7 +208,7 @@ export class SpawnSystem extends ECS.System {
 
 		const game = params.game as Game;
 
-		if (position.x + sprite.w > params.canvas.width || position.x < 0) {
+		if (position.x + sprite.width > params.canvas.width || position.x < 0) {
 			const old_player_pos = position.vector.copy();
 			const old_player_vel = velocity.vector.copy();
 
@@ -205,7 +218,7 @@ export class SpawnSystem extends ECS.System {
 				old_player_pos.x = 0;
 			} else {
 				new_level = game.level - 1;
-				old_player_pos.x = params.canvas.width - sprite.w;
+				old_player_pos.x = params.canvas.width - sprite.width;
 			}
 
 			if (new_level == 0) {
@@ -213,7 +226,7 @@ export class SpawnSystem extends ECS.System {
 				velocity.x = 0;
 				return;
 			} else if (new_level > game.max_level) {
-				position.x = params.canvas.width - sprite.w;
+				position.x = params.canvas.width - sprite.width;
 				velocity.x = 0;
 				return;
 			}
@@ -236,7 +249,7 @@ export class SpawnSystem extends ECS.System {
 					console.log("error", e);
 					//alert(`ERROR: failed to load level ${level}!`);
 					waiting = false;
-					position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
+					position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.width);
 				});
 
 			return;

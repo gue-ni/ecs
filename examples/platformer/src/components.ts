@@ -4,17 +4,32 @@ export class Forces extends ECS.VectorComponent {
 	mass: number = 10;
 }
 
+class Animation {
+	repeat: boolean;
+	frame: ECS.Vector = new ECS.Vector();
+	constructor() {}
+}
+
+class Character {
+	constructor() {}
+
+	goto(state_name: string) {}
+}
+
 export class Sprite extends ECS.Component {
-	w: number;
-	h: number;
+	width: number;
+	height: number;
 	color: string;
 	visible: boolean = true;
+	image: HTMLImageElement;
+	time: number = 0;
 
-	constructor(w: number, h: number, color: string) {
+	constructor(params: { width: number; height: number; color?: string; image?: HTMLImageElement }) {
 		super();
-		this.w = w;
-		this.h = h;
-		this.color = color;
+		this.width = params.width;
+		this.height = params.height;
+		this.color = params.color ?? "red";
+		this.image = params.image;
 	}
 }
 
@@ -82,15 +97,33 @@ export class ParticleEmitter extends ECS.Component {
 
 	explosion: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.1,
-		maxTTL: 0.2,
+		maxTTL: 0.5,
+		minSize: 1,
+		maxSize: 3,
+		maxCount: 10,
+		drag: 0.1,
+		speed: 40,
+		active: false,
+		gravity: -400,
+		emitterRadius: 4,
+		particlesPerSecond: 1000,
+		finiteParticles: true,
+	});
+
+	/*
+	explosion: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 1,
 		minSize: 1,
 		maxSize: 4,
-		gravity: -200,
+		gravity: 400,
 		emitterRadius: 4,
 		maxCount: 10,
 		particlesPerSecond: 1000,
-		speed: 100,
+		speed: 120,
+		drag: 0.05,
 		active: false,
 		finiteParticles: true,
 	});
+	*/
 }
