@@ -9,8 +9,6 @@ import {
 	Collectible,
 	CollectibleType,
 	Controller,
-	Tile,
-	Forces,
 	ParticleEmitter,
 } from "./components";
 
@@ -20,9 +18,8 @@ const JUMP = 200;
 const BOUNCE = 400;
 const SPEED = 110;
 const GRAVITY = 700;
-const DASH_SPEED = 400;
-const DASH_DURATION = 200;
-
+const DASH_SPEED = 300;
+const DASH_DURATION = 150;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
@@ -86,37 +83,25 @@ export class SpriteSystem extends ECS.System {
 
 export class PhysicsSystem extends ECS.System {
 	constructor() {
-		super([ECS.Position, ECS.Velocity, Sprite, Forces]);
+		super([ECS.Position, ECS.Velocity]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const forces = entity.getComponent(Forces) as Forces;
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
 
+		/*
 		velocity.x += (forces.x / forces.mass) * params.dt;
 		velocity.y += (forces.y / forces.mass) * params.dt;
 
 		const G = 600;
 		forces.set(0, entity.getComponent(Gravity) ? G * forces.mass : 0);
-
-		/*
-		if (entity.getComponent(Gravity)) {
-			velocity.y += GRAVITY * params.dt;
-		}
 		*/
 
-		/*
-		if (position.y > canvas.height - sprite.h) {
-			position.y = canvas.height - sprite.h;
-		}
-		*/
-
-		//position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
+		if (entity.getComponent(Gravity)) velocity.y += GRAVITY * params.dt;
 	}
 }
 
@@ -177,32 +162,41 @@ export class CollisionSystem extends ECS.CollisionSystem {
 	}
 }
 
-export class LevelSystem extends ECS.System {
+let waiting = false;
+
+export class SpawnSystem extends ECS.System {
 	constructor() {
-		super([ECS.Position, Respawn, Health]);
+		super([ECS.Position, Respawn, Health, Sprite, ECS.Player]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		if (waiting) {
+			console.log("waiting");
+			return;
+		}
+
 		const health = entity.getComponent(Health) as Health;
-		const respawn = entity.getComponent(Respawn) as Respawn;
+		const sprite = entity.getComponent(Sprite) as Sprite;
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+
+		const game = params.game as Game;
 
 		if (position.y > params.canvas.height + 16 * 3) {
 			health.value = 0;
 		}
 
 		if (position.x > params.canvas.width || position.x < 0) {
-			const game = params.game as Game;
-
-			const player_pos = position.vector.copy();
+			const old_player_pos = position.vector.copy();
+			const old_player_vel = velocity.vector.copy();
 
 			let level = 0;
 			if (position.x > 0) {
 				level = game.level + 1;
-				player_pos.x = 0
+				old_player_pos.x = 0;
 			} else {
 				level = game.level - 1;
-				player_pos.x = params.canvas.width - 8;
+				old_player_pos.x = params.canvas.width - sprite.w;
 			}
 
 			if (level == 0) {
@@ -210,42 +204,42 @@ export class LevelSystem extends ECS.System {
 				console.log("level is 0");
 				return;
 			}
-
-			console.log("trying to load level", level);
-
-			game.clearLevel();
+			waiting = true;
 
 			fetch(`assets/level-${level}.json`)
 				.then((res) => res.json())
 				.then((json) => {
+					game.clearLevel();
 					game.level = level;
 					game.data = json;
-					console.log("loaded", level);
+					console.log("loaded level", level);
+
+					setTimeout(() => {
+						game.loadLevel(old_player_pos, old_player_vel);
+						waiting = false;
+					}, 100);
 				})
 				.catch((e) => {
 					console.log("error", e);
-					console.log("failed to load next level");
+					//alert(`ERROR: failed to load level ${level}!`);
+					waiting = false;
+					position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.w);
 				});
-
-			setTimeout(() => {
-				game.loadLevel(player_pos);
-			}, 300);
 		}
 
 		if (health.value <= 0) {
-			if (!respawn.waiting) {
-				const game = params.game as Game;
-				game.clearLevel();
-
-				setTimeout(() => {
-					game.loadLevel();
-				}, 700);
-			}
-			respawn.waiting = true;
+			console.log("respawn");
+			waiting = true;
+			game.clearLevel();
+			setTimeout(() => {
+				game.loadLevel();
+				waiting = false;
+			}, 700);
 		}
 	}
 }
 
+/*
 export class ForceMovement extends ECS.System {
 	constructor() {
 		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller, Forces]);
@@ -328,6 +322,7 @@ export class ForceMovement extends ECS.System {
 		}
 	}
 }
+*/
 
 export class MovementSystem extends ECS.System {
 	constructor() {
@@ -345,27 +340,20 @@ export class MovementSystem extends ECS.System {
 			controller.allowed_dashes = 1;
 		}
 
-		const dir = new ECS.Vector();
+		const input_dir = new ECS.Vector();
 
-		if (input.is_key_pressed(BUTTONS.RIGHT, { reset: true })) {
-			//console.log("right")
-			controller.goal.x = 1;
-			dir.x = 1;
-		} else if (input.is_key_pressed(BUTTONS.LEFT, { reset: true })) {
-			//console.log("left")
-			controller.goal.x = -1;
-			dir.x = -1;
+		if (input.is_key_pressed(BUTTONS.RIGHT, {})) {
+			controller.goal.x = input_dir.x = 1;
+		} else if (input.is_key_pressed(BUTTONS.LEFT, {})) {
+			controller.goal.x = input_dir.x = -1;
 		} else {
-			//controller.goal.x = 0;
 			if (collider.south) controller.goal.x = 0;
 		}
 
 		if (input.is_key_pressed(BUTTONS.UP, {})) {
-			controller.goal.y = -1;
-			dir.y = -1;
+			controller.goal.y = input_dir.y = -1;
 		} else if (input.is_key_pressed(BUTTONS.DOWN, {})) {
-			dir.y = 1;
-			controller.goal.y = 1;
+			controller.goal.y = input_dir.y = 1;
 		} else {
 			controller.goal.y = 0;
 		}
@@ -380,9 +368,9 @@ export class MovementSystem extends ECS.System {
 			!collider.south &&
 			controller.dash_allowed
 		) {
-			const x = Math.abs(dir.x) > Math.abs(dir.y) ? dir.x : 0;
-			const y = Math.abs(dir.y) > Math.abs(dir.x) ? dir.y : 0;
-			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(300);
+			const x = Math.abs(input_dir.x) > Math.abs(input_dir.y) ? input_dir.x : 0;
+			const y = Math.abs(input_dir.y) > Math.abs(input_dir.x) ? input_dir.y : 0;
+			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
 			if (!dash.isNaN()) {
 				(params.sound as Sound).play(150, 200, 0.5);
@@ -390,7 +378,6 @@ export class MovementSystem extends ECS.System {
 
 				controller.dashing = true;
 				controller.allowed_dashes--;
-
 				velocity.set(dash.x, dash.y);
 
 				entity.removeComponent(Gravity);
@@ -401,7 +388,7 @@ export class MovementSystem extends ECS.System {
 					controller.current.set(0, 0);
 					controller.dashing = false;
 					entity.addComponent(new Gravity());
-				}, 150);
+				}, DASH_DURATION);
 
 				controller.dash_allowed = false;
 				setTimeout(() => {
@@ -423,14 +410,19 @@ export class MovementSystem extends ECS.System {
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
 
-			controller.allowed_dashes = 0;
+			controller.dash_allowed = false;
 			setTimeout(() => {
-				controller.allowed_dashes = 1;
-			}, 200);
+				controller.dash_allowed = true;
+			}, 300);
 		}
 
 		if (!controller.dashing) {
 			velocity.x = SPEED * controller.current.x;
+
+			if (!collider.south && input_dir.x == 0 && input_dir.y == 0) {
+				// simulate air resistance
+				velocity.x = velocity.x * 0.5;
+			}
 		}
 	}
 }

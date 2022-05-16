@@ -48,3 +48,5 @@ def parse_level(level):
 
 
 parse_level(1)
+parse_level(2)
+parse_level(3)

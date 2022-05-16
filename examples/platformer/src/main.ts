@@ -11,15 +11,7 @@ import {
 	Controller,
 } from "./components";
 import { Factory } from "./factory";
-import {
-	SpriteSystem,
-	PhysicsSystem,
-	CollisionSystem,
-	MovementSystem,
-	LevelSystem,
-	ForceMovement,
-	ParticleSystem,
-} from "./systems";
+import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, SpawnSystem, ParticleSystem } from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -92,14 +84,14 @@ export class Game {
 	shake: ScreenShake = new ScreenShake();
 	sound: Sound = new Sound();
 
-	loadLevel(player_pos?: ECS.Vector) {
+	loadLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
 		const TILESIZE = 8;
 		for (const { x, y, type } of this.data) {
 			const pos = new ECS.Vector(x * TILESIZE, canvas.height - y * TILESIZE - TILESIZE);
 
 			switch (type) {
 				case "player": {
-					this.ecs.addEntity(Factory.createPlayer(player_pos || pos));
+					this.ecs.addEntity(Factory.createPlayer(player_pos || pos, player_vel));
 					break;
 				}
 
@@ -126,8 +118,6 @@ export class Game {
 		}
 	}
 
-	
-
 	clearLevel() {
 		this.ecs.clearEntities();
 
@@ -147,7 +137,7 @@ export class Game {
 		this.ecs.addSystem(new MovementSystem());
 		this.ecs.addSystem(new CollisionSystem(quadtree));
 		this.ecs.addSystem(new PhysicsSystem());
-		this.ecs.addSystem(new LevelSystem());
+		this.ecs.addSystem(new SpawnSystem());
 		this.ecs.addSystem(new ParticleSystem());
 		this.ecs.addSystem(new SpriteSystem());
 
