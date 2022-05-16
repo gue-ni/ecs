@@ -1,8 +1,6 @@
-import { convertToObject } from "typescript";
 import * as ECS from "../../../src";
 import {
 	Sprite,
-	Respawn,
 	Health,
 	Gravity,
 	Bouncy,
@@ -13,7 +11,7 @@ import {
 	ParticleEmitter,
 } from "./components";
 
-import { Game, Shake as ScreenShaker, Sound } from "./main";
+import { Game, Shake , Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 400;
@@ -72,7 +70,7 @@ export class SpriteSystem extends ECS.System {
 		const sprite = entity.getComponent(Sprite) as Sprite;
 		if (!sprite.visible) return;
 
-		const shaker = params.shaker as ScreenShaker;
+		const shaker = params.shaker as Shake;
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		params.context.fillStyle = sprite.color;
@@ -138,7 +136,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
 			if (emitter) emitter.explosion.active = true;
 
-			(params.shaker as ScreenShaker).shake();
+			(params.shaker as Shake).shake();
 
 			setTimeout(() => {
 				health.value = 0;
@@ -179,7 +177,7 @@ const pixel = (x: number, y: number, image: ImageData) => {
 
 export class SpawnSystem extends ECS.System {
 	constructor() {
-		super([ECS.Position, Respawn, Health, Sprite, ECS.Player]);
+		super([ECS.Position, Health, Sprite, ECS.Player]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -392,7 +390,7 @@ export class MovementSystem extends ECS.System {
 
 			if (!dash.isNaN()) {
 				(params.sound as Sound).play(150, 200, 0.5);
-				(params.shaker as ScreenShaker).shake();
+				(params.shaker as Shake).shake();
 
 				controller.dashing = true;
 				controller.allowed_dashes--;

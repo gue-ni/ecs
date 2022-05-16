@@ -1,17 +1,5 @@
 import * as ECS from "../../../src";
-import {
-	Sprite,
-	Respawn,
-	Health,
-	Gravity,
-	Bouncy,
-	Spike,
-	Collectible,
-	Controller,
-	Tile,
-	Forces,
-	ParticleEmitter,
-} from "./components";
+import { Sprite, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, ParticleEmitter } from "./components";
 
 const TILESIZE = 8;
 
@@ -27,7 +15,6 @@ export class Factory {
 			new ECS.Player(),
 			new ECS.Input(),
 			new ECS.Position(pos.x, pos.y),
-			new Respawn(pos.x, pos.y),
 			new ECS.Velocity(vel.x, vel.y),
 			new ECS.Collider(size.x, size.y)
 		);
@@ -50,6 +37,7 @@ export class Factory {
 			new ECS.Collider(TILESIZE, TILESIZE, ECS.ColliderType.CUSTOM)
 		);
 	}
+
 	static createBounce(pos: ECS.Vector): ECS.Entity {
 		return new ECS.Entity().addComponents(
 			new Bouncy(),
