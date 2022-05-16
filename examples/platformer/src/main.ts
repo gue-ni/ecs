@@ -83,6 +83,8 @@ const pixel = (x: number, y: number, image: ImageData) => {
 	return [r, g, b, a];
 };
 
+
+
 export class Game {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 	ecs: ECS.ECS = new ECS.ECS();
