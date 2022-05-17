@@ -5,6 +5,10 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+		<!-- Allow fullscreen mode on iOS devices. (These are Apple specific meta tags.) 
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
+		-->
+
 		<!-- Primary Meta Tags -->
 		<title>2D Platformer</title>
 		<meta name="title" content="2D Platformer" />
@@ -60,17 +64,14 @@
 			#canvas {
 				width: 640px;
 				height: 360px;
-				image-rendering: -moz-crisp-edges;
-				image-rendering: -webkit-crisp-edges;
+
+				/*
+				width: 1280px;
+				height: 720px;
+				*/
+
 				image-rendering: pixelated;
 				image-rendering: crisp-edges;
-			}
-
-			@media only screen and (orientation: landscape) {
-				canvas {
-					width: 100%;
-					height: 100%;
-				}
 			}
 		</style>
 	</head>
@@ -79,7 +80,7 @@
 			<div>
 				<h1>2D Platformer</h1>
 				<canvas id="canvas" width="320" height="180"></canvas>
-				<p id="fps-display"><span> fps</span></p>
+				<p id="fps-display"></p>
 				<p>Use the Arrow Keys for movement. Hold Space + Arrow Keys to dash.</p>
 			</div>
 		</div>

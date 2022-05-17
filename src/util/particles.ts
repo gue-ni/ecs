@@ -44,6 +44,8 @@ class ParticleSystem {
 	private maxCount: number;
 	private particlesPerSecond: number;
 	private emitterRadius: number;
+	private drag: number;
+	private offset: Vector;
 
 	active: boolean = true;
 
@@ -53,9 +55,11 @@ class ParticleSystem {
 		minSize: number;
 		active?: boolean;
 		maxSize: number;
+		offset?: Vector;
 		speed: number;
 		finiteParticles?: boolean;
 		gravity: number;
+		drag?: number;
 		maxCount: number;
 		emitterRadius?: number;
 		particlesPerSecond: number;
@@ -70,6 +74,8 @@ class ParticleSystem {
 		this.gravity = params.gravity;
 		this.maxCount = params.maxCount;
 		this.emitterRadius = params.emitterRadius || 1;
+		this.drag = params.drag || 0;
+		this.offset = params.offset || new Vector();
 		this.particlesPerSecond = params.particlesPerSecond;
 	}
 
@@ -82,7 +88,7 @@ class ParticleSystem {
 			active: true,
 			alpha: 1,
 			gravity: this.gravity,
-			pos: new Vector(position.x + offset.x, position.y + offset.y),
+			pos: new Vector(position.x + this.offset.x + offset.x, position.y + this.offset.y + offset.y),
 			vel: new Vector().random_unit_vector().scalarMult(this.speed),
 		};
 
@@ -110,8 +116,8 @@ class ParticleSystem {
 			particle.pos.x += particle.vel.x * params.dt;
 			particle.pos.y += particle.vel.y * params.dt;
 
-			particle.vel.x -= particle.vel.x * 0.01;
-			particle.vel.y -= particle.vel.y * 0.01;
+			particle.vel.x -= particle.vel.x * this.drag;
+			particle.vel.y -= particle.vel.y * this.drag;
 
 			particle.vel.y += particle.gravity * params.dt;
 

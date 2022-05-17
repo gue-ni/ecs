@@ -61,6 +61,36 @@ export class ParticleSystem extends ECS.System {
 	}
 }
 
+export class AnimationSystem extends ECS.System {
+	constructor() {
+		super([Sprite, Controller, ECS.Collider]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const sprite = entity.getComponent(Sprite) as Sprite;
+		if (!sprite.animations) return;
+
+		const controller = entity.getComponent(Controller) as Controller;
+		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
+
+		if (collider.south) {
+			if (controller.goal.x > 0) {
+				sprite.animations.play("run-right");
+			} else if (controller.goal.x < 0) {
+				sprite.animations.play("run-left");
+			} else {
+				sprite.animations.play("idle-right");
+			}
+		} else {
+			if (controller.goal.x > 0) {
+				sprite.animations.play("jump-right");
+			} else {
+				sprite.animations.play("jump-left");
+			}
+		}
+	}
+}
+
 export class SpriteSystem extends ECS.System {
 	constructor() {
 		super([Sprite, ECS.Position]);
@@ -77,8 +107,14 @@ export class SpriteSystem extends ECS.System {
 		const y = Math.round(position.y + shaker.OFFSET_Y);
 
 		if (sprite.image) {
-			const frame_x = 0;
-			const frame_y = 0;
+			let frame_x = 0;
+			let frame_y = 0;
+
+			if (sprite.animations) {
+				sprite.animations.update(params.dt);
+				frame_x = sprite.animations.frameX;
+				frame_y = sprite.animations.frameY;
+			}
 
 			params.context.drawImage(
 				sprite.image,
@@ -420,7 +456,7 @@ export class MovementSystem extends ECS.System {
 				}, DASH_DURATION);
 
 				controller.dash_allowed = false;
-				setTimeout(() => (controller.dash_allowed = true), 200);
+				setTimeout(() => (controller.dash_allowed = true), 300);
 				return;
 			}
 		}
@@ -444,11 +480,11 @@ export class MovementSystem extends ECS.System {
 		}
 
 		if (!controller.dashing) {
-			velocity.x = SPEED * controller.current.x;
-
 			if (!collider.south && input_dir.x == 0 && input_dir.y == 0) {
 				// simulate air resistance
 				velocity.x = velocity.x * DRAG_FACTOR;
+			} else {
+				velocity.x = SPEED * controller.current.x;
 			}
 		}
 	}

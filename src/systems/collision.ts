@@ -17,15 +17,16 @@ class Collider extends Component {
 	east: boolean = false;
 	west: boolean = false;
 
-	constructor(
-		width: number,
-		height: number,
-		colliderType: ColliderType = ColliderType.SOLID,
-		offset: Vector = new Vector()
-	) {
+	constructor(params: { width: number; height: number; colliderType?: ColliderType; offset?: Vector }) {
 		super();
-		this.aabb = new AABB(null, new Vector(), new Vector(width, height), new Vector(), colliderType);
-		this.offset = offset;
+		this.aabb = new AABB(
+			null,
+			new Vector(),
+			new Vector(params.width, params.height),
+			new Vector(),
+			params.colliderType || ColliderType.SOLID
+		);
+		this.offset = params.offset ?? new Vector();
 	}
 }
 

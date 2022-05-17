@@ -11,7 +11,7 @@ import {
 	Controller,
 } from "./components";
 import { Factory } from "./factory";
-import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, SpawnSystem, ParticleSystem } from "./systems";
+import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, SpawnSystem, ParticleSystem, AnimationSystem } from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -183,6 +183,7 @@ export class Game {
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new SpawnSystem());
 		this.ecs.addSystem(new ParticleSystem());
+		this.ecs.addSystem(new AnimationSystem())
 		this.ecs.addSystem(new SpriteSystem());
 
 		Game.fetchLevelData("assets/level-1.png")

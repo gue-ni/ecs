@@ -4,16 +4,87 @@ export class Forces extends ECS.VectorComponent {
 	mass: number = 10;
 }
 
-class Animation {
+export class Animation {
 	repeat: boolean;
 	frame: ECS.Vector = new ECS.Vector();
-	constructor() {}
+	frames: number;
+	name: string;
+	constructor(params: { name: string; repeat?: boolean; frames?: number; row?: number }) {
+		this.name = params.name;
+		this.repeat = params.repeat;
+		this.frame.set(0, params.row ?? 0);
+		this.frames = params.frames ?? 1;
+	}
 }
 
-class Character {
-	constructor() {}
+export class Animations {
+	current: Animation | undefined;
+	next: Animation | undefined;
+	last: Animation | undefined;
+	animations: Map<string, Animation> = new Map();
+	time: number = 0;
 
-	goto(state_name: string) {}
+	constructor(animations: Animation[]) {
+		for (const animation of animations) {
+			if (!this.current) this.current = animation;
+			this.animations.set(animation.name, animation);
+		}
+	}
+
+	get frameX() {
+		if (this.current) return this.current.frame.x;
+		return 0;
+	}
+
+	get frameY() {
+		if (this.current) return this.current.frame.y;
+		return 0;
+	}
+
+	add(animation: Animation) {
+		this.animations.set(animation.name, animation);
+	}
+
+	play(name: string) {
+		if (!this.current) return;
+
+		if (this.current.name === name) return;
+
+		this.last = this.current;
+
+		if (!this.current.repeat) {
+			this.next = this.animations.get(name);
+			return;
+		} else {
+			this.next = undefined;
+		}
+
+		this.current = this.animations.get(name);
+		//this.current.frame.x = 0;
+	}
+
+	update(dt: number) {
+		if (!this.current) return;
+
+		if (this.current.frames > 1) {
+			if ((this.time += dt) > 1 / 12) {
+				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
+				this.time = 0;
+			}
+
+			if (!this.current.repeat && this.current.frame.x == this.current.frames - 1) {
+				if (this.next) {
+					this.play(this.next.name);
+					return;
+				}
+
+				if (this.last) {
+					this.play(this.last.name);
+					return;
+				}
+			}
+		}
+	}
 }
 
 export class Sprite extends ECS.Component {
@@ -23,13 +94,21 @@ export class Sprite extends ECS.Component {
 	visible: boolean = true;
 	image: HTMLImageElement;
 	time: number = 0;
+	animations: Animations;
 
-	constructor(params: { width: number; height: number; color?: string; image?: HTMLImageElement }) {
+	constructor(params: {
+		width: number;
+		height: number;
+		color?: string;
+		image?: HTMLImageElement;
+		animations?: Animations;
+	}) {
 		super();
 		this.width = params.width;
 		this.height = params.height;
 		this.color = params.color ?? "red";
 		this.image = params.image;
+		this.animations = params.animations;
 	}
 }
 
@@ -77,6 +156,7 @@ export class ParticleEmitter extends ECS.Component {
 		maxTTL: 0.5,
 		minSize: 1,
 		maxSize: 2,
+		offset: new ECS.Vector(0, 5),
 		gravity: -100,
 		emitterRadius: 4,
 		maxCount: 500,
@@ -89,6 +169,7 @@ export class ParticleEmitter extends ECS.Component {
 		maxTTL: 0.4,
 		minSize: 1,
 		maxSize: 2,
+		offset: new ECS.Vector(0, 8),
 		gravity: -100,
 		maxCount: 50,
 		particlesPerSecond: 150,

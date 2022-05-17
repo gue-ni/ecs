@@ -1,5 +1,17 @@
 import * as ECS from "../../../src";
-import { Sprite, Health, Gravity, Bouncy, Spike, Collectible, Controller, Tile, ParticleEmitter } from "./components";
+import {
+	Sprite,
+	Health,
+	Gravity,
+	Bouncy,
+	Spike,
+	Collectible,
+	Controller,
+	Tile,
+	ParticleEmitter,
+	Animation,
+	Animations,
+} from "./components";
 
 const TILESIZE = 8;
 
@@ -16,7 +28,19 @@ export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
 		const size = new ECS.Vector(16, 16);
 		return new ECS.Entity().addComponents(
-			new Sprite({ width: size.x, height: size.y, image: CHARACTER }),
+			new Sprite({
+				width: size.x,
+				height: size.y,
+				image: CHARACTER,
+				animations: new Animations([
+					new Animation({ name: "idle-right", row: 0, repeat: true }),
+					new Animation({ name: "idle-left", row: 1, repeat: true }),
+					new Animation({ name: "jump-right", row: 2, repeat: true }),
+					new Animation({ name: "jump-left", row: 3, repeat: true }),
+					new Animation({ name: "run-right", row: 4, frames: 4, repeat: true }),
+					new Animation({ name: "run-left", row: 5, frames: 4, repeat: true }),
+				]),
+			}),
 			new Gravity(),
 			new ParticleEmitter(),
 			new Controller(),
@@ -25,7 +49,7 @@ export class Factory {
 			new ECS.Input(),
 			new ECS.Position(pos.x, pos.y),
 			new ECS.Velocity(vel.x, vel.y),
-			new ECS.Collider({ width: 8, height: size.y, offset: new ECS.Vector(4,0) })
+			new ECS.Collider({ width: 8, height: size.y, offset: new ECS.Vector(4, 0) })
 		);
 	}
 
