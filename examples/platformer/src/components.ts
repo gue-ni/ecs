@@ -95,11 +95,13 @@ export class Sprite extends ECS.Component {
 	image: HTMLImageElement;
 	time: number = 0;
 	animations: Animations;
+	offset: ECS.Vector;
 
 	constructor(params: {
 		width: number;
 		height: number;
 		color?: string;
+		offset?: ECS.Vector,
 		image?: HTMLImageElement;
 		animations?: Animations;
 	}) {
@@ -108,6 +110,7 @@ export class Sprite extends ECS.Component {
 		this.height = params.height;
 		this.color = params.color ?? "red";
 		this.image = params.image;
+		this.offset = params.offset ?? new ECS.Vector()
 		this.animations = params.animations;
 	}
 }

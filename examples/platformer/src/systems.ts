@@ -118,8 +118,8 @@ export class SpriteSystem extends ECS.System {
 
 			params.context.drawImage(
 				sprite.image,
-				frame_x * sprite.width,
-				frame_y * sprite.height,
+				sprite.offset.x + frame_x * sprite.width,
+				sprite.offset.y + frame_y * sprite.height,
 				sprite.width,
 				sprite.height,
 				x,

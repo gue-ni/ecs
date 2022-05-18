@@ -11,7 +11,15 @@ import {
 	Controller,
 } from "./components";
 import { Factory } from "./factory";
-import { SpriteSystem, PhysicsSystem, CollisionSystem, MovementSystem, SpawnSystem, ParticleSystem, AnimationSystem } from "./systems";
+import {
+	SpriteSystem,
+	PhysicsSystem,
+	CollisionSystem,
+	MovementSystem,
+	SpawnSystem,
+	ParticleSystem,
+	AnimationSystem,
+} from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -74,15 +82,6 @@ export class Shake {
 	}
 }
 
-const pixel = (x: number, y: number, image: ImageData) => {
-	let index = y * (image.width * 4) + x * 4;
-	let r = image.data[index + 0];
-	let g = image.data[index + 1];
-	let b = image.data[index + 2];
-	let a = image.data[index + 3];
-	return [r, g, b, a];
-};
-
 export class Game {
 	ecs: ECS.ECS = new ECS.ECS();
 	then: number = 0;
@@ -96,6 +95,128 @@ export class Game {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
 	static fetchLevelData(url: string) {
+		const get_type = (r: number, g: number, b: number) => {
+			if (r == 255 && g == 0 && b == 0) {
+				return "player";
+			} else if (r == 0 && g == 255 && b == 0) {
+				return "tile";
+			} else if (r == 0 && g == 0 && b == 255) {
+				return "spike";
+			} else if (r == 0 && g == 255 && b == 255) {
+				return "bounce";
+			} else if (r == 255 && g == 0 && b == 255) {
+				return "dash";
+			} else {
+				return null;
+			}
+		};
+
+		const parse_xy = (x: number, y: number, image: ImageData) => {
+			if (x < 0 || x > image.width - 1 || y < 0 || y > image.height - 1) return "tile";
+
+			const [r, g, b, a] = pixel(x, y, image);
+
+			if (r == 255 && g == 0 && b == 0) {
+				return "player";
+			} else if (r == 0 && g == 255 && b == 0) {
+				return "tile";
+			} else if (r == 0 && g == 0 && b == 255) {
+				return "spike";
+			} else if (r == 0 && g == 255 && b == 255) {
+				return "bounce";
+			} else if (r == 255 && g == 0 && b == 255) {
+				return "dash";
+			} else if (r == 255 && g == 255 && b == 0) {
+				return "platform";
+			} else {
+				return null;
+			}
+		};
+
+		const pixel = (x: number, y: number, image: ImageData) => {
+			let index = y * (image.width * 4) + x * 4;
+			let r = image.data[index + 0];
+			let g = image.data[index + 1];
+			let b = image.data[index + 2];
+			let a = image.data[index + 3];
+			return [r, g, b, a];
+		};
+
+		const parse = (x: number, y: number, image: ImageData) => {
+			const t = parse_xy(x, y, image);
+			if (!t) return null;
+
+			let side = "up";
+
+			const tile = "tile";
+
+			if (t == "tile") {
+				if (
+					parse_xy(x, y - 1, image) != tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) != tile
+				) {
+					side = "top-left";
+				} else if (
+					parse_xy(x, y - 1, image) != tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) != tile &&
+					parse_xy(x - 1, y, image) == tile
+				) {
+					side = "top-right";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) != tile &&
+					parse_xy(x + 1, y, image) != tile &&
+					parse_xy(x - 1, y, image) == tile
+				) {
+					side = "bottom-right";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) != tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) != tile
+				) {
+					side = "bottom-left";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) != tile
+				) {
+					side = "left";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) != tile &&
+					parse_xy(x - 1, y, image) == tile
+				) {
+					side = "right";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) != tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile
+				) {
+					side = "down";
+				} else if (
+					parse_xy(x, y - 1, image) != tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile
+				) {
+					side = "up";
+				} else {
+					//console.log({ x, y, w: image.width, h: image.height });
+					side = "middle";
+				}
+			}
+
+			let object = { x, y, type: t, side };
+			return object;
+		};
+
 		return new Promise((resolve, reject) => {
 			const objects = [];
 
@@ -104,20 +225,27 @@ export class Game {
 			image.onerror = (e) => reject(e);
 
 			image.onload = () => {
-				const c = document.createElement("canvas");
-				c.width = image.width;
-				c.height = image.height;
-				const ctx = c.getContext("2d");
+				const cnvs = document.createElement("canvas");
+				cnvs.width = image.width;
+				cnvs.height = image.height;
+				const ctx = cnvs.getContext("2d");
 				ctx.drawImage(image, 0, 0);
 				const data = ctx.getImageData(0, 0, image.width, image.height);
 
 				for (let x = 0; x < image.width; x++) {
 					for (let y = 0; y < image.height; y++) {
+						/*
 						const [r, g, b, a] = pixel(x, y, data);
-						if (r == 255 && g == 255 && b == 255) continue;
+						const type = get_type(r, g, b);
 
-						const object = { x, y, type: "" };
+						if (!type) continue;
 
+						const object = { x, y, type };
+						*/
+
+						const object = parse(x, y, data);
+
+						/*
 						if (r == 255 && g == 0 && b == 0) {
 							object.type = "player";
 						} else if (r == 0 && g == 255 && b == 0) {
@@ -129,7 +257,10 @@ export class Game {
 						} else if (r == 255 && g == 0 && b == 255) {
 							object.type = "dash";
 						}
-						objects.push(object);
+						*/
+						if (object) {
+							objects.push(object);
+						}
 					}
 				}
 
@@ -140,7 +271,7 @@ export class Game {
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
 		const TILESIZE = 8;
-		for (const { x, y, type } of this.data) {
+		for (const { x, y, type, side } of this.data) {
 			const pos = new ECS.Vector(x * TILESIZE, y * TILESIZE);
 
 			switch (type) {
@@ -150,7 +281,7 @@ export class Game {
 				}
 
 				case "tile": {
-					this.ecs.addEntity(Factory.createTile(pos));
+					this.ecs.addEntity(Factory.createTile(pos, side));
 					break;
 				}
 
@@ -164,9 +295,17 @@ export class Game {
 					break;
 				}
 
+				case "platform": {
+					this.ecs.addEntity(Factory.createPlatform(pos));
+					break;
+				}
+
 				case "spike": {
 					this.ecs.addEntity(Factory.createSpike(pos));
 					break;
+				}
+
+				default: {
 				}
 			}
 		}
@@ -183,7 +322,7 @@ export class Game {
 		this.ecs.addSystem(new PhysicsSystem());
 		this.ecs.addSystem(new SpawnSystem());
 		this.ecs.addSystem(new ParticleSystem());
-		this.ecs.addSystem(new AnimationSystem())
+		this.ecs.addSystem(new AnimationSystem());
 		this.ecs.addSystem(new SpriteSystem());
 
 		Game.fetchLevelData("assets/level-1.png")
