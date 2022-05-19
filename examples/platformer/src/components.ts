@@ -159,7 +159,6 @@ export class ParticleEmitter extends ECS.Component {
 		maxTTL: 0.5,
 		minSize: 1,
 		maxSize: 2,
-		offset: new ECS.Vector(0, 5),
 		gravity: -100,
 		emitterRadius: 4,
 		maxCount: 500,

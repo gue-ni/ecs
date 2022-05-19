@@ -3,11 +3,10 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-		<!-- Allow fullscreen mode on iOS devices. (These are Apple specific meta tags.) 
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui" />
-		-->
+		<meta
+			name="viewport"
+			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui"
+		/>
 
 		<!-- Primary Meta Tags -->
 		<title>2D Platformer</title>
@@ -25,10 +24,7 @@
 			property="og:description"
 			content="A simple 2D pixel art platformer to showcase my entity component system implemented in TypeScript."
 		/>
-		<meta
-			property="og:image"
-			content="https://metatags.io/assets/meta-tags-16a33a6a8531e519cc0936fbba0ad904e52d35f34a46c97a2c9f6f7dd7d336f2.png"
-		/>
+		<meta property="og:image" content="" />
 
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
@@ -38,20 +34,16 @@
 			property="twitter:description"
 			content="A simple 2D pixel art platformer to showcase my entity component system implemented in TypeScript."
 		/>
-		<meta
-			property="twitter:image"
-			content="https://metatags.io/assets/meta-tags-16a33a6a8531e519cc0936fbba0ad904e52d35f34a46c97a2c9f6f7dd7d336f2.png"
-		/>
+		<meta property="twitter:image" content="" />
 
 		<style>
 			html,
 			body {
-				font-family: Arial, Helvetica, sans-serif;
-				margin: 0 !important;
-				padding: 0 !important;
+				margin: 0;
 				width: 100%;
 				height: 100%;
 				overflow: hidden;
+				font-family: Arial, Helvetica, sans-serif;
 			}
 
 			.container {
@@ -63,23 +55,31 @@
 			}
 
 			#canvas {
+				/*
 				width: 640px;
 				height: 360px;
+				*/
+
+				width: auto;
+				height: 100%;
 				image-rendering: pixelated;
 				image-rendering: crisp-edges;
+			}
+
+			@media (max-aspect-ratio: 16/9) {
+				#canvas {
+					width: 100%;
+					height: auto;
+					image-rendering: pixelated;
+					image-rendering: crisp-edges;
+				}
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
-			<div>
-				<canvas id="canvas" width="320" height="180"></canvas>
-				<p id="fps-display"></p>
-				<h1>2D Platformer</h1>
-				<p>Use the Arrow Keys for movement. Hold Space + Arrow Keys to dash.</p>
-			</div>
+			<canvas id="canvas" width="320" height="180"></canvas>
 		</div>
-		<p></p>
 		<script src="main.js"></script>
 	</body>
 </html>
