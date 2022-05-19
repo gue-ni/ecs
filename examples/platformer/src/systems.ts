@@ -82,7 +82,7 @@ export class AnimationSystem extends ECS.System {
 				sprite.animations.play("idle-right");
 			}
 		} else {
-			if (controller.goal.x > 0) {
+			if (controller.goal.x >= 0) {
 				sprite.animations.play("jump-right");
 			} else {
 				sprite.animations.play("jump-left");
