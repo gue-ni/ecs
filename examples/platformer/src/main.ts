@@ -1,15 +1,4 @@
 import * as ECS from "../../../src";
-import {
-	Sprite,
-	Respawn,
-	Health,
-	Gravity,
-	Bouncy,
-	Spike,
-	Collectible,
-	CollectibleType,
-	Controller,
-} from "./components";
 import { Factory } from "./factory";
 import {
 	SpriteSystem,
@@ -24,6 +13,10 @@ import {
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
+
+const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+console.log({ ON_MOBILE });
 
 let paused = false;
 
@@ -82,11 +75,11 @@ export class Shake {
 	}
 }
 
-export class Game {
-	ecs: ECS.ECS = new ECS.ECS();
+export class Game extends ECS.ECS {
+	//ecs: ECS.ECS = new ECS.ECS();
 	then: number = 0;
 	level: number = 1;
-	max_level: number = 3;
+	max_level: number = 4;
 	data: any;
 
 	shake: Shake = new Shake();
@@ -276,32 +269,32 @@ export class Game {
 
 			switch (type) {
 				case "player": {
-					this.ecs.addEntity(Factory.createPlayer(player_pos || pos, player_vel));
+					this.addEntity(Factory.createPlayer(player_pos || pos, player_vel));
 					break;
 				}
 
 				case "tile": {
-					this.ecs.addEntity(Factory.createTile(pos, side));
+					this.addEntity(Factory.createTile(pos, side));
 					break;
 				}
 
 				case "dash": {
-					this.ecs.addEntity(Factory.createDash(pos));
+					this.addEntity(Factory.createDash(pos));
 					break;
 				}
 
 				case "bounce": {
-					this.ecs.addEntity(Factory.createBounce(pos));
+					this.addEntity(Factory.createBounce(pos));
 					break;
 				}
 
 				case "platform": {
-					this.ecs.addEntity(Factory.createPlatform(pos));
+					this.addEntity(Factory.createPlatform(pos));
 					break;
 				}
 
 				case "spike": {
-					this.ecs.addEntity(Factory.createSpike(pos));
+					this.addEntity(Factory.createSpike(pos));
 					break;
 				}
 
@@ -312,20 +305,20 @@ export class Game {
 	}
 
 	clearLevel() {
-		this.ecs.clearEntities();
+		this.clearEntities();
 	}
 
 	setup() {
-		this.ecs.addSystem(new ECS.InputSystem(canvas));
-		this.ecs.addSystem(new MovementSystem());
-		this.ecs.addSystem(new CollisionSystem(quadtree));
-		this.ecs.addSystem(new PhysicsSystem());
-		this.ecs.addSystem(new SpawnSystem());
-		this.ecs.addSystem(new ParticleSystem());
-		this.ecs.addSystem(new AnimationSystem());
-		this.ecs.addSystem(new SpriteSystem());
+		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
+		this.addSystem(new MovementSystem());
+		this.addSystem(new CollisionSystem(quadtree));
+		this.addSystem(new PhysicsSystem());
+		this.addSystem(new SpawnSystem());
+		this.addSystem(new ParticleSystem());
+		this.addSystem(new AnimationSystem());
+		this.addSystem(new SpriteSystem());
 
-		Game.fetchLevelData("assets/level-1.png")
+		Game.fetchLevelData(`assets/level-${this.level}.png`)
 			.then((json) => {
 				this.data = json;
 				this.createLevel();
@@ -358,10 +351,10 @@ export class Game {
 
 			this.shake.update(dt);
 
-			this.ecs.update({
+			this.update({
 				dt: dt,
 				canvas,
-				ecs: this.ecs,
+				ecs: this,
 				context,
 				sound: this.sound,
 				game: this,
@@ -408,3 +401,15 @@ function animate(now: number) {
 document.addEventListener("keydown", (e) => {
 	if (e.code == "KeyP") paused = !paused;
 });
+
+document.addEventListener(
+	"touchstart",
+	() => {
+		if (!document.fullscreenElement) {
+			document.documentElement.requestFullscreen().then(() => {
+				screen.orientation.lock("landscape");
+			});
+		}
+	},
+	false
+);

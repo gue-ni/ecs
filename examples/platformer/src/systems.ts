@@ -13,6 +13,8 @@ import {
 
 import { Game, Shake, Sound } from "./main";
 
+const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const JUMP = 200;
 const BOUNCE = 400;
 const SPEED = 110;
@@ -427,15 +429,12 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
-		if (
-			input.is_key_pressed(BUTTONS.DASH) &&
-			controller.allowed_dashes > 0 &&
-			!collider.south &&
-			controller.dash_allowed
-		) {
-			const x = Math.abs(input_dir.x) > Math.abs(input_dir.y) ? input_dir.x : 0;
-			const y = Math.abs(input_dir.y) > Math.abs(input_dir.x) ? input_dir.y : 0;
+		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && controller.dash_allowed) {
+			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
+			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
+
+			console.log("try to dash");
 
 			if (!dash.isNaN()) {
 				(params.sound as Sound).play(150, 200, 0.5);
@@ -458,6 +457,8 @@ export class MovementSystem extends ECS.System {
 				controller.dash_allowed = false;
 				setTimeout(() => (controller.dash_allowed = true), 300);
 				return;
+			} else {
+				console.log("dash failed");
 			}
 		}
 
@@ -468,6 +469,8 @@ export class MovementSystem extends ECS.System {
 			collider.south
 		) {
 			(params.sound as Sound).play(150, 150, 0.5);
+
+			console.log("try to jump");
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;

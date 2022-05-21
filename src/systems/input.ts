@@ -6,7 +6,7 @@ import { Player } from "./basic";
 
 type MouseButton = "left" | "right" | "middle";
 
-const KEY_DOWN: any = {};
+const KEYS: any = {};
 const LAST_PRESSED: any = {};
 
 class Input extends Component {
@@ -27,7 +27,7 @@ class Input extends Component {
 	}
 
 	is_key_pressed(key: string, delay?: number): boolean {
-		if (KEY_DOWN[key]) {
+		if (KEYS[key]) {
 			if (!delay) return true;
 
 			if (LAST_PRESSED[key] == undefined || Date.now() - LAST_PRESSED[key] > delay) {
@@ -69,11 +69,11 @@ class InputSystem extends System {
 		window.addEventListener("keydown", (e) => {
 			if (e.repeat) return;
 
-			KEY_DOWN[e.code] = true;
+			KEYS[e.code] = true;
 		});
 
 		window.addEventListener("keyup", (e) => {
-			delete KEY_DOWN[e.code];
+			delete KEYS[e.code];
 		});
 
 		canvas.addEventListener("mousedown", (e) => {
@@ -125,4 +125,89 @@ class InputSystem extends System {
 	}
 }
 
-export { Input, InputSystem, MouseButton };
+class MobileInputSystem extends System {
+	constructor() {
+		super([Input, Player]);
+
+		const handleTouch = (e: TouchEvent) => {
+			const touch = e.touches[0];
+			const x = touch.clientX - left_control_bb.left;
+			const y = touch.clientY - left_control_bb.top;
+			const width = button_0.offsetWidth;
+			const height = button_0.offsetHeight;
+
+			//console.log({ x, y, width, height });
+
+			if (x < width / 2) {
+				//console.log("left");
+				KEYS["ArrowLeft"] = true;
+				delete KEYS["ArrowRight"];
+			} else if (x > width / 2) {
+				//console.log("right");
+				delete KEYS["ArrowLeft"];
+				KEYS["ArrowRight"] = true;
+			}
+
+			/*
+			if (y < height / 2) {
+				//console.log("up");
+				KEYS["ArrowUp"] = true;
+				delete KEYS["ArrowDown"];
+			} else if (y > height / 2) {
+				//console.log("down");
+				delete KEYS["ArrowUp"];
+				KEYS["ArrowDown"] = true;
+			}
+			*/
+		};
+
+		const button_0 = document.querySelector("#button-0") as HTMLElement;
+		const left_control_bb = button_0.getBoundingClientRect();
+		//left_control.style.display = "flex";
+
+		console.log({ left_control: button_0 });
+
+		button_0.addEventListener("touchmove", handleTouch);
+		button_0.addEventListener("touchstart", handleTouch);
+		button_0.addEventListener("touchend", () => {
+			delete KEYS["ArrowRight"];
+			delete KEYS["ArrowLeft"];
+			delete KEYS["ArrowUp"];
+			delete KEYS["ArrowDown"];
+		});
+
+		const button_1 = document.querySelector("#button-1") as HTMLElement;
+		button_1.addEventListener("touchstart", () => {
+			console.log("button-1");
+			KEYS["KeyC"] = true;
+		});
+		button_1.addEventListener("touchend", () => {
+			delete KEYS["KeyC"];
+		});
+
+		const button_2 = document.querySelector("#button-2") as HTMLElement;
+		button_2.addEventListener("touchstart", () => {
+			console.log("button-2");
+			KEYS["KeyV"] = true;
+		});
+		button_2.addEventListener("touchend", () => {
+			delete KEYS["KeyV"];
+		});
+
+		/*
+		const button_1 = document.querySelector("#button-1") as HTMLElement;
+		button_1.style.display = "flex";
+		button_1.addEventListener("touchstart", () => {});
+		button_1.addEventListener("touchend", () => {});
+
+		const button_2 = document.querySelector("#button-2") as HTMLElement;
+		button_2.style.display = "flex";
+		button_2.addEventListener("touchstart", () => {});
+		button_2.addEventListener("touchend", () => {});
+		*/
+	}
+
+	updateEntity(entity: Entity, params: UpdateParams): void {}
+}
+
+export { Input, InputSystem, MobileInputSystem, MouseButton };

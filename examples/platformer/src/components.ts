@@ -158,11 +158,11 @@ export class ParticleEmitter extends ECS.Component {
 		minTTL: 0.2,
 		maxTTL: 0.5,
 		minSize: 1,
-		maxSize: 2,
+		maxSize: 1,
 		gravity: -100,
 		emitterRadius: 4,
 		maxCount: 500,
-		particlesPerSecond: 100,
+		particlesPerSecond: 130,
 		speed: 0,
 	});
 
@@ -182,7 +182,7 @@ export class ParticleEmitter extends ECS.Component {
 		minTTL: 0.1,
 		maxTTL: 0.5,
 		minSize: 1,
-		maxSize: 3,
+		maxSize: 2,
 		maxCount: 10,
 		drag: 0.1,
 		speed: 40,
