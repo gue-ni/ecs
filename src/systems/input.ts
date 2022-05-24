@@ -7,6 +7,7 @@ import { Player } from "./basic";
 type MouseButton = "left" | "right" | "middle";
 
 const KEYS: any = {};
+const RESET: any = {};
 const LAST_PRESSED: any = {};
 
 class Input extends Component {
@@ -26,8 +27,23 @@ class Input extends Component {
 		this.mouse_last_pressed = {};
 	}
 
-	is_key_pressed(key: string, delay?: number): boolean {
+	disable_until_reset(key: string) {
+		RESET[key] = false;
+	}
+
+	/**
+	 * 
+	 * @param key key to check
+	 * @param delay does not return true if last pressed less than delay ago
+	 * @param wait_for_reset does not return true if key was not released since last press
+	 * @returns 
+	 */
+	is_key_pressed(key: string, delay?: number, wait_for_reset?: boolean): boolean {
 		if (KEYS[key]) {
+			if (wait_for_reset && !RESET[key]) {
+				return false;
+			}
+
 			if (!delay) return true;
 
 			if (LAST_PRESSED[key] == undefined || Date.now() - LAST_PRESSED[key] > delay) {
@@ -68,12 +84,12 @@ class InputSystem extends System {
 
 		window.addEventListener("keydown", (e) => {
 			if (e.repeat) return;
-
 			KEYS[e.code] = true;
 		});
 
 		window.addEventListener("keyup", (e) => {
 			delete KEYS[e.code];
+			RESET[e.code] = true;
 		});
 
 		canvas.addEventListener("mousedown", (e) => {

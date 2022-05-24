@@ -1,4 +1,4 @@
-import * as ECS from "../../../lib";
+import * as ECS from "../../../src";
 import {
 	Sprite,
 	Health,
@@ -12,11 +12,7 @@ import {
 	Animation,
 	Animations,
 } from "./components";
-
-const TILESIZE = 8;
-
-const SPRITES = new Image();
-SPRITES.src = "assets/spritesheet.png";
+import { TILESIZE, SPRITESHEET } from "./main";
 
 export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
@@ -25,15 +21,15 @@ export class Factory {
 			new Sprite({
 				width: size.x,
 				height: size.y,
-				image: SPRITES,
+				image: SPRITESHEET,
 				offset: new ECS.Vector(0, TILESIZE * 1),
 				animations: new Animations([
-					new Animation({ name: "idle-right", row: 0, repeat: true }),
-					new Animation({ name: "idle-left", row: 1, repeat: true }),
-					new Animation({ name: "jump-right", row: 2, repeat: true }),
-					new Animation({ name: "jump-left", row: 3, repeat: true }),
-					new Animation({ name: "run-right", row: 4, frames: 4, repeat: true }),
-					new Animation({ name: "run-left", row: 5, frames: 4, repeat: true }),
+					new Animation({ name: "idle-right", y: 0, repeat: true }),
+					new Animation({ name: "idle-left", y: 1, repeat: true }),
+					new Animation({ name: "jump-right", y: 2, repeat: true }),
+					new Animation({ name: "jump-left", y: 3, repeat: true }),
+					new Animation({ name: "run-right", y: 4, frames: 4, repeat: true }),
+					new Animation({ name: "run-left", y: 5, frames: 4, repeat: true }),
 				]),
 			}),
 			new Gravity(),
@@ -52,7 +48,12 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 28 * TILESIZE) }),
+			new Sprite({
+				width: TILESIZE,
+				height: TILESIZE,
+				image: SPRITESHEET,
+				offset: new ECS.Vector(0, 28 * TILESIZE),
+			}),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: TILESIZE,
@@ -120,7 +121,7 @@ export class Factory {
 		const e = new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset })
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITESHEET, offset })
 		);
 
 		if (side != "middle") {
@@ -143,20 +144,35 @@ export class Factory {
 			new Sprite({
 				width: TILESIZE,
 				height: TILESIZE,
-				image: SPRITES,
+				image: SPRITESHEET,
 				offset: new ECS.Vector(0, 0),
-				animations: new Animations([new Animation({ name: "spin", row: 0, repeat: true, frames: 6 })]),
+				animations: new Animations([new Animation({ name: "spin", y: 0, repeat: true, frames: 6 })]),
 			}),
 			new ECS.Collider({ width: TILESIZE, height: TILESIZE, colliderType: ECS.ColliderType.CUSTOM })
 		);
 	}
 
 	static createBounce(pos: ECS.Vector): ECS.Entity {
+		console.log("create bounce")
 		return new ECS.Entity().addComponents(
 			new Bouncy(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, color: "turquoise" }),
-			new ECS.Collider({ width: TILESIZE, height: TILESIZE, colliderType: ECS.ColliderType.CUSTOM_SOLID })
+			new Sprite({
+				width: TILESIZE,
+				height: TILESIZE,
+				image: SPRITESHEET,
+				offset: new ECS.Vector(0 * TILESIZE, 29 * TILESIZE),
+				animations: new Animations([
+					new Animation({ name: "idle", repeat: true, frames: 1, y: 0 }),
+					new Animation({ name: "bounce", repeat: false, frames: 3, x: 0, y: 0 }),
+				]),
+			}),
+			new ECS.Collider({
+				width: TILESIZE,
+				height: 4,
+				colliderType: ECS.ColliderType.CUSTOM_SOLID,
+				offset: new ECS.Vector(0, 4),
+			})
 		);
 	}
 
@@ -164,7 +180,12 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 21 * TILESIZE) }),
+			new Sprite({
+				width: TILESIZE,
+				height: TILESIZE,
+				image: SPRITESHEET,
+				offset: new ECS.Vector(0, 21 * TILESIZE),
+			}),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: 2,

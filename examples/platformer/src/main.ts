@@ -1,4 +1,4 @@
-import * as ECS from "../../../lib";
+import * as ECS from "../../../src";
 import { Factory } from "./factory";
 import {
 	SpriteSystem,
@@ -18,12 +18,18 @@ const level_display: HTMLElement = document.getElementById("level-display") as H
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-export const FOREGROUND_COLOR = "#B8C2B9";
+export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#382B26";
 /*
 export const FOREGROUND_COLOR = "#ffffff";
+export const FOREGROUND_COLOR = "#B8C2B9";
 export const BACKGROUND_COLOR = "#000";
 */
+
+export const TILESIZE = 8;
+
+export const SPRITESHEET = new Image();
+SPRITESHEET.src = "assets/spritesheet.png";
 
 let paused = false;
 
@@ -95,22 +101,6 @@ export class Game extends ECS.ECS {
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
 	static fetchLevelData(url: string) {
-		const get_type = (r: number, g: number, b: number) => {
-			if (r == 255 && g == 0 && b == 0) {
-				return "player";
-			} else if (r == 0 && g == 255 && b == 0) {
-				return "tile";
-			} else if (r == 0 && g == 0 && b == 255) {
-				return "spike";
-			} else if (r == 0 && g == 255 && b == 255) {
-				return "bounce";
-			} else if (r == 255 && g == 0 && b == 255) {
-				return "dash";
-			} else {
-				return null;
-			}
-		};
-
 		const parse_xy = (x: number, y: number, image: ImageData) => {
 			if (x < 0 || x > image.width - 1 || y < 0 || y > image.height - 1) return "tile";
 
@@ -234,33 +224,8 @@ export class Game extends ECS.ECS {
 
 				for (let x = 0; x < image.width; x++) {
 					for (let y = 0; y < image.height; y++) {
-						/*
-						const [r, g, b, a] = pixel(x, y, data);
-						const type = get_type(r, g, b);
-
-						if (!type) continue;
-
-						const object = { x, y, type };
-						*/
-
 						const object = parse(x, y, data);
-
-						/*
-						if (r == 255 && g == 0 && b == 0) {
-							object.type = "player";
-						} else if (r == 0 && g == 255 && b == 0) {
-							object.type = "tile";
-						} else if (r == 0 && g == 0 && b == 255) {
-							object.type = "spike";
-						} else if (r == 0 && g == 255 && b == 255) {
-							object.type = "bounce";
-						} else if (r == 255 && g == 0 && b == 255) {
-							object.type = "dash";
-						}
-						*/
-						if (object) {
-							objects.push(object);
-						}
+						if (object) objects.push(object);
 					}
 				}
 
@@ -343,6 +308,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new AnimationSystem());
 		this.addSystem(new SpriteSystem());
 
+		console.log("setup level:", this.level);
 		Game.fetchLevelData(`assets/level-${this.level}.png`)
 			.then((json) => {
 				this.data = json;

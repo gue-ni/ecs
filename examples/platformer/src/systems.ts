@@ -1,4 +1,4 @@
-import * as ECS from "../../../lib";
+import * as ECS from "../../../src";
 import {
 	Sprite,
 	Health,
@@ -26,8 +26,8 @@ const BUTTONS = {
 	RIGHT: "ArrowRight",
 	UP: "ArrowUp",
 	DOWN: "ArrowDown",
-	JUMP: "ArrowUp",
-	DASH: "Space",
+	JUMP: "KeyC",
+	DASH: "KeyX",
 };
 
 export class ParticleSystem extends ECS.System {
@@ -103,8 +103,8 @@ export class SpriteSystem extends ECS.System {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const shaker = params.shaker as Shake;
 
-		const x = Math.round(position.x + shaker.OFFSET_X);
-		const y = Math.round(position.y + shaker.OFFSET_Y);
+		const pos_x = Math.round(position.x + shaker.OFFSET_X);
+		const pos_y = Math.round(position.y + shaker.OFFSET_Y);
 
 		if (sprite.image) {
 			let frame_x = 0;
@@ -114,6 +114,17 @@ export class SpriteSystem extends ECS.System {
 				sprite.animations.update(params.dt);
 				frame_x = sprite.animations.frameX;
 				frame_y = sprite.animations.frameY;
+
+				/*
+				if (entity.getComponent(Bouncy)) {
+					console.log({
+						frame_x,
+						frame_y,
+						w: sprite.width,
+						h: sprite.height,
+					});
+				}
+				*/
 			}
 
 			params.context.drawImage(
@@ -122,14 +133,14 @@ export class SpriteSystem extends ECS.System {
 				sprite.offset.y + frame_y * sprite.height,
 				sprite.width,
 				sprite.height,
-				x,
-				y,
+				pos_x,
+				pos_y,
 				sprite.width,
 				sprite.height
 			);
 		} else {
 			params.context.fillStyle = sprite.color || "red";
-			params.context.fillRect(x - 0.5, y - 0.5, sprite.width, sprite.height);
+			params.context.fillRect(pos_x - 0.5, pos_y - 0.5, sprite.width, sprite.height);
 		}
 	}
 }
@@ -170,6 +181,9 @@ export class CollisionSystem extends ECS.CollisionSystem {
 
 		if (velocity && velocity.y > 10 && Math.abs(collision.contact_normal.y) > 0 && target.getComponent(Bouncy)) {
 			velocity.y = -BOUNCE;
+			const sprite = target.getComponent(Sprite) as Sprite;
+			console.log("play bounce");
+			sprite.animations.play("bounce");
 			(params.sound as Sound).play(100, 190, 0.5);
 		}
 
@@ -335,12 +349,14 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
-		if (input.is_key_pressed(BUTTONS.DASH) && controller.allowed_dashes > 0 && controller.dash_allowed) {
+		if (input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0) {
 			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
 			if (dash.isNaN()) return;
+
+			input.disable_until_reset(BUTTONS.DASH);
 
 			(params.sound as Sound).play(150, 200, 0.5);
 			(params.shaker as Shake).shake();
@@ -359,13 +375,11 @@ export class MovementSystem extends ECS.System {
 				entity.addComponent(new Gravity());
 			}, DASH_DURATION);
 
-			controller.dash_allowed = false;
-			setTimeout(() => (controller.dash_allowed = true), 400);
 			return;
 		}
 
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, 300) &&
+			input.is_key_pressed(BUTTONS.JUMP) &&
 			controller.allowed_jumps > 0 &&
 			!controller.dashing &&
 			collider.south
@@ -377,9 +391,6 @@ export class MovementSystem extends ECS.System {
 
 			controller.jumping = true;
 			setTimeout(() => (controller.jumping = false), 50);
-
-			controller.dash_allowed = false;
-			setTimeout(() => (controller.dash_allowed = true), 150);
 		}
 
 		if (!controller.dashing) {

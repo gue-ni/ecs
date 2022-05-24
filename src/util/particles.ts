@@ -10,6 +10,7 @@ interface Particle {
 	gravity: number;
 	active: boolean;
 	alpha: number;
+	color: string;
 }
 
 interface ParticleEmitter {
@@ -27,6 +28,7 @@ interface ParticleEmitter {
 	gravity?: number;
 	explosive?: boolean;
 	emit?: boolean;
+	color?: string;
 }
 
 class ParticleSystem {
@@ -46,6 +48,7 @@ class ParticleSystem {
 	private emitterRadius: number;
 	private drag: number;
 	private offset: Vector;
+	private color: string;
 
 	active: boolean = true;
 
@@ -63,6 +66,7 @@ class ParticleSystem {
 		maxCount: number;
 		emitterRadius?: number;
 		particlesPerSecond: number;
+		color?: string;
 	}) {
 		this.minTTL = params.minTTL;
 		this.maxTTL = params.maxTTL;
@@ -77,6 +81,7 @@ class ParticleSystem {
 		this.drag = params.drag || 0;
 		this.offset = params.offset || new Vector();
 		this.particlesPerSecond = params.particlesPerSecond;
+		this.color = params.color || "#ffffff";
 	}
 
 	private createParticle(position: IVector): Particle {
@@ -86,6 +91,7 @@ class ParticleSystem {
 			ttl: randomFloat(this.minTTL, this.maxTTL),
 			size: randomInteger(this.minSize, this.maxSize),
 			active: true,
+			color: this.color,
 			alpha: 1,
 			gravity: this.gravity,
 			pos: new Vector(position.x + this.offset.x + offset.x, position.y + this.offset.y + offset.y),
@@ -123,7 +129,7 @@ class ParticleSystem {
 
 			particle.pos.round();
 
-			params.context.fillStyle = `rgba(255,255,255,${particle.alpha})`;
+			params.context.fillStyle = particle.color;
 			params.context.fillRect(
 				Math.round(particle.pos.x - Math.round(particle.size / 2)),
 				Math.round(particle.pos.y - Math.round(particle.size / 2)),

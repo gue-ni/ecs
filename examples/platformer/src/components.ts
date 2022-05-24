@@ -1,4 +1,4 @@
-import * as ECS from "../../../lib";
+import * as ECS from "../../../src";
 import { BACKGROUND_COLOR, FOREGROUND_COLOR } from "./main";
 
 export class Forces extends ECS.VectorComponent {
@@ -10,10 +10,10 @@ export class Animation {
 	frame: ECS.Vector = new ECS.Vector();
 	frames: number;
 	name: string;
-	constructor(params: { name: string; repeat?: boolean; frames?: number; row?: number }) {
+	constructor(params: { name: string; repeat?: boolean; frames?: number; y?: number; x?: number }) {
 		this.name = params.name;
 		this.repeat = params.repeat;
-		this.frame.set(0, params.row ?? 0);
+		this.frame.set(params.x ?? 0, params.y ?? 0);
 		this.frames = params.frames ?? 1;
 	}
 }
@@ -34,11 +34,13 @@ export class Animations {
 
 	get frameX() {
 		if (this.current) return this.current.frame.x;
+		console.log("no current");
 		return 0;
 	}
 
 	get frameY() {
 		if (this.current) return this.current.frame.y;
+		console.log("no current");
 		return 0;
 	}
 
@@ -46,6 +48,43 @@ export class Animations {
 		this.animations.set(animation.name, animation);
 	}
 
+	play(name: string) {
+		if (name == this.current.name) return;
+
+		const next = this.animations.get(name);
+		next.frame.x = 0;
+
+		if (this.current.repeat) {
+			this.last = this.current;
+			this.next = null;
+			this.current = next;
+		} else {
+			this.next = next;
+		}
+	}
+
+	update(dt: number) {
+		if (!this.current) return;
+
+		if (this.current.frames > 1) {
+			if ((this.time += dt) > 1 / 12) {
+				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
+				this.time = 0;
+			}
+		}
+
+		if (!this.current.repeat) {
+			if (this.current.frame.x == this.current.frames - 1) {
+				if (this.next) {
+					this.current = this.next;
+				} else {
+					this.current = this.last;
+				}
+			}
+		}
+	}
+
+	/*
 	play(name: string) {
 		if (!this.current) return;
 
@@ -68,24 +107,27 @@ export class Animations {
 		if (!this.current) return;
 
 		if (this.current.frames > 1) {
-			if ((this.time += dt) > 1 / 12) {
+			if ((this.time += dt) > 1 / 1) {
 				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
 				this.time = 0;
 			}
 
 			if (!this.current.repeat && this.current.frame.x == this.current.frames - 1) {
 				if (this.next) {
+					console.log("setting next", this.next.name)
 					this.play(this.next.name);
 					return;
 				}
 
 				if (this.last) {
+					console.log("setting last")
 					this.play(this.last.name);
 					return;
 				}
 			}
 		}
 	}
+	*/
 }
 
 export class Sprite extends ECS.Component {
@@ -143,9 +185,8 @@ export class Collectible extends ECS.Component {
 export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
-	allowed_jumps: number = 2;
+	allowed_jumps: number = 1;
 	allowed_dashes: number = 1;
-	dash_allowed: boolean = true;
 	goal: ECS.Vector = new ECS.Vector();
 	current: ECS.Vector = new ECS.Vector();
 }
