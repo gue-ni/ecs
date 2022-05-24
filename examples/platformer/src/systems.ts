@@ -1,4 +1,4 @@
-import * as ECS from "../../../src";
+import * as ECS from "../../../lib";
 import {
 	Sprite,
 	Health,
@@ -128,7 +128,7 @@ export class SpriteSystem extends ECS.System {
 				sprite.height
 			);
 		} else {
-			params.context.fillStyle = sprite.color;
+			params.context.fillStyle = sprite.color || "red";
 			params.context.fillRect(x - 0.5, y - 0.5, sprite.width, sprite.height);
 		}
 	}

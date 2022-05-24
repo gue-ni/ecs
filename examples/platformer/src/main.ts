@@ -1,4 +1,4 @@
-import * as ECS from "../../../src";
+import * as ECS from "../../../lib";
 import { Factory } from "./factory";
 import {
 	SpriteSystem,
@@ -297,7 +297,7 @@ export class Game extends ECS.ECS {
 				}
 
 				case "dash": {
-					this.addEntity(Factory.createDash(pos));
+					this.addEntity(Factory.createCoin(pos));
 					break;
 				}
 

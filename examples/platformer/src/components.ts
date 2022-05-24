@@ -1,4 +1,4 @@
-import * as ECS from "../../../src";
+import * as ECS from "../../../lib";
 
 export class Forces extends ECS.VectorComponent {
 	mass: number = 10;

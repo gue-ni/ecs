@@ -1,4 +1,4 @@
-import * as ECS from "../../../src";
+import * as ECS from "../../../lib";
 import {
 	Sprite,
 	Health,
@@ -15,20 +15,8 @@ import {
 
 const TILESIZE = 8;
 
-const TILE = new Image();
-TILE.src = "assets/tile.png";
-
-const SPIKE = new Image();
-SPIKE.src = "assets/spikes.png";
-
-const PLATFORM = new Image();
-PLATFORM.src = "assets/platform.png";
-
-const COIN = new Image();
-COIN.src = "assets/coin.png";
-
-const CHARACTER = new Image();
-CHARACTER.src = "assets/character.png";
+const SPRITES = new Image();
+SPRITES.src = "assets/sprites.png";
 
 export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
@@ -37,7 +25,8 @@ export class Factory {
 			new Sprite({
 				width: size.x,
 				height: size.y,
-				image: CHARACTER,
+				image: SPRITES,
+				offset: new ECS.Vector(0, TILESIZE * 1),
 				animations: new Animations([
 					new Animation({ name: "idle-right", row: 0, repeat: true }),
 					new Animation({ name: "idle-left", row: 1, repeat: true }),
@@ -63,7 +52,7 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: PLATFORM }),
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 27 * TILESIZE) }),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: TILESIZE,
@@ -125,14 +114,13 @@ export class Factory {
 	}
 
 	static createTile(pos: ECS.Vector, side: string): ECS.Entity {
-		let offset = Factory.tileOffset(side);
-
-		//console.log("create tile", side, offset.x, offset.y);
+		const offset = Factory.tileOffset(side);
+		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: TILE, offset })
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset })
 		);
 
 		if (side != "middle") {
@@ -148,14 +136,15 @@ export class Factory {
 		return e;
 	}
 
-	static createDash(pos: ECS.Vector): ECS.Entity {
+	static createCoin(pos: ECS.Vector): ECS.Entity {
 		return new ECS.Entity().addComponents(
 			new Collectible(),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite({
 				width: TILESIZE,
 				height: TILESIZE,
-				image: COIN,
+				image: SPRITES,
+				offset: new ECS.Vector(0, 0),
 				animations: new Animations([new Animation({ name: "spin", row: 0, repeat: true, frames: 6 })]),
 			}),
 			new ECS.Collider({ width: TILESIZE, height: TILESIZE, colliderType: ECS.ColliderType.CUSTOM })
@@ -175,7 +164,7 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPIKE, offset: new ECS.Vector(1 * TILESIZE, 0) }),
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 21 * TILESIZE) }),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: 2,
