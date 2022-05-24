@@ -115,9 +115,7 @@ export class Sprite extends ECS.Component {
 	}
 }
 
-export class Respawn extends ECS.VectorComponent {
-	waiting: boolean = false;
-}
+
 
 export class Tile extends ECS.Component {}
 

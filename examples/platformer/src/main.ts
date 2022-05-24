@@ -13,10 +13,10 @@ import {
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
+const death_count: HTMLElement = document.getElementById("death-count") as HTMLElement;
+const level_display: HTMLElement = document.getElementById("level-display") as HTMLElement;
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-console.log({ ON_MOBILE });
 
 let paused = false;
 
@@ -76,11 +76,11 @@ export class Shake {
 }
 
 export class Game extends ECS.ECS {
-	//ecs: ECS.ECS = new ECS.ECS();
-	then: number = 0;
-	level: number = 1;
 	max_level: number = 4;
 	data: any;
+
+	private then: number = 0;
+	private timer: number = 0;
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
@@ -262,6 +262,24 @@ export class Game extends ECS.ECS {
 		});
 	}
 
+	get deaths() {
+		return parseInt(localStorage.getItem("deaths")) || 0;
+	}
+
+	set deaths(x: number) {
+		localStorage.setItem("deaths", x.toString());
+		death_count.innerText = `${this.deaths} Death${this.deaths > 1 || this.deaths == 0 ? "s" : ""}`;
+	}
+
+	get level() {
+		return parseInt(localStorage.getItem("level")) || 1;
+	}
+
+	set level(x: number) {
+		localStorage.setItem("level", x.toString());
+		level_display.innerText = `Level ${this.level}`;
+	}
+
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
 		const TILESIZE = 8;
 		for (const { x, y, type, side } of this.data) {
@@ -297,9 +315,6 @@ export class Game extends ECS.ECS {
 					this.addEntity(Factory.createSpike(pos));
 					break;
 				}
-
-				default: {
-				}
 			}
 		}
 	}
@@ -309,6 +324,9 @@ export class Game extends ECS.ECS {
 	}
 
 	setup() {
+		this.level = this.level;
+		this.deaths = this.deaths;
+
 		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
 		this.addSystem(new MovementSystem());
 		this.addSystem(new CollisionSystem(quadtree));
@@ -334,12 +352,10 @@ export class Game extends ECS.ECS {
 		let dt = now - this.then;
 		this.then = now;
 
-		/*
-		if ((timer += dt) > 1) {
-			timer = 0;
-			fps.innerText = `${(1 / dt).toFixed(2)}`;
+		if ((this.timer += dt) > 0.5) {
+			this.timer = 0;
+			fps.innerText = `${(1 / dt).toFixed(2)} FPS`;
 		}
-		*/
 
 		if (dt > 1 / 30) dt = 1 / 30;
 
@@ -352,12 +368,12 @@ export class Game extends ECS.ECS {
 			this.shake.update(dt);
 
 			this.update({
-				dt: dt,
+				dt,
 				canvas,
-				ecs: this,
 				context,
-				sound: this.sound,
+				ecs: this,
 				game: this,
+				sound: this.sound,
 				shaker: this.shake,
 			});
 		}
@@ -366,37 +382,8 @@ export class Game extends ECS.ECS {
 	}
 }
 
-let g = new Game();
+const g = new Game();
 g.setup();
-
-/*
-
-let dt: number = 0;
-let then: number = 0;
-let timer = 0;
-function animate(now: number) {
-	now *= 0.001;
-	dt = now - then;
-	then = now;
-
-	if ((timer += dt) > 1) {
-		timer = 0;
-		fps.innerText = `${(1 / dt).toFixed(2)}`;
-	}
-
-	if (dt > 1 / 30) dt = 1 / 30;
-
-	if (!paused) {
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		context.fillStyle = "#D3D3D3";
-		context.fillRect(0, 0, canvas.width, canvas.height);
-
-		ecs.update({ dt, canvas, context });
-	}
-
-	requestAnimationFrame(animate);
-}
-*/
 
 document.addEventListener("keydown", (e) => {
 	if (e.code == "KeyP") paused = !paused;

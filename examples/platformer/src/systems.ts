@@ -13,13 +13,11 @@ import {
 
 import { Game, Shake, Sound } from "./main";
 
-const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
 const JUMP = 200;
 const BOUNCE = 400;
 const SPEED = 110;
 const GRAVITY = 650;
-const DASH_SPEED = 300;
+const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
 const ACCELERATION = 40;
@@ -206,7 +204,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			switch (collectible.t) {
 				case CollectibleType.DASH: {
 					const controller = entity.getComponent(Controller) as Controller;
-					controller.allowed_dashes = 1;
+					controller.allowed_dashes++;
 					this.ecs.removeEntity(target);
 					break;
 				}
@@ -216,15 +214,6 @@ export class CollisionSystem extends ECS.CollisionSystem {
 }
 
 let waiting = false;
-
-const pixel = (x: number, y: number, image: ImageData) => {
-	let index = y * (image.width * 4) + x * 4;
-	let r = image.data[index + 0];
-	let g = image.data[index + 1];
-	let b = image.data[index + 2];
-	let a = image.data[index + 3];
-	return [r, g, b, a];
-};
 
 export class SpawnSystem extends ECS.System {
 	constructor() {
@@ -276,6 +265,7 @@ export class SpawnSystem extends ECS.System {
 					game.clearLevel();
 					game.level = new_level;
 					game.data = json;
+					game.deaths = 0;
 					console.log("loaded level", new_level);
 
 					setTimeout(() => {
@@ -294,8 +284,9 @@ export class SpawnSystem extends ECS.System {
 		}
 
 		if (health.value <= 0) {
-			console.log("respawn");
 			waiting = true;
+			game.deaths++;
+
 			game.clearLevel();
 			setTimeout(() => {
 				game.createLevel();
@@ -306,91 +297,6 @@ export class SpawnSystem extends ECS.System {
 		}
 	}
 }
-
-/*
-export class ForceMovement extends ECS.System {
-	constructor() {
-		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller, Forces]);
-	}
-
-	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const input = entity.getComponent(ECS.Input) as ECS.Input;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
-		const controller = entity.getComponent(Controller) as Controller;
-		const forces = entity.getComponent(Forces) as Forces;
-
-		const dir = new ECS.Vector();
-
-		if (input.is_key_pressed(BUTTONS.RIGHT, { reset: true })) {
-			dir.x = 1;
-		} else if (input.is_key_pressed(BUTTONS.LEFT, { reset: true })) {
-			dir.x = -1;
-		} else if (input.is_key_pressed(BUTTONS.UP, {})) {
-			dir.y = -1;
-		} else if (input.is_key_pressed(BUTTONS.DOWN, {})) {
-			dir.y = 1;
-		}
-
-		const acceleration = 200;
-		const decceleration = 50;
-
-		let targetSpeed = dir.x * SPEED;
-
-		let speedDiff = targetSpeed - velocity.x;
-
-		let accelRate = Math.abs(targetSpeed) > 0.01 ? acceleration : decceleration;
-
-		let velPower = 0.9;
-
-		if (dir.x != 0) {
-			const movement = Math.pow(Math.abs(speedDiff) * accelRate, velPower) * Math.sign(speedDiff);
-			forces.x += movement;
-		} else {
-			const drag_coefficient = collider.south ? 5 : 0.01;
-			const drag = Math.sign(velocity.x) * Math.pow(velocity.x, 2) * drag_coefficient;
-			forces.x -= drag;
-		}
-
-		if (collider.south) {
-			controller.allowed_jumps = 1;
-			controller.allowed_dashes = 1;
-		}
-
-		if (input.is_key_pressed(BUTTONS.JUMP, { delay: 300 }) && controller.allowed_jumps > 0) {
-			(params.sound as Sound).play(100, 190, 0.5);
-			velocity.y = 0;
-			forces.y = -150000;
-			controller.allowed_jumps--;
-		}
-
-		if (input.is_key_pressed(BUTTONS.DASH, {}) && controller.allowed_dashes > 0 && !collider.south) {
-			const dash_force = new ECS.Vector(Math.sign(dir.x), Math.sign(dir.y)).normalize().scalarMult(200_000);
-
-			if (!dash_force.isNaN()) {
-				(params.sound as Sound).play(200, 220, 1.5);
-				entity.removeComponent(Gravity);
-
-				controller.dashing = true;
-				controller.allowed_dashes--;
-
-				velocity.set(0, 0);
-				forces.set(dash_force.x, dash_force.y);
-
-				setTimeout(() => {
-					forces.set(0, 0);
-					velocity.set(0, 0);
-					controller.goal.set(0, 0);
-					controller.current.set(0, 0);
-					controller.dashing = false;
-					entity.addComponent(new Gravity());
-				}, DASH_DURATION);
-				return;
-			}
-		}
-	}
-}
-*/
 
 export class MovementSystem extends ECS.System {
 	constructor() {
@@ -434,32 +340,28 @@ export class MovementSystem extends ECS.System {
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
-			console.log("try to dash");
+			if (dash.isNaN()) return;
 
-			if (!dash.isNaN()) {
-				(params.sound as Sound).play(150, 200, 0.5);
-				(params.shaker as Shake).shake();
+			(params.sound as Sound).play(150, 200, 0.5);
+			(params.shaker as Shake).shake();
 
-				controller.dashing = true;
-				controller.allowed_dashes--;
-				velocity.set(dash.x, dash.y);
+			controller.dashing = true;
+			controller.allowed_dashes--;
+			velocity.set(dash.x, dash.y);
 
-				entity.removeComponent(Gravity);
+			entity.removeComponent(Gravity);
 
-				setTimeout(() => {
-					velocity.set(0, 0);
-					controller.goal.set(0, 0);
-					controller.current.set(0, 0);
-					controller.dashing = false;
-					entity.addComponent(new Gravity());
-				}, DASH_DURATION);
+			setTimeout(() => {
+				velocity.set(0, 0);
+				controller.goal.set(0, 0);
+				controller.current.set(0, 0);
+				controller.dashing = false;
+				entity.addComponent(new Gravity());
+			}, DASH_DURATION);
 
-				controller.dash_allowed = false;
-				setTimeout(() => (controller.dash_allowed = true), 300);
-				return;
-			} else {
-				console.log("dash failed");
-			}
+			controller.dash_allowed = false;
+			setTimeout(() => (controller.dash_allowed = true), 400);
+			return;
 		}
 
 		if (
@@ -469,8 +371,6 @@ export class MovementSystem extends ECS.System {
 			collider.south
 		) {
 			(params.sound as Sound).play(150, 150, 0.5);
-
-			console.log("try to jump");
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
