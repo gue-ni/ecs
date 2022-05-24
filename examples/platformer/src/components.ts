@@ -1,4 +1,5 @@
 import * as ECS from "../../../lib";
+import { BACKGROUND_COLOR, FOREGROUND_COLOR } from "./main";
 
 export class Forces extends ECS.VectorComponent {
 	mass: number = 10;
@@ -101,7 +102,7 @@ export class Sprite extends ECS.Component {
 		width: number;
 		height: number;
 		color?: string;
-		offset?: ECS.Vector,
+		offset?: ECS.Vector;
 		image?: HTMLImageElement;
 		animations?: Animations;
 	}) {
@@ -110,12 +111,10 @@ export class Sprite extends ECS.Component {
 		this.height = params.height;
 		this.color = params.color ?? "red";
 		this.image = params.image;
-		this.offset = params.offset ?? new ECS.Vector()
+		this.offset = params.offset ?? new ECS.Vector();
 		this.animations = params.animations;
 	}
 }
-
-
 
 export class Tile extends ECS.Component {}
 
@@ -162,10 +161,12 @@ export class ParticleEmitter extends ECS.Component {
 		maxCount: 500,
 		particlesPerSecond: 130,
 		speed: 0,
+		color: FOREGROUND_COLOR,
 	});
 
 	jump: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.1,
+		color: FOREGROUND_COLOR,
 		maxTTL: 0.4,
 		minSize: 1,
 		maxSize: 2,
@@ -182,6 +183,7 @@ export class ParticleEmitter extends ECS.Component {
 		minSize: 1,
 		maxSize: 2,
 		maxCount: 10,
+		color: FOREGROUND_COLOR,
 		drag: 0.1,
 		speed: 40,
 		active: false,

@@ -16,7 +16,7 @@ import {
 const TILESIZE = 8;
 
 const SPRITES = new Image();
-SPRITES.src = "assets/sprites.png";
+SPRITES.src = "assets/spritesheet.png";
 
 export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
@@ -52,7 +52,7 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Tile(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 27 * TILESIZE) }),
+			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITES, offset: new ECS.Vector(0, 28 * TILESIZE) }),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: TILESIZE,

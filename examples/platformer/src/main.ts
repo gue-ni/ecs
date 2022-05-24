@@ -18,6 +18,13 @@ const level_display: HTMLElement = document.getElementById("level-display") as H
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
+export const FOREGROUND_COLOR = "#B8C2B9";
+export const BACKGROUND_COLOR = "#382B26";
+/*
+export const FOREGROUND_COLOR = "#ffffff";
+export const BACKGROUND_COLOR = "#000";
+*/
+
 let paused = false;
 
 const quadtree = new ECS.QuadTree(
@@ -362,7 +369,7 @@ export class Game extends ECS.ECS {
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			//context.fillStyle = "#D3D3D3";
-			context.fillStyle = "#000";
+			context.fillStyle = BACKGROUND_COLOR;
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			this.shake.update(dt);
