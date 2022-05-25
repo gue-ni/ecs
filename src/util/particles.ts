@@ -45,7 +45,7 @@ class ParticleSystem {
 	private finiteParticles: boolean;
 	private maxCount: number;
 	private particlesPerSecond: number;
-	private emitterShape: Vector;
+	private emitterSize: Vector;
 	private drag: number;
 	private offset: Vector;
 	private color: string;
@@ -60,7 +60,7 @@ class ParticleSystem {
 		maxSize: number;
 		offset?: Vector;
 		speed: number;
-		emitterShape?: Vector;
+		emitterSize?: Vector;
 		finiteParticles?: boolean;
 		gravity: number;
 		drag?: number;
@@ -79,7 +79,7 @@ class ParticleSystem {
 		this.maxCount = params.maxCount;
 		//this.emitterRadius = params.emitterRadius || 1;
 		this.drag = params.drag || 0;
-		this.emitterShape = params.emitterShape || new Vector(1, 1);
+		this.emitterSize = params.emitterSize || new Vector(1, 1);
 		this.offset = params.offset || new Vector();
 		this.particlesPerSecond = params.particlesPerSecond;
 		this.color = params.color || "#ffffff";
@@ -88,12 +88,12 @@ class ParticleSystem {
 	private createParticle(position: IVector): Particle {
 		//const shape_offset = new Vector().random_unit_vector().scalarMult(this.emitterRadius);
 
-		// emitt in ellipse shape
-		let A = this.emitterShape.x / 2;
-		let B = this.emitterShape.y / 2;
+
+		let A = this.emitterSize.x / 2;
+		let B = this.emitterSize.y / 2;
 		let r = A * Math.sqrt(Math.random());
 		let phi = 2 * Math.PI * Math.random();
-		const random_offset = new Vector(r * Math.cos(phi), (B / A) * r * Math.sin(phi));
+		const shape_offset = new Vector(r * Math.cos(phi), (B / A) * r * Math.sin(phi));
 
 		const particle: Particle = {
 			ttl: randomFloat(this.minTTL, this.maxTTL),
@@ -102,7 +102,7 @@ class ParticleSystem {
 			color: this.color,
 			alpha: 1,
 			gravity: this.gravity,
-			pos: new Vector(position.x + this.offset.x + random_offset.x, position.y + this.offset.y + random_offset.y),
+			pos: new Vector(position.x + this.offset.x + shape_offset.x, position.y + this.offset.y + shape_offset.y),
 			vel: new Vector().random_unit_vector().scalarMult(this.speed),
 		};
 
@@ -148,7 +148,7 @@ class ParticleSystem {
 
 			particle.vel.y += particle.gravity * params.dt;
 
-			particle.pos.round();
+			//particle.pos.round();
 
 			params.context.fillStyle = particle.color;
 			params.context.fillRect(

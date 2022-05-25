@@ -52,8 +52,8 @@ export class ParticleSystem extends ECS.System {
 			emitter.jump.active = false;
 		}
 
-		//emitter.collect.update(p, params);
-		//emitter.dust.update(p, params);
+		emitter.collect.update(p, params);
+		emitter.dust.update(p, params);
 		emitter.dash.update(p, params);
 		emitter.jump.update(p, params);
 		emitter.explosion.update(p, params);
