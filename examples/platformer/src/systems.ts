@@ -191,16 +191,15 @@ export class CollisionSystem extends ECS.CollisionSystem {
 		// spikes
 		if (health && health.value != 0 && target.getComponent(Spike)) {
 			(params.sound as Sound).play(200, 50, 0.5);
+			(params.shaker as Shake).shake();
 
 			target.removeComponent(Spike);
-			entity.removeComponent(ECS.Velocity)
+			entity.removeComponent(ECS.Velocity);
 
 			const sprite = entity.getComponent(Sprite) as Sprite;
 			if (sprite) sprite.visible = false;
 
-			if (emitter) emitter.explosion.active = true;
-
-			(params.shaker as Shake).shake();
+			if (emitter) emitter.explosion.start_emitting();
 
 			setTimeout(() => (health.value = 0), 700);
 			return;
