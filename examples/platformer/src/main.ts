@@ -89,7 +89,7 @@ export class Shake {
 }
 
 export class Game extends ECS.ECS {
-	max_level: number = 4;
+	max_level: number = 5;
 	data: any;
 
 	private then: number = 0;

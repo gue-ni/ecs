@@ -17,21 +17,39 @@ import { TILESIZE, SPRITESHEET } from "./main";
 export class Factory {
 	static createPlayer(pos: ECS.Vector, vel: ECS.Vector = new ECS.Vector()): ECS.Entity {
 		const size = new ECS.Vector(16, 16);
+
+		let old_sprite = new Sprite({
+			width: size.x,
+			height: size.y,
+			image: SPRITESHEET,
+			offset: new ECS.Vector(0 * 8, TILESIZE * 1),
+			animations: new Animations([
+				new Animation({ name: "idle-right", y: 0, repeat: true }),
+				new Animation({ name: "idle-left", y: 1, repeat: true }),
+				new Animation({ name: "jump-right", y: 2, repeat: true }),
+				new Animation({ name: "jump-left", y: 3, repeat: true }),
+				new Animation({ name: "run-right", y: 4, frames: 4, repeat: true }),
+				new Animation({ name: "run-left", y: 5, frames: 4, repeat: true }),
+			]),
+		});
+
+		let new_sprite = new Sprite({
+			width: size.x,
+			height: size.y,
+			image: SPRITESHEET,
+			offset: new ECS.Vector(TILESIZE * 8, TILESIZE * 1),
+			animations: new Animations([
+				new Animation({ name: "idle-right", y: 0, frames: 6, repeat: true }),
+				new Animation({ name: "idle-left", y: 1, repeat: true }),
+				new Animation({ name: "jump-right", y: 2, repeat: true }),
+				new Animation({ name: "jump-left", y: 3, repeat: true }),
+				new Animation({ name: "run-right", y: 4, frames: 3, repeat: true }),
+				new Animation({ name: "run-left", y: 5, frames: 3, repeat: true }),
+			]),
+		});
+
 		return new ECS.Entity().addComponents(
-			new Sprite({
-				width: size.x,
-				height: size.y,
-				image: SPRITESHEET,
-				offset: new ECS.Vector(0, TILESIZE * 1),
-				animations: new Animations([
-					new Animation({ name: "idle-right", y: 0, repeat: true }),
-					new Animation({ name: "idle-left", y: 1, repeat: true }),
-					new Animation({ name: "jump-right", y: 2, repeat: true }),
-					new Animation({ name: "jump-left", y: 3, repeat: true }),
-					new Animation({ name: "run-right", y: 4, frames: 4, repeat: true }),
-					new Animation({ name: "run-left", y: 5, frames: 4, repeat: true }),
-				]),
-			}),
+			new_sprite,
 			new Gravity(),
 			new ParticleEmitter(),
 			new Controller(),
@@ -153,7 +171,7 @@ export class Factory {
 	}
 
 	static createBounce(pos: ECS.Vector): ECS.Entity {
-		console.log("create bounce")
+		console.log("create bounce");
 		return new ECS.Entity().addComponents(
 			new Bouncy(),
 			new ECS.Position(pos.x, pos.y),
