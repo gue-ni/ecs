@@ -83,51 +83,6 @@ export class Animations {
 			}
 		}
 	}
-
-	/*
-	play(name: string) {
-		if (!this.current) return;
-
-		if (this.current.name === name) return;
-
-		this.last = this.current;
-
-		if (!this.current.repeat) {
-			this.next = this.animations.get(name);
-			return;
-		} else {
-			this.next = undefined;
-		}
-
-		this.current = this.animations.get(name);
-		//this.current.frame.x = 0;
-	}
-
-	update(dt: number) {
-		if (!this.current) return;
-
-		if (this.current.frames > 1) {
-			if ((this.time += dt) > 1 / 1) {
-				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
-				this.time = 0;
-			}
-
-			if (!this.current.repeat && this.current.frame.x == this.current.frames - 1) {
-				if (this.next) {
-					console.log("setting next", this.next.name)
-					this.play(this.next.name);
-					return;
-				}
-
-				if (this.last) {
-					console.log("setting last")
-					this.play(this.last.name);
-					return;
-				}
-			}
-		}
-	}
-	*/
 }
 
 export class Sprite extends ECS.Component {
@@ -198,22 +153,56 @@ export class ParticleEmitter extends ECS.Component {
 		minSize: 1,
 		maxSize: 1,
 		gravity: -100,
-		emitterRadius: 4,
+		emitterShape: new ECS.Vector(8, 8),
 		maxCount: 500,
 		particlesPerSecond: 130,
 		speed: 0,
 		color: FOREGROUND_COLOR,
 	});
 
+	dust: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 0.3,
+		minSize: 1,
+		maxSize: 2,
+		maxCount: 30,
+		color: FOREGROUND_COLOR,
+		offset: new ECS.Vector(0, 7),
+		drag: 0.3,
+		speed: 50,
+		active: false,
+		gravity: -200,
+		emitterShape: new ECS.Vector(8, 2),
+		particlesPerSecond: 1000,
+		finiteParticles: true,
+	});
+
+	collect: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 0.5,
+		minSize: 1,
+		maxSize: 2,
+		maxCount: 10,
+		color: FOREGROUND_COLOR,
+		drag: 0.2,
+		speed: 70,
+		active: false,
+		gravity: 100,
+		emitterShape: new ECS.Vector(4, 4),
+		particlesPerSecond: 1000,
+		finiteParticles: true,
+	});
+
 	jump: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.1,
-		color: FOREGROUND_COLOR,
 		maxTTL: 0.4,
+		color: FOREGROUND_COLOR,
 		minSize: 1,
 		maxSize: 2,
 		offset: new ECS.Vector(0, 8),
+		emitterShape: new ECS.Vector(2, 2),
 		gravity: -100,
-		maxCount: 50,
+		maxCount: 100,
 		particlesPerSecond: 150,
 		speed: 0,
 	});
@@ -229,7 +218,7 @@ export class ParticleEmitter extends ECS.Component {
 		speed: 40,
 		active: false,
 		gravity: -400,
-		emitterRadius: 4,
+		emitterShape: new ECS.Vector(6, 8),
 		particlesPerSecond: 1000,
 		finiteParticles: true,
 	});

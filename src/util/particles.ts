@@ -45,7 +45,7 @@ class ParticleSystem {
 	private finiteParticles: boolean;
 	private maxCount: number;
 	private particlesPerSecond: number;
-	private emitterRadius: number;
+	private emitterShape: Vector;
 	private drag: number;
 	private offset: Vector;
 	private color: string;
@@ -60,11 +60,11 @@ class ParticleSystem {
 		maxSize: number;
 		offset?: Vector;
 		speed: number;
+		emitterShape?: Vector;
 		finiteParticles?: boolean;
 		gravity: number;
 		drag?: number;
 		maxCount: number;
-		emitterRadius?: number;
 		particlesPerSecond: number;
 		color?: string;
 	}) {
@@ -77,15 +77,23 @@ class ParticleSystem {
 		this.active = params.active ?? true;
 		this.gravity = params.gravity;
 		this.maxCount = params.maxCount;
-		this.emitterRadius = params.emitterRadius || 1;
+		//this.emitterRadius = params.emitterRadius || 1;
 		this.drag = params.drag || 0;
+		this.emitterShape = params.emitterShape || new Vector(1, 1);
 		this.offset = params.offset || new Vector();
 		this.particlesPerSecond = params.particlesPerSecond;
 		this.color = params.color || "#ffffff";
 	}
 
 	private createParticle(position: IVector): Particle {
-		const offset = new Vector().random_unit_vector().scalarMult(this.emitterRadius);
+		//const shape_offset = new Vector().random_unit_vector().scalarMult(this.emitterRadius);
+
+		// emitt in ellipse shape
+		let A = this.emitterShape.x / 2;
+		let B = this.emitterShape.y / 2;
+		let r = A * Math.sqrt(Math.random());
+		let phi = 2 * Math.PI * Math.random();
+		const random_offset = new Vector(r * Math.cos(phi), (B / A) * r * Math.sin(phi));
 
 		const particle: Particle = {
 			ttl: randomFloat(this.minTTL, this.maxTTL),
@@ -94,11 +102,24 @@ class ParticleSystem {
 			color: this.color,
 			alpha: 1,
 			gravity: this.gravity,
-			pos: new Vector(position.x + this.offset.x + offset.x, position.y + this.offset.y + offset.y),
+			pos: new Vector(position.x + this.offset.x + random_offset.x, position.y + this.offset.y + random_offset.y),
 			vel: new Vector().random_unit_vector().scalarMult(this.speed),
 		};
 
 		return particle;
+	}
+
+	stop_emitting() {
+		this.active = false;
+	}
+
+	start_emitting() {
+		this.active = true;
+	}
+
+	reset() {
+		this.time = 0;
+		this.particles = [];
 	}
 
 	update(position: IVector, params: UpdateParams): void {
