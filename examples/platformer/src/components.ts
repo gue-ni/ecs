@@ -217,7 +217,7 @@ export class ParticleEmitter extends ECS.Component {
 		drag: 0.1,
 		speed: 40,
 		active: false,
-		gravity: -400,
+		gravity: -300,
 		emitterShape: new ECS.Vector(6, 8),
 		particlesPerSecond: 1000,
 		finiteParticles: true,

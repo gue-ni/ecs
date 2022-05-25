@@ -373,7 +373,7 @@ export class MovementSystem extends ECS.System {
 				return;
 			}
 
-			input.disable_until_reset(BUTTONS.DASH);
+			input.disable_until_key_release(BUTTONS.DASH);
 
 			(params.sound as Sound).play(150, 200, 0.5);
 			(params.shaker as Shake).shake();

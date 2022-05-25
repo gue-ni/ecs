@@ -27,7 +27,7 @@ class Input extends Component {
 		this.mouse_last_pressed = {};
 	}
 
-	disable_until_reset(key: string) {
+	disable_until_key_release(key: string) {
 		DISABLED[key] = true;
 	}
 
