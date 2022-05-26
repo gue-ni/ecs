@@ -39,12 +39,12 @@ export class Factory {
 			image: SPRITESHEET,
 			offset: new ECS.Vector(TILESIZE * 8, TILESIZE * 1),
 			animations: new Animations([
-				new Animation({ name: "idle-right", y: 0, frames: 6, repeat: true }),
+				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
 				new Animation({ name: "idle-left", y: 1, repeat: true }),
 				new Animation({ name: "jump-right", y: 2, repeat: true }),
 				new Animation({ name: "jump-left", y: 3, repeat: true }),
-				new Animation({ name: "run-right", y: 4, frames: 3, repeat: true }),
-				new Animation({ name: "run-left", y: 5, frames: 3, repeat: true }),
+				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
+				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
 			]),
 		});
 

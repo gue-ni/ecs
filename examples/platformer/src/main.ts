@@ -334,7 +334,6 @@ export class Game extends ECS.ECS {
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
-			//context.fillStyle = "#D3D3D3";
 			context.fillStyle = BACKGROUND_COLOR;
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -355,11 +354,34 @@ export class Game extends ECS.ECS {
 	}
 }
 
-const g = new Game();
-g.setup();
+const game = new Game();
+game.setup();
 
 document.addEventListener("keydown", (e) => {
-	if (e.code == "KeyP") paused = !paused;
+	switch (e.code) {
+		case "KeyP": {
+			paused = !paused;
+			break;
+		}
+
+		case "KeyR": {
+			localStorage.clear();
+			location.reload();
+			break;
+		}
+
+		case "KeyM": {
+			game.level++;
+			location.reload();
+			break;
+		}
+
+		case "KeyN": {
+			game.level--;
+			location.reload();
+			break;
+		}
+	}
 });
 
 document.addEventListener(

@@ -67,7 +67,7 @@ export class Animations {
 		if (!this.current) return;
 
 		if (this.current.frames > 1) {
-			if ((this.time += dt) > 1 / 12) {
+			if ((this.time += dt) > 1 / 10) {
 				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
 				this.time = 0;
 			}
@@ -153,9 +153,9 @@ export class ParticleEmitter extends ECS.Component {
 		minSize: 1,
 		maxSize: 1,
 		gravity: -100,
-		emitterSize: new ECS.Vector(8, 8),
+		emitterSize: new ECS.Vector(12, 12),
 		maxCount: 500,
-		particlesPerSecond: 130,
+		particlesPerSecond: 150,
 		speed: 0,
 		color: FOREGROUND_COLOR,
 	});
