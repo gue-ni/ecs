@@ -50,6 +50,13 @@
 				box-sizing: border-box;
 				background: #000;
 				font-family: Arial, Helvetica, sans-serif;
+
+				-webkit-touch-callout: none; /* iOS Safari */
+				-webkit-user-select: none; /* Safari */
+				-khtml-user-select: none; /* Konqueror HTML */
+				-moz-user-select: none; /* Old versions of Firefox */
+				-ms-user-select: none; /* Internet Explorer/Edge */
+				user-select: none;
 			}
 
 			.container {
@@ -88,8 +95,6 @@
 				top: 10vh;
 				color: white;
 			}
-
-
 
 			.red {
 				color: red;
@@ -154,8 +159,6 @@
 			<div class="button big red" id="button-0" style="left: 50%; top: 0">Button 0</div>
 			<div class="base" id="base"></div>
 			<div class="top" id="top"></div>
-
-
 
 			<div class="button small blue" id="button-1" style="left: 25%; top: 60%">Button 1</div>
 			<div class="button small blue" id="button-2" style="left: 25%; top: 20%">Button 2</div>
