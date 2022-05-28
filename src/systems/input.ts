@@ -197,8 +197,8 @@ class InputSystem extends System {
 
 class MobileInputSystem extends System {
 	visible: boolean = false;
-	touch_start: Vector = new Vector(50, 150);
-	touch_move: Vector = new Vector(50, 150);
+	touch_start: Vector = new Vector(350, 150);
+	touch_move: Vector = new Vector(350, 150);
 	joystick_base: HTMLElement;
 	joystick_top: HTMLElement;
 	down: boolean = false;
@@ -287,6 +287,7 @@ class MobileInputSystem extends System {
 		});
 		button_1.addEventListener("touchend", () => {
 			delete KEYS["KeyC"];
+			DISABLED["KeyC"] = false;
 		});
 
 		const button_2 = document.querySelector("#button-2") as HTMLElement;
