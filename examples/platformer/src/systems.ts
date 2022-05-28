@@ -384,6 +384,8 @@ export class MovementSystem extends ECS.System {
 		} else {
 			controller.goal.x = input.joystick_x;
 			controller.goal.y = input.joystick_y;
+
+			input_dir.set(input.joystick_x, input.joystick_y)
 		}
 
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
@@ -426,13 +428,12 @@ export class MovementSystem extends ECS.System {
 			!controller.dashing &&
 			(collider.south || controller.coyote_time > 0)
 		) {
-			(params.sound as Sound).play(150, 150, 0.5);
-
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
 
 			controller.jumping = true;
 			setTimeout(() => (controller.jumping = false), 50);
+			(params.sound as Sound).play(150, 150, 0.5);
 		}
 
 		if (!controller.dashing) {
