@@ -2,27 +2,20 @@ import { Component, ComponentConstructor, ComponentType, getComponentType } from
 
 let _entities = 0;
 
-interface EntityParams {
-	id?: string;
-	ttl?: number;
-}
-
 type EntityID = string;
 
 class Entity {
 	readonly id: EntityID;
-	readonly count: number;
+	readonly entityNumber: number;
 	active: boolean;
 	ttl?: number;
 	readonly components = new Map<ComponentType, Component>();
 
-	constructor(params: EntityParams = {}) {
+	constructor(params?: { id?: string; ttl?: number }) {
 		this.active = true;
-		this.count = _entities;
-		this.id = params.id || (+new Date()).toString(16) + _entities;
-		this.ttl = params.ttl;
-
-		_entities++;
+		this.ttl = params?.ttl;
+		this.entityNumber = _entities++;
+		this.id = params?.id || (+new Date()).toString(16) + this.entityNumber;
 	}
 
 	addComponents(...components: Component[]): Entity {

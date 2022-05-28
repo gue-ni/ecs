@@ -178,7 +178,7 @@ export class CollectibleSystem extends ECS.System {
 		this.time += params.dt;
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const value = Math.sin(this.time + entity.count) * 0.2;
+		const value = Math.sin(this.time + entity.entityNumber) * 0.2;
 		position.y += value;
 	}
 }
