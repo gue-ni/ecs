@@ -82,6 +82,13 @@
 				height: 20vh;
 			}
 
+			.display {
+				position: absolute;
+				left: 10vw;
+				top: 10vh;
+				color: white;
+			}
+
 
 
 			.red {
@@ -138,11 +145,11 @@
 	<body>
 		<div class="container">
 			<canvas id="canvas" width="320" height="180"></canvas>
-			<p style="display: none">
+			<div class="display">
 				<span id="fps-display">FPS</span>
 				<span id="death-count">Deaths</span>
 				<span id="level-display">Level</span>
-			</p>
+			</div>
 
 			<div class="button big red" id="button-0" style="left: 50%; top: 0">Button 0</div>
 			<div class="base" id="base"></div>
