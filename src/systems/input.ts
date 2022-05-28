@@ -292,10 +292,11 @@ class MobileInputSystem extends System {
 		const button_2 = document.querySelector("#button-2") as HTMLElement;
 		button_2.addEventListener("touchstart", () => {
 			console.log("button-2");
-			KEYS["KeyV"] = true;
+			KEYS["KeyX"] = true;
 		});
 		button_2.addEventListener("touchend", () => {
-			delete KEYS["KeyV"];
+			delete KEYS["KeyX"];
+			DISABLED["KeyX"] = false;
 		});
 
 		/*
