@@ -218,8 +218,6 @@ class MobileInputSystem extends System {
 			const x = touch.clientX;
 			const y = touch.clientY;
 
-
-
 			this.touch_start.set(x, y);
 			this.touch_move.set(x, y);
 		};
@@ -245,6 +243,10 @@ class MobileInputSystem extends System {
 
 			JOYSTICK.x = (this.touch_move.x - this.touch_start.x) / max_radius;
 			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
+
+			if (JOYSTICK.isNaN()){
+				alert("Nan")
+			}
 		};
 
 		const virtual_joystick = document.querySelector("#button-0") as HTMLElement;
@@ -280,7 +282,6 @@ class MobileInputSystem extends System {
 			delete KEYS["KeyV"];
 		});
 
-		
 		/*
 		const button_2 = document.querySelector("#button-2") as HTMLElement;
 		button_2.style.display = "flex";
