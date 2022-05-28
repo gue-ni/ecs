@@ -244,8 +244,8 @@ class MobileInputSystem extends System {
 			JOYSTICK.x = (this.touch_move.x - this.touch_start.x) / max_radius;
 			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
 
-			if (JOYSTICK.isNaN()){
-				alert("Nan")
+			if (JOYSTICK.isNaN()) {
+				JOYSTICK.set(0, 0);
 			}
 		};
 
