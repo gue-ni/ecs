@@ -196,6 +196,7 @@ class InputSystem extends System {
 }
 
 class MobileInputSystem extends System {
+	visible: boolean = false;
 	touch_start: Vector = new Vector(50, 150);
 	touch_move: Vector = new Vector(50, 150);
 	joystick_base: HTMLElement;
@@ -207,10 +208,17 @@ class MobileInputSystem extends System {
 		const initialTouch = (e: TouchEvent) => {
 			e.preventDefault();
 			const touch = e.touches[0];
+			/*
 			const x = touch.clientX - left_control_bb.left;
 			const y = touch.clientY - left_control_bb.top;
 			const width = virtual_joystick.offsetWidth;
 			const height = virtual_joystick.offsetHeight;
+			*/
+
+			const x = touch.clientX;
+			const y = touch.clientY;
+
+
 
 			this.touch_start.set(x, y);
 			this.touch_move.set(x, y);
@@ -220,11 +228,14 @@ class MobileInputSystem extends System {
 
 		const handleTouch = (e: TouchEvent) => {
 			e.preventDefault();
+
 			const touch = e.touches[0];
-			const x = touch.clientX - left_control_bb.left;
-			const y = touch.clientY - left_control_bb.top;
-			const width = virtual_joystick.offsetWidth;
-			const height = virtual_joystick.offsetHeight;
+			const x = touch.clientX;
+			const y = touch.clientY;
+			//const x = touch.clientX - left_control_bb.left;
+			//const y = touch.clientY - left_control_bb.top;
+			//const width = virtual_joystick.offsetWidth;
+			//const height = virtual_joystick.offsetHeight;
 
 			let vec = new Vector(x - this.touch_start.x, y - this.touch_start.y);
 			let mag = vec.magnitude();
