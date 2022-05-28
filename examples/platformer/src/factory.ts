@@ -134,7 +134,7 @@ export class Factory {
 
 	static createTile(pos: ECS.Vector, side: string): ECS.Entity {
 		const offset = Factory.tileOffset(side);
-		offset.x += 9 * TILESIZE;
+		offset.x += 6 * TILESIZE;
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
