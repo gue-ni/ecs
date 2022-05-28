@@ -205,10 +205,15 @@ class MobileInputSystem extends System {
 	constructor() {
 		super([Input, Player]);
 
-		const initialTouch = (e: TouchEvent) => {
+		const initialTouch = (e: TouchEvent, el: HTMLElement) => {
 			e.preventDefault();
-			const touch = e.touches[0];
-			console.log("touchstart");
+
+
+			let touch = e.touches[0];
+			//for (let tmp of e.touches) if (el == tmp.target) touch = tmp;
+			//if (!touch) return;
+
+			console.log("touchstart", e.touches.length);
 			/*
 			const x = touch.clientX - left_control_bb.left;
 			const y = touch.clientY - left_control_bb.top;
@@ -225,11 +230,15 @@ class MobileInputSystem extends System {
 
 		const max_radius = 90;
 
-		const handleTouch = (e: TouchEvent) => {
+		const handleTouch = (e: TouchEvent, el: HTMLElement) => {
 			e.preventDefault();
 
-			console.log("touchmove");
-			const touch = e.touches[0];
+			console.log("touchmove", e.touches.length);
+
+			let touch = e.touches[0];
+			//for (let tmp of e.touches) if (el == tmp.target) touch = tmp;
+			//if (!touch) return;
+
 			const x = touch.clientX;
 			const y = touch.clientY;
 			//const x = touch.clientX - left_control_bb.left;
@@ -258,8 +267,8 @@ class MobileInputSystem extends System {
 
 		const left_control_bb = virtual_joystick.getBoundingClientRect();
 
-		virtual_joystick.addEventListener("touchstart", initialTouch);
-		virtual_joystick.addEventListener("touchmove", handleTouch);
+		virtual_joystick.addEventListener("touchstart", (e) => initialTouch(e, virtual_joystick));
+		virtual_joystick.addEventListener("touchmove", (e) => handleTouch(e, virtual_joystick));
 		virtual_joystick.addEventListener("touchend", (e) => {
 			e.preventDefault();
 			console.log("touchend");

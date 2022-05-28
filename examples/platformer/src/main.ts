@@ -441,7 +441,11 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener(
 	"touchstart",
 	() => {
-		if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+		if (!document.fullscreenElement)
+			document.documentElement
+				.requestFullscreen()
+				.then((r) => console.log(r))
+				.catch((e) => console.log(e));
 	},
 	false
 );
@@ -449,9 +453,10 @@ document.addEventListener(
 document.addEventListener(
 	"touchstart",
 	() => {
-		try {
-			screen.orientation.lock("landscape");
-		} catch (error) {}
+		screen.orientation
+			.lock("landscape")
+			.then((s) => console.log(s))
+			.catch((e) => console.log(e));
 	},
 	false
 );
