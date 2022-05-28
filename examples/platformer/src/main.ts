@@ -449,7 +449,9 @@ document.addEventListener(
 document.addEventListener(
 	"touchstart",
 	() => {
-		screen.orientation.lock("landscape");
+		try {
+			screen.orientation.lock("landscape");
+		} catch (error) {}
 	},
 	false
 );
