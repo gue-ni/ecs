@@ -208,6 +208,7 @@ class MobileInputSystem extends System {
 		const initialTouch = (e: TouchEvent) => {
 			e.preventDefault();
 			const touch = e.touches[0];
+			console.log("touchstart");
 			/*
 			const x = touch.clientX - left_control_bb.left;
 			const y = touch.clientY - left_control_bb.top;
@@ -227,6 +228,7 @@ class MobileInputSystem extends System {
 		const handleTouch = (e: TouchEvent) => {
 			e.preventDefault();
 
+			console.log("touchmove");
 			const touch = e.touches[0];
 			const x = touch.clientX;
 			const y = touch.clientY;
@@ -246,6 +248,7 @@ class MobileInputSystem extends System {
 
 			if (JOYSTICK.isNaN()) {
 				JOYSTICK.set(0, 0);
+				console.log({ JOYSTICK, move: this.touch_move, start: this.touch_start });
 			}
 		};
 
@@ -297,7 +300,7 @@ class MobileInputSystem extends System {
 		this.joystick_top.style.left = `${this.touch_move.x - this.joystick_top.offsetWidth / 2}px`;
 		this.joystick_top.style.top = `${this.touch_move.y - this.joystick_top.offsetHeight / 2}px`;
 
-		console.log(JOYSTICK.x.toFixed(2), JOYSTICK.y.toFixed(2));
+		//console.log(JOYSTICK.x.toFixed(2), JOYSTICK.y.toFixed(2));
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {}
