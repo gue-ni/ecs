@@ -208,10 +208,11 @@ class MobileInputSystem extends System {
 		const initialTouch = (e: TouchEvent, el: HTMLElement) => {
 			e.preventDefault();
 
-
-			let touch = e.touches[0];
-			//for (let tmp of e.touches) if (el == tmp.target) touch = tmp;
-			//if (!touch) return;
+			let touch = null;
+			for (let i = 0; i < e.touches.length; i++) {
+				if (el == e.touches[i].target) touch = e.touches[i];
+			}
+			if (!touch) return;
 
 			console.log("touchstart", e.touches.length);
 			/*
@@ -235,9 +236,11 @@ class MobileInputSystem extends System {
 
 			console.log("touchmove", e.touches.length);
 
-			let touch = e.touches[0];
-			//for (let tmp of e.touches) if (el == tmp.target) touch = tmp;
-			//if (!touch) return;
+			let touch = null;
+			for (let i = 0; i < e.touches.length; i++) {
+				if (el == e.touches[i].target) touch = e.touches[i];
+			}
+			if (!touch) return;
 
 			const x = touch.clientX;
 			const y = touch.clientY;
@@ -256,7 +259,7 @@ class MobileInputSystem extends System {
 			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
 
 			if (JOYSTICK.isNaN()) {
-				console.log({ JOYSTICK, move: this.touch_move, start: this.touch_start });
+				console.log("nan",{ joy:JOYSTICK, move: this.touch_move, start: this.touch_start });
 				JOYSTICK.set(0, 0);
 			}
 		};
