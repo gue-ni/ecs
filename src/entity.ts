@@ -11,14 +11,18 @@ type EntityID = string;
 
 class Entity {
 	readonly id: EntityID;
+	readonly count: number;
 	active: boolean;
 	ttl?: number;
 	readonly components = new Map<ComponentType, Component>();
 
 	constructor(params: EntityParams = {}) {
 		this.active = true;
-		this.id = params.id || (+new Date()).toString(16) + _entities++;
+		this.count = _entities;
+		this.id = params.id || (+new Date()).toString(16) + _entities;
 		this.ttl = params.ttl;
+
+		_entities++;
 	}
 
 	addComponents(...components: Component[]): Entity {

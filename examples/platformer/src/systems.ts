@@ -168,6 +168,21 @@ export class PhysicsSystem extends ECS.System {
 	}
 }
 
+export class CollectibleSystem extends ECS.System {
+	time: number = 0;
+	constructor() {
+		super([Collectible, ECS.Position]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		this.time += params.dt;
+
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const value = Math.sin(this.time + entity.count) * 0.2;
+		position.y += value;
+	}
+}
+
 export class CollisionSystem extends ECS.CollisionSystem {
 	customSolidResponse(
 		collision: ECS.CollisionEvent,
@@ -205,7 +220,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			return;
 		}
 
-		if (velocity && velocity.y > 50 && emitter && collision.contact_normal.y != 0) {
+		if (velocity && velocity.y > 10 && emitter && collision.contact_normal.y != 0) {
 			emitter.dust.reset();
 			emitter.dust.start_emitting();
 			return;
@@ -339,6 +354,9 @@ export class MovementSystem extends ECS.System {
 		if (collider.south) {
 			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
+			controller.coyote_time = 0.1;
+		} else {
+			if (controller.coyote_time > 0) controller.coyote_time -= params.dt;
 		}
 
 		const input_dir = new ECS.Vector();
@@ -368,8 +386,6 @@ export class MovementSystem extends ECS.System {
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
 			if (dash.isNaN()) {
-				//dash.set(1,0)
-				//dash.scalarMult(DASH_SPEED)
 				return;
 			}
 
@@ -399,7 +415,7 @@ export class MovementSystem extends ECS.System {
 			input.is_key_pressed(BUTTONS.JUMP) &&
 			controller.allowed_jumps > 0 &&
 			!controller.dashing &&
-			collider.south
+			(collider.south || controller.coyote_time > 0)
 		) {
 			(params.sound as Sound).play(150, 150, 0.5);
 

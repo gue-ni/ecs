@@ -70,7 +70,7 @@ export class Factory {
 				width: TILESIZE,
 				height: TILESIZE,
 				image: SPRITESHEET,
-				offset: new ECS.Vector(0, 28 * TILESIZE),
+				offset: new ECS.Vector(1 * TILESIZE, 28 * TILESIZE),
 			}),
 			new ECS.Collider({
 				width: TILESIZE,
@@ -84,12 +84,12 @@ export class Factory {
 		const offset = new ECS.Vector();
 		switch (side) {
 			case "up": {
-				offset.set(1 * TILESIZE, 0);
+				offset.set(ECS.randomInteger(1, 2) * TILESIZE, 0);
 				break;
 			}
 
 			case "down": {
-				offset.set(1 * TILESIZE, 2 * TILESIZE);
+				offset.set(ECS.randomInteger(1,2) * TILESIZE, 2 * TILESIZE);
 				break;
 			}
 
@@ -99,7 +99,7 @@ export class Factory {
 			}
 
 			case "top-right": {
-				offset.set(TILESIZE * 2, 0);
+				offset.set(TILESIZE * 3, 0);
 				break;
 			}
 
@@ -109,7 +109,7 @@ export class Factory {
 			}
 
 			case "bottom-right": {
-				offset.set(TILESIZE * 2, 2 * TILESIZE);
+				offset.set(TILESIZE * 3, 2 * TILESIZE);
 				break;
 			}
 
@@ -119,7 +119,7 @@ export class Factory {
 			}
 
 			case "right": {
-				offset.set(TILESIZE * 2, TILESIZE * 1);
+				offset.set(TILESIZE * 3, TILESIZE * 1);
 				break;
 			}
 
@@ -134,6 +134,7 @@ export class Factory {
 
 	static createTile(pos: ECS.Vector, side: string): ECS.Entity {
 		const offset = Factory.tileOffset(side);
+		offset.x += 9 * TILESIZE;
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(

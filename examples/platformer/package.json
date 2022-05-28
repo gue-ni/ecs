@@ -4,10 +4,11 @@
   "description": "",
   "main": "main.ts",
   "scripts": {
-    "build": "webpack"
+    "build": "webpack",
+    "deploy": "webpack && deploy.bat"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Jakob Maier",
+  "license": "",
   "dependencies": {
     "copy-webpack-plugin": "^10.2.4",
     "ts-loader": "^9.2.7",

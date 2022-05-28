@@ -143,6 +143,7 @@ export class Controller extends ECS.Component {
 	allowed_jumps: number = 1;
 	allowed_dashes: number = 1;
 	goal: ECS.Vector = new ECS.Vector();
+	coyote_time: number = 0;
 	current: ECS.Vector = new ECS.Vector();
 }
 

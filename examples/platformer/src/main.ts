@@ -8,6 +8,7 @@ import {
 	SpawnSystem,
 	ParticleSystem,
 	AnimationSystem,
+	CollectibleSystem,
 } from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
@@ -19,8 +20,10 @@ const level_display: HTMLElement = document.getElementById("level-display") as H
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export const FOREGROUND_COLOR = "#ffffff";
-export const BACKGROUND_COLOR = "#382B26";
+export const BACKGROUND_COLOR = "#392946";
+
 /*
+export const BACKGROUND_COLOR = "#382B26";
 export const FOREGROUND_COLOR = "#ffffff";
 export const FOREGROUND_COLOR = "#B8C2B9";
 export const BACKGROUND_COLOR = "#000";
@@ -132,7 +135,7 @@ export class Game extends ECS.ECS {
 			return [r, g, b, a];
 		};
 
-		const parse = (x: number, y: number, image: ImageData) => {
+		const parseTiles = (x: number, y: number, image: ImageData) => {
 			const t = parse_xy(x, y, image);
 			if (!t) return null;
 
@@ -169,6 +172,38 @@ export class Game extends ECS.ECS {
 					parse_xy(x - 1, y, image) != tile
 				) {
 					side = "bottom-left";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile &&
+					parse_xy(x - 1, y - 1, image) != tile
+				) {
+					side = "up";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile &&
+					parse_xy(x + 1, y - 1, image) != tile
+				) {
+					side = "up";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile &&
+					parse_xy(x + 1, y + 1, image) != tile
+				) {
+					side = "down";
+				} else if (
+					parse_xy(x, y - 1, image) == tile &&
+					parse_xy(x, y + 1, image) == tile &&
+					parse_xy(x + 1, y, image) == tile &&
+					parse_xy(x - 1, y, image) == tile &&
+					parse_xy(x - 1, y + 1, image) != tile
+				) {
+					side = "down";
 				} else if (
 					parse_xy(x, y - 1, image) == tile &&
 					parse_xy(x, y + 1, image) == tile &&
@@ -224,7 +259,7 @@ export class Game extends ECS.ECS {
 
 				for (let x = 0; x < image.width; x++) {
 					for (let y = 0; y < image.height; y++) {
-						const object = parse(x, y, data);
+						const object = parseTiles(x, y, data);
 						if (object) objects.push(object);
 					}
 				}
@@ -306,6 +341,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new SpawnSystem());
 		this.addSystem(new ParticleSystem());
 		this.addSystem(new AnimationSystem());
+		this.addSystem(new CollectibleSystem())
 		this.addSystem(new SpriteSystem());
 
 		console.log("setup level:", this.level);
