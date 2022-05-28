@@ -73,14 +73,14 @@ export class Shake {
 	OFFSET_X = 0;
 	OFFSET_Y = 0;
 
-	private static magnitude: number = 2;
-	private static duration: number = 0.2;
+	private static magnitude: number = 3;
+	private static duration: number = 0.25;
 	private time: number = 0;
 
 	update(dt: number) {
 		if ((this.time -= dt) > 0) {
-			this.OFFSET_X = ECS.randomInteger(-Shake.magnitude, Shake.magnitude);
-			this.OFFSET_Y = ECS.randomInteger(-Shake.magnitude, Shake.magnitude);
+			this.OFFSET_X = ECS.randomFloat(-Shake.magnitude, Shake.magnitude);
+			this.OFFSET_Y = ECS.randomFloat(-Shake.magnitude, Shake.magnitude);
 		} else {
 			this.OFFSET_X = 0;
 			this.OFFSET_Y = 0;
@@ -394,7 +394,7 @@ export class Game extends ECS.ECS {
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
 				if (this.frame == 0) console.log("[Capture] starting from zero");
 				this.frameTimer = 0;
-				this.frame = (this.frame + 1) % 300; // max frames to store
+				this.frame = (this.frame + 1) % 400; // max frames to store
 				localStorage.setItem(this.frame.toString(), canvas.toDataURL("image/png"));
 			}
 		}

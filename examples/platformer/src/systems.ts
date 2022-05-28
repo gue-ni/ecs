@@ -394,10 +394,8 @@ export class MovementSystem extends ECS.System {
 			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
-			console.log("dash?");
 
 			if (dash.isNaN()) {
-				console.log("dash nan");
 				return;
 			}
 
