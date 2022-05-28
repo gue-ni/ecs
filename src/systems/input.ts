@@ -3,12 +3,17 @@ import { System } from "../system";
 import { Entity } from "../entity";
 import { UpdateParams } from "../ecs";
 import { Player } from "./basic";
+import { Vector } from "../util/vector";
 
 type MouseButton = "left" | "right" | "middle";
 
 const KEYS: any = {};
 const DISABLED: any = {};
 const LAST_PRESSED: any = {};
+
+const JOYSTICK: Vector = new Vector();
+
+const d_pad = new Vector();
 
 class Input extends Component {
 	mouse: any;
@@ -27,16 +32,24 @@ class Input extends Component {
 		this.mouse_last_pressed = {};
 	}
 
+	get joystick_x() {
+		return JOYSTICK.x;
+	}
+
+	get joystick_y() {
+		return JOYSTICK.y;
+	}
+
 	disable_until_key_release(key: string) {
 		DISABLED[key] = true;
 	}
 
 	/**
-	 * 
+	 *
 	 * @param key key to check
 	 * @param delay does not return true if last pressed less than delay ago
 	 * @param wait_for_reset does not return true if key was not released since last press
-	 * @returns 
+	 * @returns
 	 */
 	is_key_pressed(key: string, delay?: number, wait_for_reset?: boolean): boolean {
 		if (KEYS[key]) {
@@ -63,6 +76,47 @@ class Input extends Component {
 		}
 		return false;
 	}
+}
+
+class Joystick extends Component {
+	get x() {
+		return d_pad.x;
+	}
+
+	get y() {
+		return d_pad.y;
+	}
+}
+
+export class JoystickSystem extends System {
+	constructor(params: { left: string; right: string; up: string; down: string }) {
+		super([Joystick]);
+
+		window.addEventListener("keydown", (e) => {
+			if (e.code == params.left) {
+				d_pad.x = -1;
+			} else if (e.code == params.right) {
+				d_pad.x = +1;
+			} else {
+				d_pad.x = 0;
+			}
+
+			if (e.code == params.up) {
+				d_pad.y = -1;
+			} else if (e.code == params.down) {
+				d_pad.y = +1;
+			} else {
+				d_pad.y = 0;
+			}
+		});
+
+		window.addEventListener("keyup", (e) => {
+			delete KEYS[e.code];
+			DISABLED[e.code] = false;
+		});
+	}
+
+	updateEntity(entity: Entity, params: UpdateParams): void {}
 }
 
 class InputSystem extends System {
@@ -142,54 +196,59 @@ class InputSystem extends System {
 }
 
 class MobileInputSystem extends System {
+	touch_start: Vector = new Vector(50, 150);
+	touch_move: Vector = new Vector(50, 150);
+	joystick_base: HTMLElement;
+	joystick_top: HTMLElement;
+
 	constructor() {
 		super([Input, Player]);
 
-		const handleTouch = (e: TouchEvent) => {
+		const initialTouch = (e: TouchEvent) => {
+			e.preventDefault();
 			const touch = e.touches[0];
 			const x = touch.clientX - left_control_bb.left;
 			const y = touch.clientY - left_control_bb.top;
-			const width = button_0.offsetWidth;
-			const height = button_0.offsetHeight;
+			const width = virtual_joystick.offsetWidth;
+			const height = virtual_joystick.offsetHeight;
 
-			//console.log({ x, y, width, height });
-
-			if (x < width / 2) {
-				//console.log("left");
-				KEYS["ArrowLeft"] = true;
-				delete KEYS["ArrowRight"];
-			} else if (x > width / 2) {
-				//console.log("right");
-				delete KEYS["ArrowLeft"];
-				KEYS["ArrowRight"] = true;
-			}
-
-			/*
-			if (y < height / 2) {
-				//console.log("up");
-				KEYS["ArrowUp"] = true;
-				delete KEYS["ArrowDown"];
-			} else if (y > height / 2) {
-				//console.log("down");
-				delete KEYS["ArrowUp"];
-				KEYS["ArrowDown"] = true;
-			}
-			*/
+			this.touch_start.set(x, y);
+			this.touch_move.set(x, y);
 		};
 
-		const button_0 = document.querySelector("#button-0") as HTMLElement;
-		const left_control_bb = button_0.getBoundingClientRect();
-		//left_control.style.display = "flex";
+		const max_radius = 90;
 
-		console.log({ left_control: button_0 });
+		const handleTouch = (e: TouchEvent) => {
+			e.preventDefault();
+			const touch = e.touches[0];
+			const x = touch.clientX - left_control_bb.left;
+			const y = touch.clientY - left_control_bb.top;
+			const width = virtual_joystick.offsetWidth;
+			const height = virtual_joystick.offsetHeight;
 
-		button_0.addEventListener("touchmove", handleTouch);
-		button_0.addEventListener("touchstart", handleTouch);
-		button_0.addEventListener("touchend", () => {
-			delete KEYS["ArrowRight"];
-			delete KEYS["ArrowLeft"];
-			delete KEYS["ArrowUp"];
-			delete KEYS["ArrowDown"];
+			let vec = new Vector(x - this.touch_start.x, y - this.touch_start.y);
+			let mag = vec.magnitude();
+			vec.normalize();
+			vec.scalarMult(Math.min(mag, max_radius));
+			this.touch_move.set(this.touch_start.x + vec.x, this.touch_start.y + vec.y);
+
+			JOYSTICK.x = (this.touch_move.x - this.touch_start.x) / max_radius;
+			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
+		};
+
+		const virtual_joystick = document.querySelector("#button-0") as HTMLElement;
+		this.joystick_base = document.querySelector("#base") as HTMLElement;
+		this.joystick_top = document.querySelector("#top") as HTMLElement;
+
+		const left_control_bb = virtual_joystick.getBoundingClientRect();
+
+		virtual_joystick.addEventListener("touchstart", initialTouch);
+		virtual_joystick.addEventListener("touchmove", handleTouch);
+		virtual_joystick.addEventListener("touchend", (e) => {
+			e.preventDefault();
+			console.log("touchend");
+			this.touch_move.set(this.touch_start.x, this.touch_start.y);
+			JOYSTICK.set(0, 0);
 		});
 
 		const button_1 = document.querySelector("#button-1") as HTMLElement;
@@ -221,6 +280,16 @@ class MobileInputSystem extends System {
 		button_2.addEventListener("touchstart", () => {});
 		button_2.addEventListener("touchend", () => {});
 		*/
+	}
+
+	beforeAll(entities: Entity[], params: UpdateParams): void {
+		this.joystick_base.style.left = `${this.touch_start.x - this.joystick_base.offsetWidth / 2}px`;
+		this.joystick_base.style.top = `${this.touch_start.y - this.joystick_base.offsetHeight / 2}px`;
+
+		this.joystick_top.style.left = `${this.touch_move.x - this.joystick_top.offsetWidth / 2}px`;
+		this.joystick_top.style.top = `${this.touch_move.y - this.joystick_top.offsetHeight / 2}px`;
+
+		console.log(JOYSTICK.x.toFixed(2), JOYSTICK.y.toFixed(2));
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {}
