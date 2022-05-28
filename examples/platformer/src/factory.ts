@@ -58,7 +58,7 @@ export class Factory {
 			new ECS.Input(),
 			new ECS.Position(pos.x, pos.y),
 			new ECS.Velocity(vel.x, vel.y),
-			new ECS.Collider({ width: 8, height: size.y, offset: new ECS.Vector(4, 0) })
+			new ECS.Collider({ width: 6, height: size.y, offset: new ECS.Vector(5, 0) })
 		);
 	}
 

@@ -18,7 +18,7 @@ const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
 const death_count: HTMLElement = document.getElementById("death-count") as HTMLElement;
 const level_display: HTMLElement = document.getElementById("level-display") as HTMLElement;
 
-const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+export const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#392946";
@@ -103,7 +103,8 @@ export class Game extends ECS.ECS {
 	sound: Sound = new Sound();
 
 	frame: number = 0;
-	frameCounter: number = 0;
+	recording: boolean = false;
+	frameTimer: number = 0;
 
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
@@ -389,13 +390,11 @@ export class Game extends ECS.ECS {
 			});
 
 			// export to png
-			if ((this.frameCounter += dt) >= 1 / 30) {
+			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
 				if (this.frame == 0) console.log("[Capture] starting from zero");
-				this.frameCounter = 0;
-				const max_frames = 300;
-				this.frame = (this.frame + 1) % max_frames;
-				const url = canvas.toDataURL("image/png");
-				localStorage.setItem(this.frame.toString(), url);
+				this.frameTimer = 0;
+				this.frame = (this.frame + 1) % 300; // max frames to store
+				localStorage.setItem(this.frame.toString(), canvas.toDataURL("image/png"));
 			}
 		}
 
@@ -419,6 +418,12 @@ document.addEventListener("keydown", (e) => {
 			break;
 		}
 
+		case "KeyU": {
+			game.recording = !game.recording;
+			console.log("recording", game.recording)
+			break;
+		}
+
 		case "KeyM": {
 			game.level++;
 			location.reload();
@@ -433,6 +438,7 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
+/*
 document.addEventListener(
 	"touchstart",
 	() => {
@@ -444,3 +450,5 @@ document.addEventListener(
 	},
 	false
 );
+
+*/

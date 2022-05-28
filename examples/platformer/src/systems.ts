@@ -11,7 +11,7 @@ import {
 	ParticleEmitter,
 } from "./components";
 
-import { Game, Shake, Sound } from "./main";
+import { Game, ON_MOBILE, Shake, Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 350;
@@ -72,10 +72,14 @@ export class AnimationSystem extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 
+		const epsilon = 0.1;
+
+		//console.log("goal", controller.goal.x)
+
 		if (collider.south) {
-			if (controller.goal.x > 0) {
+			if (controller.goal.x > epsilon) {
 				sprite.animations.play("run-right");
-			} else if (controller.goal.x < 0) {
+			} else if (controller.goal.x < -epsilon) {
 				sprite.animations.play("run-left");
 			} else {
 				sprite.animations.play("idle-right");
@@ -361,20 +365,25 @@ export class MovementSystem extends ECS.System {
 
 		const input_dir = new ECS.Vector();
 
-		if (input.is_key_pressed(BUTTONS.RIGHT)) {
-			controller.goal.x = input_dir.x = 1;
-		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
-			controller.goal.x = input_dir.x = -1;
-		} else {
-			if (collider.south) controller.goal.x = 0;
-		}
+		if (!ON_MOBILE) {
+			if (input.is_key_pressed(BUTTONS.RIGHT)) {
+				controller.goal.x = input_dir.x = 1;
+			} else if (input.is_key_pressed(BUTTONS.LEFT)) {
+				controller.goal.x = input_dir.x = -1;
+			} else {
+				if (collider.south) controller.goal.x = 0;
+			}
 
-		if (input.is_key_pressed(BUTTONS.UP)) {
-			controller.goal.y = input_dir.y = -1;
-		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
-			controller.goal.y = input_dir.y = 1;
+			if (input.is_key_pressed(BUTTONS.UP)) {
+				controller.goal.y = input_dir.y = -1;
+			} else if (input.is_key_pressed(BUTTONS.DOWN)) {
+				controller.goal.y = input_dir.y = 1;
+			} else {
+				controller.goal.y = 0;
+			}
 		} else {
-			controller.goal.y = 0;
+			controller.goal.x = input.joystick_x;
+			controller.goal.y = input.joystick_y;
 		}
 
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);

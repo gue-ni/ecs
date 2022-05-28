@@ -8,6 +8,8 @@
 			content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, minimal-ui"
 		/>
 
+		<link rel="shortcut icon" href="assets/favicon.ico?reload=true" type="image/x-icon" />
+
 		<!-- Primary Meta Tags -->
 		<title>2D Platformer</title>
 		<meta name="title" content="2D Platformer" />
@@ -42,43 +44,59 @@
 			html,
 			body {
 				margin: 0;
-				width: 100%;
-				height: 100%;
+				width: 100vw;
+				height: 100vh;
 				overflow: hidden;
+				box-sizing: border-box;
 				background: #000;
 				font-family: Arial, Helvetica, sans-serif;
 			}
 
 			.container {
-				width: 100%;
-				height: 100%;
+				width: 100vw;
+				height: 100vh;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 			}
 
-			.input {
-				position: absolute;
-			}
-
-			.debug {
-				position: absolute;
-				color: red;
-				left: 20%;
-				top: 0;
-			}
-
 			.button {
+				display: block;
 				position: absolute;
-				color: red;
 				background: transparent;
+			}
+
+			.base {
+				position: absolute;
+				background: rgba(207, 24, 24, 0.5);
+				border-radius: 50%;
+				width: 50px;
+				height: 50px;
+			}
+
+			.top {
+				position: absolute;
+				background: rgba(11, 9, 114, 0.5);
+				border-radius: 50%;
+				width: 30px;
+				height: 30px;
+			}
+
+
+
+			.red {
+				color: red;
 				border: 1px solid red;
-				padding: 1em;
+			}
+
+			.blue {
+				color: blue;
+				border: 1px solid blue;
 			}
 
 			.big {
-				height: 100px;
-				width: 100px;
+				width: 50vw;
+				height: 100vh;
 			}
 
 			.small {
@@ -120,10 +138,20 @@
 	<body>
 		<div class="container">
 			<canvas id="canvas" width="320" height="180"></canvas>
-			<div class="debug" id="debug">Debug:</div>
-			<div class="button big" id="button-0" style="left: 10%; top: 50%">Button 0</div>
-			<div class="button small" id="button-1" style="left: 75%; top: 70%">Button 1</div>
-			<div class="button small" id="button-2" style="left: 75%; top: 20%">Button 2</div>
+			<p style="display: none">
+				<span id="fps-display">FPS</span>
+				<span id="death-count">Deaths</span>
+				<span id="level-display">Level</span>
+			</p>
+
+			<div class="button big red" id="button-0" style="left: 0; top: 0">Button 0</div>
+			<div class="base" id="base"></div>
+			<div class="top" id="top"></div>
+
+
+
+			<div class="button small blue" id="button-1" style="left: 75%; top: 60%">Button 1</div>
+			<div class="button small blue" id="button-2" style="left: 75%; top: 20%">Button 2</div>
 		</div>
 		<!--
 		<script src="main.js"></script>

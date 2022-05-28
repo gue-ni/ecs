@@ -182,7 +182,7 @@ export class ParticleEmitter extends ECS.Component {
 		minTTL: 0.1,
 		maxTTL: 0.5,
 		minSize: 1,
-		maxSize: 1,
+		maxSize: 2,
 		maxCount: 10,
 		color: "#f4b41b",
 		drag: 0.2,
