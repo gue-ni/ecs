@@ -400,7 +400,7 @@ document.addEventListener("keydown", (e) => {
 			break;
 		}
 
-		case "KeyR": {
+		case "KeyT": {
 			localStorage.clear();
 			location.reload();
 			break;

@@ -9,7 +9,7 @@
   },
   "author": "Jakob Maier",
   "license": "",
-  "devDependencies": {
+  "dependencies": {
     "copy-webpack-plugin": "^10.2.4",
     "ts-loader": "^9.2.7",
     "webpack": "^5.69.1",
