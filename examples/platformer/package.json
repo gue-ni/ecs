@@ -1,7 +1,7 @@
 {
   "name": "Platformer",
   "version": "1.0.0",
-  "description": "test",
+  "description": "tesasdft",
   "main": "main.ts",
   "scripts": {
     "build": "webpack",
