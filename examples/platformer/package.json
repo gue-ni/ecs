@@ -1,7 +1,7 @@
 {
-  "name": "platformer",
+  "name": "Platformer",
   "version": "1.0.0",
-  "description": "",
+  "description": "test",
   "main": "main.ts",
   "scripts": {
     "build": "webpack",
