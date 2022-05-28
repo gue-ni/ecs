@@ -444,7 +444,6 @@ document.addEventListener(
 		if (!document.fullscreenElement)
 			document.documentElement
 				.requestFullscreen()
-				.then((r) => console.log(r))
 				.catch((e) => console.log(e));
 	},
 	false
@@ -455,7 +454,6 @@ document.addEventListener(
 	() => {
 		screen.orientation
 			.lock("landscape")
-			.then((s) => console.log(s))
 			.catch((e) => console.log(e));
 	},
 	false

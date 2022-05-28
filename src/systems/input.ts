@@ -201,10 +201,12 @@ class MobileInputSystem extends System {
 	touch_move: Vector = new Vector(50, 150);
 	joystick_base: HTMLElement;
 	joystick_top: HTMLElement;
+	down: boolean = false;
 
 	constructor() {
 		super([Input, Player]);
 
+		/*
 		const initialTouch = (e: TouchEvent, el: HTMLElement) => {
 			e.preventDefault();
 
@@ -215,12 +217,6 @@ class MobileInputSystem extends System {
 			if (!touch) return;
 
 			console.log("touchstart", e.touches.length);
-			/*
-			const x = touch.clientX - left_control_bb.left;
-			const y = touch.clientY - left_control_bb.top;
-			const width = virtual_joystick.offsetWidth;
-			const height = virtual_joystick.offsetHeight;
-			*/
 
 			const x = touch.clientX;
 			const y = touch.clientY;
@@ -229,13 +225,10 @@ class MobileInputSystem extends System {
 			this.touch_move.set(x, y);
 		};
 
-		const max_radius = 90;
+		*/
+		const max_radius = 70;
 
 		const handleTouch = (e: TouchEvent, el: HTMLElement) => {
-			e.preventDefault();
-
-			console.log("touchmove", e.touches.length);
-
 			let touch = null;
 			for (let i = 0; i < e.touches.length; i++) {
 				if (el == e.touches[i].target) touch = e.touches[i];
@@ -244,10 +237,17 @@ class MobileInputSystem extends System {
 
 			const x = touch.clientX;
 			const y = touch.clientY;
-			//const x = touch.clientX - left_control_bb.left;
-			//const y = touch.clientY - left_control_bb.top;
-			//const width = virtual_joystick.offsetWidth;
-			//const height = virtual_joystick.offsetHeight;
+
+			if (!this.down) {
+				console.log("touchstart", e.touches.length);
+
+				this.down = true;
+				this.touch_start.set(x, y);
+				this.touch_move.set(x, y);
+				JOYSTICK.set(0, 0);
+				return;
+			}
+			console.log("touchmove", e.touches.length);
 
 			let vec = new Vector(x - this.touch_start.x, y - this.touch_start.y);
 			let mag = vec.magnitude();
@@ -259,7 +259,7 @@ class MobileInputSystem extends System {
 			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
 
 			if (JOYSTICK.isNaN()) {
-				console.log("nan",{ joy:JOYSTICK, move: this.touch_move, start: this.touch_start });
+				console.log("NaN", { joy: JOYSTICK, move: this.touch_move, start: this.touch_start });
 				JOYSTICK.set(0, 0);
 			}
 		};
@@ -270,13 +270,14 @@ class MobileInputSystem extends System {
 
 		const left_control_bb = virtual_joystick.getBoundingClientRect();
 
-		virtual_joystick.addEventListener("touchstart", (e) => initialTouch(e, virtual_joystick));
+		virtual_joystick.addEventListener("touchstart", (e) => handleTouch(e, virtual_joystick));
 		virtual_joystick.addEventListener("touchmove", (e) => handleTouch(e, virtual_joystick));
 		virtual_joystick.addEventListener("touchend", (e) => {
 			e.preventDefault();
 			console.log("touchend");
 			this.touch_move.set(this.touch_start.x, this.touch_start.y);
 			JOYSTICK.set(0, 0);
+			this.down = false;
 		});
 
 		const button_1 = document.querySelector("#button-1") as HTMLElement;
