@@ -420,7 +420,7 @@ document.addEventListener("keydown", (e) => {
 
 		case "KeyU": {
 			game.recording = !game.recording;
-			console.log("recording", game.recording)
+			console.log("recording", game.recording);
 			break;
 		}
 
@@ -438,7 +438,6 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-/*
 document.addEventListener(
 	"touchstart",
 	() => {
@@ -450,5 +449,3 @@ document.addEventListener(
 	},
 	false
 );
-
-*/
