@@ -269,12 +269,8 @@ class MobileInputSystem extends System {
 			delete KEYS["KeyV"];
 		});
 
+		
 		/*
-		const button_1 = document.querySelector("#button-1") as HTMLElement;
-		button_1.style.display = "flex";
-		button_1.addEventListener("touchstart", () => {});
-		button_1.addEventListener("touchend", () => {});
-
 		const button_2 = document.querySelector("#button-2") as HTMLElement;
 		button_2.style.display = "flex";
 		button_2.addEventListener("touchstart", () => {});

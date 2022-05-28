@@ -441,11 +441,15 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener(
 	"touchstart",
 	() => {
-		if (!document.fullscreenElement) {
-			document.documentElement.requestFullscreen().then(() => {
-				screen.orientation.lock("landscape");
-			});
-		}
+		if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+	},
+	false
+);
+
+document.addEventListener(
+	"touchstart",
+	() => {
+		screen.orientation.lock("landscape");
 	},
 	false
 );
