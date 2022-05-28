@@ -1,3 +1,4 @@
+import { ParametricBufferGeometry } from "three";
 import * as ECS from "../../../src";
 import { Factory } from "./factory";
 import {
@@ -100,6 +101,9 @@ export class Game extends ECS.ECS {
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
+
+	frame: number = 0;
+	frameCounter: number = 0;
 
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
@@ -341,7 +345,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new SpawnSystem());
 		this.addSystem(new ParticleSystem());
 		this.addSystem(new AnimationSystem());
-		this.addSystem(new CollectibleSystem())
+		this.addSystem(new CollectibleSystem());
 		this.addSystem(new SpriteSystem());
 
 		console.log("setup level:", this.level);
@@ -360,13 +364,12 @@ export class Game extends ECS.ECS {
 		now *= 0.001;
 		let dt = now - this.then;
 		this.then = now;
+		if (dt > 1 / 30) dt = 1 / 30;
 
 		if ((this.timer += dt) > 0.5) {
 			this.timer = 0;
 			fps.innerText = `${(1 / dt).toFixed(2)} FPS`;
 		}
-
-		if (dt > 1 / 30) dt = 1 / 30;
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
@@ -384,6 +387,16 @@ export class Game extends ECS.ECS {
 				sound: this.sound,
 				shaker: this.shake,
 			});
+
+			// export to png
+			if ((this.frameCounter += dt) >= 1 / 30) {
+				if (this.frame == 0) console.log("[Capture] starting from zero");
+				this.frameCounter = 0;
+				const max_frames = 300;
+				this.frame = (this.frame + 1) % max_frames;
+				const url = canvas.toDataURL("image/png");
+				localStorage.setItem(this.frame.toString(), url);
+			}
 		}
 
 		requestAnimationFrame(this.animateBind);
