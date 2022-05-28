@@ -20,7 +20,7 @@ const GRAVITY = 610;
 const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
-const ACCELERATION = 40;
+const ACCELERATION = 25;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
@@ -337,7 +337,7 @@ export class SpawnSystem extends ECS.System {
 			setTimeout(() => {
 				game.createLevel();
 				waiting_for_respawn = false;
-			}, 700);
+			}, 300);
 
 			return;
 		}
@@ -384,7 +384,7 @@ export class MovementSystem extends ECS.System {
 		} else {
 			controller.goal.x = input.joystick_x;
 			controller.goal.y = input.joystick_y;
-			input_dir.set(input.joystick_x, input.joystick_y)
+			input_dir.set(input.joystick_x, input.joystick_y);
 		}
 
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
@@ -394,10 +394,10 @@ export class MovementSystem extends ECS.System {
 			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
-			console.log("dash?")
+			console.log("dash?");
 
 			if (dash.isNaN()) {
-				console.log("dash nan")
+				console.log("dash nan");
 				return;
 			}
 

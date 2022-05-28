@@ -102,9 +102,9 @@ export class Game extends ECS.ECS {
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
 
-	frame: number = 0;
+	private frame: number = 0;
 	recording: boolean = false;
-	frameTimer: number = 0;
+	private frameTimer: number = 0;
 
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
@@ -288,6 +288,7 @@ export class Game extends ECS.ECS {
 	}
 
 	set level(x: number) {
+		if (x > this.max_level || x < 1) return;
 		localStorage.setItem("level", x.toString());
 		level_display.innerText = `Level ${this.level}`;
 	}
@@ -441,10 +442,7 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener(
 	"touchstart",
 	() => {
-		if (!document.fullscreenElement)
-			document.documentElement
-				.requestFullscreen()
-				.catch((e) => console.log(e));
+		if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch((e) => console.log(e));
 	},
 	false
 );
@@ -452,9 +450,7 @@ document.addEventListener(
 document.addEventListener(
 	"touchstart",
 	() => {
-		screen.orientation
-			.lock("landscape")
-			.catch((e) => console.log(e));
+		screen.orientation.lock("landscape").catch((e) => console.log(e));
 	},
 	false
 );

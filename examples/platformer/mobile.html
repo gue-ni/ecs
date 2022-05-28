@@ -26,7 +26,7 @@
 			property="og:description"
 			content="A simple 2D pixel art platformer to showcase my entity component system implemented in TypeScript."
 		/>
-		<meta property="og:image" content="" />
+		<meta property="og:image" content="assets/card.png" />
 
 		<!-- Twitter -->
 		<meta property="twitter:card" content="summary_large_image" />
@@ -36,7 +36,7 @@
 			property="twitter:description"
 			content="A simple 2D pixel art platformer to showcase my entity component system implemented in TypeScript."
 		/>
-		<meta property="twitter:image" content="" />
+		<meta property="twitter:image" content="assets/card.png" />
 
 		<script defer src="main.js?reload=1"></script>
 
@@ -50,13 +50,6 @@
 				box-sizing: border-box;
 				background: #000;
 				font-family: Arial, Helvetica, sans-serif;
-
-				-webkit-touch-callout: none; /* iOS Safari */
-				-webkit-user-select: none; /* Safari */
-				-khtml-user-select: none; /* Konqueror HTML */
-				-moz-user-select: none; /* Old versions of Firefox */
-				-ms-user-select: none; /* Internet Explorer/Edge */
-				user-select: none;
 			}
 
 			.container {
@@ -65,6 +58,13 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
+
+				-webkit-touch-callout: none; /* iOS Safari */
+				-webkit-user-select: none; /* Safari */
+				-khtml-user-select: none; /* Konqueror HTML */
+				-moz-user-select: none; /* Old versions of Firefox */
+				-ms-user-select: none; /* Internet Explorer/Edge */
+				user-select: none;
 			}
 
 			.button {
@@ -163,8 +163,5 @@
 			<div class="button small blue" id="button-1" style="left: 10vw; top: 60vh">Button 1</div>
 			<div class="button small blue" id="button-2" style="left: 25vw; top: 60vh">Button 2</div>
 		</div>
-		<!--
-		<script src="main.js"></script>
-		-->
 	</body>
 </html>

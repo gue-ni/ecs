@@ -31,4 +31,4 @@ for key in data:
 
 
 frames[0].save(f'media/gif_{int(time.time())}.gif',  format='GIF', append_images=frames[1:],
-               save_all=True, duration=1000.0 / 25.0, loop=0)
+               save_all=True, duration=1000.0 / 23.0, loop=0)
