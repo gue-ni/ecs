@@ -1,6 +1,7 @@
 import * as ECS from "../../../src";
 import {
 	Sprite,
+	Light,
 	Health,
 	Gravity,
 	Bouncy,
@@ -53,6 +54,13 @@ export class Factory {
 			new Gravity(),
 			new ParticleEmitter(),
 			new Controller(),
+			new Light({
+				image: SPRITESHEET,
+				width: 128,
+				height: 128,
+				emitterSize: new ECS.Vector(size.x, size.y),
+				offset: new ECS.Vector(14 * TILESIZE, 21 * TILESIZE),
+			}),
 			new Health(),
 			new ECS.Player(),
 			new ECS.Input(),
@@ -187,6 +195,13 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Collectible(),
 			new ECS.Position(pos.x, pos.y),
+			new Light({
+				image: SPRITESHEET,
+				width: 16,
+				height: 16,
+				emitterSize: new ECS.Vector(TILESIZE, TILESIZE),
+				offset: new ECS.Vector(10 * TILESIZE, 28 * TILESIZE),
+			}),
 			new Sprite({
 				width: TILESIZE,
 				height: TILESIZE,

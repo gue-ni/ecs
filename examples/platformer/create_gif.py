@@ -4,9 +4,8 @@ import io
 import json
 import base64
 from PIL import Image
-from numpy import append
 
-file = open("img.json", 'r')
+file = open("media/img.json", 'r')
 
 data = json.load(file)
 

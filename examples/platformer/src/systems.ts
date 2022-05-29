@@ -9,6 +9,7 @@ import {
 	CollectibleType,
 	Controller,
 	ParticleEmitter,
+	Light,
 } from "./components";
 
 import { Game, ON_MOBILE, Shake, Sound } from "./main";
@@ -26,9 +27,60 @@ const BUTTONS = {
 	RIGHT: "ArrowRight",
 	UP: "ArrowUp",
 	DOWN: "ArrowDown",
-	JUMP: "KeyC",
-	DASH: "KeyX",
+	JUMP: "KeyV",
+	DASH: "KeyC",
+	HOLD: "KeyX",
 };
+
+export class LightSystem extends ECS.System {
+	private canvas: HTMLCanvasElement;
+	private context: CanvasRenderingContext2D;
+	private readonly darkness: number = 0.6;
+
+	constructor(canvas: HTMLCanvasElement) {
+		super([Light, ECS.Position]);
+
+		this.canvas = document.createElement("canvas");
+		this.context = this.canvas.getContext("2d");
+		this.canvas.width = canvas.width;
+		this.canvas.height = canvas.height;
+	}
+
+	beforeAll = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+		this.context.globalAlpha = 1.0;
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
+		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+		return entities;
+	};
+
+	afterAll = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+		this.context.globalCompositeOperation = "source-over";
+		params.context.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
+		return entities;
+	};
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const light = entity.getComponent(Light) as Light;
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const shaker = params.shaker as Shake;
+
+		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
+
+		this.context.globalCompositeOperation = "destination-out";
+		this.context.drawImage(
+			light.image,
+			light.offset.x,
+			light.offset.y,
+			light.width,
+			light.height,
+			Math.round(position.x + light.emitterSize.x / 2 - light.width / 2 + shaker.OFFSET_X),
+			Math.round(position.y + light.emitterSize.y / 2 - light.height / 2 + shaker.OFFSET_X),
+			light.width,
+			light.height
+		);
+	}
+}
 
 export class ParticleSystem extends ECS.System {
 	constructor() {
@@ -117,17 +169,6 @@ export class SpriteSystem extends ECS.System {
 				sprite.animations.update(params.dt);
 				frame_x = sprite.animations.frameX;
 				frame_y = sprite.animations.frameY;
-
-				/*
-				if (entity.getComponent(Bouncy)) {
-					console.log({
-						frame_x,
-						frame_y,
-						w: sprite.width,
-						h: sprite.height,
-					});
-				}
-				*/
 			}
 
 			params.context.drawImage(
@@ -156,19 +197,15 @@ export class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const controller = entity.getComponent(Controller) as Controller;
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
 
-		/*
-		velocity.x += (forces.x / forces.mass) * params.dt;
-		velocity.y += (forces.y / forces.mass) * params.dt;
-
-		const G = 600;
-		forces.set(0, entity.getComponent(Gravity) ? G * forces.mass : 0);
-		*/
-
-		if (entity.getComponent(Gravity)) velocity.y += GRAVITY * params.dt;
+		if (entity.getComponent(Gravity)) {
+			if (controller && controller.holding) return;
+			velocity.y += GRAVITY * params.dt;
+		}
 	}
 }
 
@@ -355,6 +392,12 @@ export class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 
+		/*
+		if (collider.east || collider.west) {
+			controller.allowed_jumps = 1;
+		}
+		*/
+
 		if (collider.south) {
 			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
@@ -421,12 +464,28 @@ export class MovementSystem extends ECS.System {
 			return;
 		}
 
+		/*
+		if (input.is_key_pressed(BUTTONS.HOLD)) {
+			if ((collider.east || collider.west) && !collider.south && !controller.holding) {
+				console.log("hold");
+				velocity.y = 0;
+				controller.holding = true;
+				controller.allowed_jumps = 1;
+
+				//entity.removeComponent(Gravity);
+				setTimeout(() => (controller.holding = false), 200);
+			}
+		}
+		*/
+
 		if (
-			input.is_key_pressed(BUTTONS.JUMP) &&
+			input.is_key_pressed(BUTTONS.JUMP, 0, true) &&
 			controller.allowed_jumps > 0 &&
 			!controller.dashing &&
 			(collider.south || controller.coyote_time > 0)
 		) {
+			input.disable_until_key_release(BUTTONS.JUMP);
+
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
 

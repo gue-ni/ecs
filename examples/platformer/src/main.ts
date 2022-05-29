@@ -10,6 +10,7 @@ import {
 	ParticleSystem,
 	AnimationSystem,
 	CollectibleSystem,
+	LightSystem,
 } from "./systems";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
@@ -140,101 +141,101 @@ export class Game extends ECS.ECS {
 			return [r, g, b, a];
 		};
 
-		const parseTiles = (x: number, y: number, image: ImageData) => {
+		const parseTile = (x: number, y: number, image: ImageData) => {
 			const t = parse_xy(x, y, image);
 			if (!t) return null;
 
 			let side = "up";
 
-			const tile = "tile";
+			const tl = "tile";
 
 			if (t == "tile") {
 				if (
-					parse_xy(x, y - 1, image) != tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) != tile
+					parse_xy(x, y - 1, image) != tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) != tl
 				) {
 					side = "top-left";
 				} else if (
-					parse_xy(x, y - 1, image) != tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) != tile &&
-					parse_xy(x - 1, y, image) == tile
+					parse_xy(x, y - 1, image) != tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) != tl &&
+					parse_xy(x - 1, y, image) == tl
 				) {
 					side = "top-right";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) != tile &&
-					parse_xy(x + 1, y, image) != tile &&
-					parse_xy(x - 1, y, image) == tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) != tl &&
+					parse_xy(x + 1, y, image) != tl &&
+					parse_xy(x - 1, y, image) == tl
 				) {
 					side = "bottom-right";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) != tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) != tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) != tl
 				) {
 					side = "bottom-left";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile &&
-					parse_xy(x - 1, y - 1, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl &&
+					parse_xy(x - 1, y - 1, image) != tl
 				) {
 					side = "up";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile &&
-					parse_xy(x + 1, y - 1, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl &&
+					parse_xy(x + 1, y - 1, image) != tl
 				) {
 					side = "up";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile &&
-					parse_xy(x + 1, y + 1, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl &&
+					parse_xy(x + 1, y + 1, image) != tl
 				) {
 					side = "down";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile &&
-					parse_xy(x - 1, y + 1, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl &&
+					parse_xy(x - 1, y + 1, image) != tl
 				) {
 					side = "down";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) != tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) != tl
 				) {
 					side = "left";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) != tile &&
-					parse_xy(x - 1, y, image) == tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) != tl &&
+					parse_xy(x - 1, y, image) == tl
 				) {
 					side = "right";
 				} else if (
-					parse_xy(x, y - 1, image) == tile &&
-					parse_xy(x, y + 1, image) != tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile
+					parse_xy(x, y - 1, image) == tl &&
+					parse_xy(x, y + 1, image) != tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl
 				) {
 					side = "down";
 				} else if (
-					parse_xy(x, y - 1, image) != tile &&
-					parse_xy(x, y + 1, image) == tile &&
-					parse_xy(x + 1, y, image) == tile &&
-					parse_xy(x - 1, y, image) == tile
+					parse_xy(x, y - 1, image) != tl &&
+					parse_xy(x, y + 1, image) == tl &&
+					parse_xy(x + 1, y, image) == tl &&
+					parse_xy(x - 1, y, image) == tl
 				) {
 					side = "up";
 				} else {
@@ -244,21 +245,20 @@ export class Game extends ECS.ECS {
 			}
 
 			if (t == "spike") {
-				if (parse_xy(x + 1, y, image) == tile && parse_xy(x - 1, y, image) == null) {
+				if (parse_xy(x + 1, y, image) == tl && parse_xy(x - 1, y, image) == null) {
 					side = "left";
-				} else if (parse_xy(x + 1, y, image) == null && parse_xy(x - 1, y, image) == tile) {
+				} else if (parse_xy(x + 1, y, image) == null && parse_xy(x - 1, y, image) == tl) {
 					side = "right";
-				} else if (parse_xy(x, y - 1, image) == null && parse_xy(x, y + 1, image) == tile) {
-					side = "up"
-				} else if (parse_xy(x, y - 1, image) == tile && parse_xy(x, y + 1, image) == null){
-					side = "down"
+				} else if (parse_xy(x, y - 1, image) == null && parse_xy(x, y + 1, image) == tl) {
+					side = "up";
+				} else if (parse_xy(x, y - 1, image) == tl && parse_xy(x, y + 1, image) == null) {
+					side = "down";
 				} else {
-					side = "up"
+					side = "up";
 				}
 			}
 
-			let object = { x, y, type: t, side };
-			return object;
+			return { x, y, type: t, side };
 		};
 
 		return new Promise((resolve, reject) => {
@@ -278,7 +278,7 @@ export class Game extends ECS.ECS {
 
 				for (let x = 0; x < image.width; x++) {
 					for (let y = 0; y < image.height; y++) {
-						const object = parseTiles(x, y, data);
+						const object = parseTile(x, y, data);
 						if (object) objects.push(object);
 					}
 				}
@@ -363,6 +363,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new AnimationSystem());
 		this.addSystem(new CollectibleSystem());
 		this.addSystem(new SpriteSystem());
+		this.addSystem(new LightSystem(canvas));
 
 		console.log("setup level:", this.level);
 		Game.autoTiling(`assets/level-${this.level}.png`)
@@ -390,7 +391,8 @@ export class Game extends ECS.ECS {
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			//context.fillStyle = BACKGROUND_COLOR;
-			context.fillStyle = "#0F022E";
+			//context.fillStyle = "#0F022E";
+			context.fillStyle = "#170e2e";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			this.shake.update(dt);

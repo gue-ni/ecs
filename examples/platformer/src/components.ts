@@ -137,13 +137,40 @@ export class Collectible extends ECS.Component {
 	t: CollectibleType = CollectibleType.DASH;
 }
 
+export class Light extends ECS.Component {
+	image: HTMLImageElement;
+	width: number;
+	emitterSize: ECS.Vector;
+	height: number;
+	offset: ECS.Vector;
+	time: number = 0;
+	flickering: boolean;
+
+	constructor(params: {
+		image: HTMLImageElement;
+		emitterSize: ECS.Vector;
+		width: number;
+		height: number;
+		offset: ECS.Vector;
+	}) {
+		super();
+		this.image = params.image;
+		this.emitterSize = params.emitterSize;
+		this.width = params.width;
+		this.height = params.height;
+		this.offset = params.offset;
+	}
+}
+
 export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
+	holding: boolean = false;
 	allowed_jumps: number = 1;
 	allowed_dashes: number = 1;
 	goal: ECS.Vector = new ECS.Vector();
 	coyote_time: number = 0;
+
 	current: ECS.Vector = new ECS.Vector();
 }
 
