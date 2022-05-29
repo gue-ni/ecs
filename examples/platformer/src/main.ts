@@ -375,7 +375,8 @@ export class Game extends ECS.ECS {
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
-			context.fillStyle = BACKGROUND_COLOR;
+			//context.fillStyle = BACKGROUND_COLOR;
+			context.fillStyle = "#0F022E";
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			this.shake.update(dt);

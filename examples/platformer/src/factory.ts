@@ -124,7 +124,8 @@ export class Factory {
 			}
 
 			case "middle": {
-				offset.set(TILESIZE * 1, TILESIZE * 1);
+				//offset.set(TILESIZE * ECS.randomInteger(1,2), TILESIZE * 1);
+				offset.set(TILESIZE * (Math.random() > 0.9 ? 2 : 1), TILESIZE * 1);
 				break;
 			}
 		}
@@ -134,7 +135,7 @@ export class Factory {
 
 	static createTile(pos: ECS.Vector, side: string): ECS.Entity {
 		const offset = Factory.tileOffset(side);
-		offset.x += 6 * TILESIZE;
+		offset.x += 10 * TILESIZE;
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
@@ -207,9 +208,9 @@ export class Factory {
 			}),
 			new ECS.Collider({
 				width: TILESIZE,
-				height: 2,
+				height: 4,
 				colliderType: ECS.ColliderType.CUSTOM_SOLID,
-				offset: new ECS.Vector(0, 6),
+				offset: new ECS.Vector(0, 4),
 			})
 		);
 	}
