@@ -108,7 +108,7 @@ export class Game extends ECS.ECS {
 
 	animateBind: FrameRequestCallback = this.animate.bind(this);
 
-	static fetchLevelData(url: string) {
+	static autoTiling(url: string) {
 		const parse_xy = (x: number, y: number, image: ImageData) => {
 			if (x < 0 || x > image.width - 1 || y < 0 || y > image.height - 1) return "tile";
 
@@ -243,6 +243,20 @@ export class Game extends ECS.ECS {
 				}
 			}
 
+			if (t == "spike") {
+				if (parse_xy(x + 1, y, image) == tile && parse_xy(x - 1, y, image) == null) {
+					side = "left";
+				} else if (parse_xy(x + 1, y, image) == null && parse_xy(x - 1, y, image) == tile) {
+					side = "right";
+				} else if (parse_xy(x, y - 1, image) == null && parse_xy(x, y + 1, image) == tile) {
+					side = "up"
+				} else if (parse_xy(x, y - 1, image) == tile && parse_xy(x, y + 1, image) == null){
+					side = "down"
+				} else {
+					side = "up"
+				}
+			}
+
 			let object = { x, y, type: t, side };
 			return object;
 		};
@@ -325,7 +339,7 @@ export class Game extends ECS.ECS {
 				}
 
 				case "spike": {
-					this.addEntity(Factory.createSpike(pos));
+					this.addEntity(Factory.createSpike(pos, side));
 					break;
 				}
 			}
@@ -351,7 +365,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new SpriteSystem());
 
 		console.log("setup level:", this.level);
-		Game.fetchLevelData(`assets/level-${this.level}.png`)
+		Game.autoTiling(`assets/level-${this.level}.png`)
 			.then((json) => {
 				this.data = json;
 				this.createLevel();

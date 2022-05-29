@@ -89,7 +89,7 @@ export class Factory {
 			}
 
 			case "down": {
-				offset.set(ECS.randomInteger(1,2) * TILESIZE, 2 * TILESIZE);
+				offset.set(ECS.randomInteger(1, 2) * TILESIZE, 2 * TILESIZE);
 				break;
 			}
 
@@ -126,6 +126,32 @@ export class Factory {
 			case "middle": {
 				//offset.set(TILESIZE * ECS.randomInteger(1,2), TILESIZE * 1);
 				offset.set(TILESIZE * (Math.random() > 0.9 ? 2 : 1), TILESIZE * 1);
+				break;
+			}
+		}
+
+		return offset;
+	}
+
+	static spikeOffset(side: string): ECS.Vector {
+		const offset = new ECS.Vector();
+
+		switch (side) {
+			case "up": {
+				offset.set(0, 0);
+				break;
+			}
+
+			case "down": {
+				offset.set(1 * TILESIZE, 0);
+				break;
+			}
+			case "left": {
+				offset.set(2 * TILESIZE, 0);
+				break;
+			}
+			case "right": {
+				offset.set(3 * TILESIZE, 0);
 				break;
 			}
 		}
@@ -196,7 +222,9 @@ export class Factory {
 		);
 	}
 
-	static createSpike(pos: ECS.Vector): ECS.Entity {
+	static createSpike(pos: ECS.Vector, side: string): ECS.Entity {
+		const offset = Factory.spikeOffset(side);
+		offset.y += 21 * TILESIZE;
 		return new ECS.Entity().addComponents(
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
@@ -204,13 +232,13 @@ export class Factory {
 				width: TILESIZE,
 				height: TILESIZE,
 				image: SPRITESHEET,
-				offset: new ECS.Vector(0, 21 * TILESIZE),
+				offset: offset,
 			}),
 			new ECS.Collider({
-				width: TILESIZE,
-				height: 4,
+				width: 2,
+				height: 2,
 				colliderType: ECS.ColliderType.CUSTOM_SOLID,
-				offset: new ECS.Vector(0, 4),
+				offset: new ECS.Vector(4, 4),
 			})
 		);
 	}
