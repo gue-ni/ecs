@@ -56,13 +56,13 @@ export class NumberRenderer {
 	constructor(params: { spritesheet: HTMLImageElement; offset: ECS.Vector }) {
 		this.canvas = document.createElement("canvas");
 		this.context = this.canvas.getContext("2d");
-		this.canvas.width = 32;
-		this.canvas.height = 8;
+		this.canvas.width = this.letterSize.x * 10;
+		this.canvas.height = this.letterSize.y;
 		this.spritesheet = params.spritesheet;
 		this.offset = params.offset;
 	}
 
-	renderInteger(context: CanvasRenderingContext2D, x: number, y: number, num: number) {
+	renderNumber(context: CanvasRenderingContext2D, x: number, y: number, num: number) {
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.context.fillStyle = "rgba(0, 0, 0, 0)";
 		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -70,7 +70,7 @@ export class NumberRenderer {
 		let str = num.toString();
 		for (let i = 0; i < str.length; i++) {
 			let digit = parseInt(str[i]);
-			//let digit = 1
+			if (isNaN(digit)) digit = 10;
 
 			this.context.drawImage(
 				this.spritesheet,
@@ -143,6 +143,7 @@ export class Game extends ECS.ECS {
 
 	private then: number = 0;
 	private timer: number = 0;
+	private loaded_at: number = 0;
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
@@ -471,9 +472,25 @@ export class Game extends ECS.ECS {
 			);
 
 			// deaths
-			this.numbers.renderInteger(context, 2 * TILESIZE, TILESIZE, this.deaths);
+			this.numbers.renderNumber(context, 2 * TILESIZE, TILESIZE, this.deaths);
+
+			context.drawImage(
+				SPRITESHEET,
+				7 * TILESIZE,
+				1 * TILESIZE,
+				13,
+				TILESIZE,
+				36 * TILESIZE - 7,
+				TILESIZE,
+				13,
+				TILESIZE
+			);
+
 			// level
-			this.numbers.renderInteger(context, 38 * TILESIZE, TILESIZE, this.level);
+			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
+
+			// time 
+			this.numbers.renderNumber(context, 2 * TILESIZE, 4 * TILESIZE, 0.0);
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
