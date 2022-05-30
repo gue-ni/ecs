@@ -256,7 +256,6 @@ class MobileInputSystem extends System {
 		virtual_joystick.addEventListener("touchmove", (e) => handleTouch(e, virtual_joystick));
 		virtual_joystick.addEventListener("touchend", (e) => {
 			e.preventDefault();
-			console.log("touchend");
 			this.touch_move.set(this.touch_start.x, this.touch_start.y);
 			JOYSTICK.set(0, 0);
 			this.down = false;

@@ -123,6 +123,9 @@
 			.small {
 				height: 25vh;
 				width: 25vh;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 
 			#canvas {
@@ -169,8 +172,10 @@
 			<div class="base" id="base"></div>
 			<div class="top" id="top"></div>
 
-			<div class="button small blue" id="button-1" style="left: 2vw; top: 60vh">Jump</div>
-			<div class="button small blue" id="button-2" style="left: 2vw; top: 20vh">Dash</div>
+			<div class="button small blue" id="button-1" style="left: 2vw; top: 60vh">
+				<div>Jump</div>
+			</div>
+			<div class="button small blue" id="button-2" style="left: 2vw; top: 20vh"><div>Dash</div></div>
 		</div>
 	</body>
 </html>
