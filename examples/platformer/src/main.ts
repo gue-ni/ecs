@@ -20,8 +20,8 @@ const death_count: HTMLElement = document.getElementById("death-count") as HTMLE
 const level_display: HTMLElement = document.getElementById("level-display") as HTMLElement;
 
 export const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-if (ON_MOBILE && !window.location.href.includes("mobile.html")){
-	window.location.href = "mobile.html"
+if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
+	window.location.href = "mobile.html";
 }
 
 export const FOREGROUND_COLOR = "#ffffff";
@@ -460,7 +460,6 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-/*
 document.addEventListener(
 	"touchstart",
 	() => {
@@ -476,5 +475,3 @@ document.addEventListener(
 	},
 	false
 );
-
-*/
