@@ -27,9 +27,9 @@ const BUTTONS = {
 	RIGHT: "ArrowRight",
 	UP: "ArrowUp",
 	DOWN: "ArrowDown",
-	JUMP: "KeyV",
-	DASH: "KeyC",
-	HOLD: "KeyX",
+	JUMP: "KeyC",
+	DASH: "KeyX",
+	HOLD: "KeyY",
 };
 
 export class LightSystem extends ECS.System {
@@ -39,7 +39,6 @@ export class LightSystem extends ECS.System {
 
 	constructor(canvas: HTMLCanvasElement) {
 		super([Light, ECS.Position]);
-
 		this.canvas = document.createElement("canvas");
 		this.context = this.canvas.getContext("2d");
 		this.canvas.width = canvas.width;
@@ -51,12 +50,6 @@ export class LightSystem extends ECS.System {
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 		this.context.fillStyle = `rgba(0, 0, 0, ${this.darkness})`;
 		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-		return entities;
-	};
-
-	afterAll = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
-		this.context.globalCompositeOperation = "source-over";
-		params.context.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
 		return entities;
 	};
 
@@ -80,6 +73,12 @@ export class LightSystem extends ECS.System {
 			light.height
 		);
 	}
+
+	afterAll = (entities: ECS.Entity[], params: ECS.UpdateParams) => {
+		this.context.globalCompositeOperation = "source-over";
+		params.context.drawImage(this.canvas, 0, 0, this.canvas.width, this.canvas.height);
+		return entities;
+	};
 }
 
 export class ParticleSystem extends ECS.System {
@@ -465,26 +464,33 @@ export class MovementSystem extends ECS.System {
 		}
 
 		/*
+		if ((collider.east || collider.west) && Math.abs(velocity.x) > 20) {
+			controller.allowed_jumps = 1;
+		}
+		*/
+
+		/*
 		if (input.is_key_pressed(BUTTONS.HOLD)) {
-			if ((collider.east || collider.west) && !collider.south && !controller.holding) {
+			if ((collider.east || collider.west)) {
 				console.log("hold");
-				velocity.y = 0;
 				controller.holding = true;
 				controller.allowed_jumps = 1;
 
 				//entity.removeComponent(Gravity);
-				setTimeout(() => (controller.holding = false), 200);
+				//setTimeout(() => (controller.holding = false), 200);
 			}
+		} else {
+			controller.holding = false;
 		}
 		*/
 
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, 0, true) &&
-			controller.allowed_jumps > 0 &&
+			input.is_key_pressed(BUTTONS.JUMP, 0, false) &&
 			!controller.dashing &&
-			(collider.south || controller.coyote_time > 0)
+			(collider.south || controller.coyote_time > 0) &&
+			controller.allowed_jumps > 0
 		) {
-			input.disable_until_key_release(BUTTONS.JUMP);
+			//input.disable_until_key_release(BUTTONS.JUMP);
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;

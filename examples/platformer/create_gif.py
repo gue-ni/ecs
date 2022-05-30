@@ -9,6 +9,7 @@ file = open("media/img.json", 'r')
 
 data = json.load(file)
 
+# https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#gif
 
 i = 0
 
@@ -26,8 +27,13 @@ for key in data:
 
     frames.append(img)
 
-    # img.save(f"frames/{key}.png")
+    #img.save(f"media/frames/{key}.png")
 
 
-frames[0].save(f'media/gif_{int(time.time())}.gif',  format='GIF', append_images=frames[1:],
-               save_all=True, duration=1000.0 / 20.0, loop=0)
+fps = 20.0
+timestamp = int(time.time())
+frames[0].save(f'media/video_{timestamp}.gif',  format='GIF', append_images=frames[1:],
+               save_all=True, duration=int(1000.0 / fps), loop=0)
+
+frames[0].save(f'media/video_{timestamp}.webp',  format='WEBP', append_images=frames[1:], quality=100,
+               save_all=True, duration=int(1000.0 / fps), loop=0)
