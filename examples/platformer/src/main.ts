@@ -319,8 +319,7 @@ export class Game extends ECS.ECS {
 
 			image.onload = () => {
 				const cnvs = document.createElement("canvas");
-				cnvs.width = image.width;
-				cnvs.height = image.height;
+				(cnvs.width = image.width), (cnvs.height = image.height);
 				const ctx = cnvs.getContext("2d");
 				ctx.drawImage(image, 0, 0);
 				const data = ctx.getImageData(0, 0, image.width, image.height);
@@ -488,9 +487,6 @@ export class Game extends ECS.ECS {
 
 			// level
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
-
-			// time 
-			this.numbers.renderNumber(context, 2 * TILESIZE, 4 * TILESIZE, 0.0);
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {

@@ -60,18 +60,26 @@
 				justify-content: center;
 			}
 
-			#canvas {
-				width: 640px;
-				height: 360px;
+			.pixelated {
 				image-rendering: pixelated;
 				image-rendering: crisp-edges;
+			}
+
+			.x2 {
+				width: 640px;
+				height: 360px;
+			}
+
+			.x4 {
+				width: 1280px;
+				height: 720px;
 			}
 		</style>
 	</head>
 	<body>
 		<div class="container">
 			<div>
-				<canvas id="canvas" width="320" height="180"></canvas>
+				<canvas class="pixelated x2" id="canvas" width="320" height="180"></canvas>
 				<p>
 					<span id="fps-display">FPS</span>
 				</p>

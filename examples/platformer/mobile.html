@@ -53,7 +53,7 @@
 				height: 100vh;
 				overflow: hidden;
 				box-sizing: border-box;
-				background: #000;
+				background: #060112;
 				font-family: Arial, Helvetica, sans-serif;
 			}
 
@@ -122,6 +122,12 @@
 				border: 1px solid white;
 			}
 
+			.centered {
+				position: relative;
+				transform: translate(-50%, -50%);
+				color: white;
+			}
+
 			.big {
 				width: 50vw;
 				height: 100vh;
@@ -156,6 +162,16 @@
 				.button {
 					display: none;
 				}
+
+				#canvas {
+					display: none;
+				}
+			}
+
+			@media screen and (orientation: landscape) {
+				.centered {
+					display: none;
+				}
 			}
 		</style>
 	</head>
@@ -164,6 +180,10 @@
 			<canvas id="canvas" width="320" height="180"></canvas>
 			<div class="display">
 				<span id="fps-display">FPS</span>
+			</div>
+
+			<div style="position: absolute; left: 50vw; top: 50vh">
+				<div class="centered">Please rotate the screen!</div>
 			</div>
 
 			<div class="button small blue" id="ArrowUp" style="left: 75vw; top: 30vh">
