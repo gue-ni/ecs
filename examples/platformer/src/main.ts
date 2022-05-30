@@ -401,7 +401,7 @@ export class Game extends ECS.ECS {
 		this.level = this.level;
 		this.deaths = this.deaths;
 
-		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
+		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem2() : new ECS.InputSystem(canvas));
 		//this.addSystem(new ECS.InputSystem(canvas));
 		this.addSystem(new MovementSystem());
 		this.addSystem(new CollisionSystem(quadtree));

@@ -407,26 +407,20 @@ export class MovementSystem extends ECS.System {
 
 		const input_dir = new ECS.Vector();
 
-		if (!ON_MOBILE) {
-			if (input.is_key_pressed(BUTTONS.RIGHT)) {
-				controller.goal.x = input_dir.x = 1;
-			} else if (input.is_key_pressed(BUTTONS.LEFT)) {
-				controller.goal.x = input_dir.x = -1;
-			} else {
-				if (collider.south) controller.goal.x = 0;
-			}
-
-			if (input.is_key_pressed(BUTTONS.UP)) {
-				controller.goal.y = input_dir.y = -1;
-			} else if (input.is_key_pressed(BUTTONS.DOWN)) {
-				controller.goal.y = input_dir.y = 1;
-			} else {
-				controller.goal.y = 0;
-			}
+		if (input.is_key_pressed(BUTTONS.RIGHT)) {
+			controller.goal.x = input_dir.x = 1;
+		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
+			controller.goal.x = input_dir.x = -1;
 		} else {
-			controller.goal.x = input.joystick_x;
-			controller.goal.y = input.joystick_y;
-			input_dir.set(input.joystick_x, input.joystick_y);
+			if (collider.south) controller.goal.x = 0;
+		}
+
+		if (input.is_key_pressed(BUTTONS.UP)) {
+			controller.goal.y = input_dir.y = -1;
+		} else if (input.is_key_pressed(BUTTONS.DOWN)) {
+			controller.goal.y = input_dir.y = 1;
+		} else {
+			controller.goal.y = 0;
 		}
 
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);

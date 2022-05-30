@@ -22,6 +22,6 @@ export {
 export { Particle, ParticleEmitter, ParticleSystem } from "./util/particles";
 
 // useful systems & components
-export { Input, InputSystem, MobileInputSystem, MouseButton } from "./systems/input";
+export { Input, InputSystem, MobileInputSystem, MobileInputSystem2, MouseButton } from "./systems/input";
 export { Collider, CollisionSystem } from "./systems/collision";
 export { Position, Velocity, Player, VectorComponent } from "./systems/basic";

@@ -195,10 +195,53 @@ class InputSystem extends System {
 	}
 }
 
+class MobileInputSystem2 extends System {
+	constructor() {
+		super([Input, Player]);
+
+		for (let arrow of ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown"]) {
+			const button = document.querySelector(`#${arrow}`) as HTMLElement;
+			button.ontouchstart = () => {
+				KEYS[arrow] = true;
+			};
+			button.ontouchend = () => {
+				delete KEYS[arrow];
+			};
+		}
+
+		const jump = document.querySelector("#button-1") as HTMLElement;
+		jump.ontouchstart = () => {
+			KEYS["KeyC"] = true;
+		};
+
+		jump.ontouchend = () => {
+			delete KEYS["KeyC"];
+			DISABLED["KeyC"] = false;
+		};
+
+		const dash = document.querySelector("#button-2") as HTMLElement;
+		dash.ontouchstart = () => {
+			KEYS["KeyX"] = true;
+		};
+		dash.ontouchend = () => {
+			delete KEYS["KeyX"];
+			DISABLED["KeyX"] = false;
+		};
+	}
+
+	updateEntity(entity: Entity, params: UpdateParams): void {}
+}
+
 class MobileInputSystem extends System {
 	visible: boolean = false;
-	touch_start: Vector = new Vector(350, 150);
-	touch_move: Vector = new Vector(350, 150);
+	touch_start: Vector = new Vector(
+		document.documentElement.clientWidth * 0.8,
+		document.documentElement.clientHeight * 0.75
+	);
+	touch_move: Vector = new Vector(
+		document.documentElement.clientWidth * 0.8,
+		document.documentElement.clientHeight * 0.75
+	);
 	joystick_base: HTMLElement;
 	joystick_top: HTMLElement;
 	down: boolean = false;
@@ -293,4 +336,4 @@ class MobileInputSystem extends System {
 	updateEntity(entity: Entity, params: UpdateParams): void {}
 }
 
-export { Input, InputSystem, MobileInputSystem, MouseButton };
+export { Input, InputSystem, MobileInputSystem, MobileInputSystem2, MouseButton };
