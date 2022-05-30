@@ -123,14 +123,13 @@ export class AnimationSystem extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 
-		const epsilon = 0.1;
 
 		//console.log("goal", controller.goal.x)
 
 		if (collider.south) {
-			if (controller.goal.x > epsilon) {
+			if (controller.goal.x > 0) {
 				sprite.animations.play("run-right");
-			} else if (controller.goal.x < -epsilon) {
+			} else if (controller.goal.x < 0) {
 				sprite.animations.play("run-left");
 			} else {
 				sprite.animations.play("idle-right");
