@@ -1,6 +1,6 @@
 # Pixel Art Platformer inspired by _Celeste_
 
-![](assets/card.png)
+![](assets/video.webp)
 
 [Play Here!](https://www.jakobmaier.at/projects/ecs/platformer/?ref=github)
 

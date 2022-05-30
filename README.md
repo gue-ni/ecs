@@ -4,7 +4,7 @@ A simple entity-component-system for HTML5 games.
 
 ## Example: a platformer inspired by _Celeste_
 
-![](examples/platformer/assets/card.png)
+![](examples/platformer/assets/video.webp)
 
 [Play Here!](https://www.jakobmaier.at/projects/ecs/platformer/?ref=github)
 
