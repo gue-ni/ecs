@@ -1,15 +1,14 @@
 # ECS - Entity Component System
 
-A simple entity-component-system for HTML5 games. 
+A simple entity-component-system for HTML5 games.
 
-## TODO
+## Example: a platformer inspired by _Celeste_
 
-*	improve design
+![](examples/platformer/assets/card.png)
+
+[Play Here!](https://www.jakobmaier.at/projects/ecs/platformer/?ref=github)
 
 ## Usage
-
-
-
 
 ```TypeScript
 import * as ECS from "lofi-ecs";
@@ -44,7 +43,13 @@ class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: UpdateParams): void {
 		const position = entity.getComponent(Position) as Position;
 		const velocity = entity.getComponent(Velocity) as Velocity;
-		// implement logic here
+
+		position.x = position.x + params.dt * velocity.x;
+		position.y = position.y + params.dt * velocity.y;
+
+		if (position.y < params.canvas.height) {
+			velocity.y += params.dt * GRAVITY;
+		}
 	}
 }
 
