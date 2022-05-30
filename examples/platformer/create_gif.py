@@ -27,7 +27,7 @@ for key in data:
 
     frames.append(img)
 
-    #img.save(f"media/frames/{key}.png")
+    img.save(f"media/frames/{key}.png")
 
 
 fps = 20.0
