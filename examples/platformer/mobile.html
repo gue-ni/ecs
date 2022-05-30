@@ -152,19 +152,11 @@
 				}
 			}
 
-			/*
-			@media only screen and (pointer: coarse) and (min-width: 320px) and (max-width: 812px) and (orientation: portrait) {
-				html {
-					transform: rotate(-90deg);
-					transform-origin: left top;
-					width: 100vh;
-					overflow-x: hidden;
-					position: absolute;
-					top: 100%;
-					left: 0;
+			@media screen and (orientation: portrait) {
+				.button {
+					display: none;
 				}
 			}
-			*/
 		</style>
 	</head>
 	<body>
@@ -174,29 +166,23 @@
 				<span id="fps-display">FPS</span>
 			</div>
 
-			<!--
-			<div class="button big red" id="button-0" style="left: 50%; top: 0"></div>
-			<div class="base" id="base"></div>
-			<div class="top" id="top"></div>
-			-->
-
 			<div class="button small blue" id="ArrowUp" style="left: 75vw; top: 30vh">
 				<div>&UpArrow;</div>
 			</div>
 			<div class="button small blue" id="ArrowDown" style="left: 75vw; top: 70vh">
 				<div>&DownArrow;</div>
 			</div>
-			<div class="button small blue" id="ArrowLeft" style="left: calc(85vw - 40vh); top: 50vh">
+			<div class="button small blue" id="ArrowLeft" style="left: calc(75vw - 20vh); top: 50vh">
 				<div>&LeftArrow;</div>
 			</div>
-			<div class="button small blue" id="ArrowRight" style="left: 85vw; top: 50vh">
+			<div class="button small blue" id="ArrowRight" style="left: calc(75vw + 20vh); top: 50vh">
 				<div>&RightArrow;</div>
 			</div>
 
-			<div class="button small blue" id="button-2" style="left: 2vw; top: 30vh">
+			<div class="button small blue" id="dash" style="left: 2vw; top: 30vh">
 				<div>Dash</div>
 			</div>
-			<div class="button small blue" id="button-1" style="left: 2vw; top: 70vh">
+			<div class="button small blue" id="jump" style="left: 2vw; top: 70vh">
 				<div>Jump</div>
 			</div>
 		</div>

@@ -195,7 +195,7 @@ class InputSystem extends System {
 	}
 }
 
-class MobileInputSystem2 extends System {
+class MobileInputSystem extends System {
 	constructor() {
 		super([Input, Player]);
 
@@ -209,17 +209,16 @@ class MobileInputSystem2 extends System {
 			};
 		}
 
-		const jump = document.querySelector("#button-1") as HTMLElement;
+		const jump = document.querySelector("#jump") as HTMLElement;
 		jump.ontouchstart = () => {
 			KEYS["KeyC"] = true;
 		};
-
 		jump.ontouchend = () => {
 			delete KEYS["KeyC"];
 			DISABLED["KeyC"] = false;
 		};
 
-		const dash = document.querySelector("#button-2") as HTMLElement;
+		const dash = document.querySelector("#dash") as HTMLElement;
 		dash.ontouchstart = () => {
 			KEYS["KeyX"] = true;
 		};
@@ -232,108 +231,6 @@ class MobileInputSystem2 extends System {
 	updateEntity(entity: Entity, params: UpdateParams): void {}
 }
 
-class MobileInputSystem extends System {
-	visible: boolean = false;
-	touch_start: Vector = new Vector(
-		document.documentElement.clientWidth * 0.8,
-		document.documentElement.clientHeight * 0.75
-	);
-	touch_move: Vector = new Vector(
-		document.documentElement.clientWidth * 0.8,
-		document.documentElement.clientHeight * 0.75
-	);
-	joystick_base: HTMLElement;
-	joystick_top: HTMLElement;
-	down: boolean = false;
 
-	constructor() {
-		super([Input, Player]);
 
-		const max_radius = 50;
-
-		const handleTouch = (e: TouchEvent, el: HTMLElement) => {
-			let touch = null;
-			for (let i = 0; i < e.touches.length; i++) {
-				if (el == e.touches[i].target) touch = e.touches[i];
-			}
-			if (!touch) return;
-
-			const x = touch.clientX;
-			const y = touch.clientY;
-
-			if (!this.down) {
-				//console.log("touchstart", e.touches.length);
-				this.down = true;
-				JOYSTICK.set(0, 0);
-				this.touch_start.set(x, y);
-				this.touch_move.set(x, y);
-				return;
-			}
-			//console.log("touchmove", e.touches.length);
-
-			let vec = new Vector(x - this.touch_start.x, y - this.touch_start.y);
-			let mag = vec.magnitude();
-			vec.normalize();
-			vec.scalarMult(Math.min(mag, max_radius));
-			this.touch_move.set(this.touch_start.x + vec.x, this.touch_start.y + vec.y);
-
-			const epsilon = 0.1;
-			let vx = (this.touch_move.x - this.touch_start.x) / max_radius;
-			let vy = (this.touch_move.y - this.touch_start.y) / max_radius;
-
-			JOYSTICK.set(Math.abs(vx) > epsilon ? vx : 0, Math.abs(vy) > epsilon ? vy : 0);
-
-			if (JOYSTICK.isNaN()) {
-				//console.log("NaN", { joy: JOYSTICK, move: this.touch_move, start: this.touch_start });
-				JOYSTICK.set(0, 0);
-			}
-		};
-
-		const virtual_joystick = document.querySelector("#button-0") as HTMLElement;
-		this.joystick_base = document.querySelector("#base") as HTMLElement;
-		this.joystick_top = document.querySelector("#top") as HTMLElement;
-
-		const left_control_bb = virtual_joystick.getBoundingClientRect();
-
-		virtual_joystick.addEventListener("touchstart", (e) => handleTouch(e, virtual_joystick));
-		virtual_joystick.addEventListener("touchmove", (e) => handleTouch(e, virtual_joystick));
-		virtual_joystick.addEventListener("touchend", (e) => {
-			e.preventDefault();
-			this.touch_move.set(this.touch_start.x, this.touch_start.y);
-			JOYSTICK.set(0, 0);
-			this.down = false;
-		});
-
-		const button_1 = document.querySelector("#button-1") as HTMLElement;
-		button_1.addEventListener("touchstart", () => {
-			KEYS["KeyC"] = true;
-		});
-
-		button_1.addEventListener("touchend", () => {
-			delete KEYS["KeyC"];
-			DISABLED["KeyC"] = false;
-		});
-
-		const button_2 = document.querySelector("#button-2") as HTMLElement;
-		button_2.addEventListener("touchstart", () => {
-			KEYS["KeyX"] = true;
-		});
-		button_2.addEventListener("touchend", () => {
-			delete KEYS["KeyX"];
-			DISABLED["KeyX"] = false;
-		});
-	}
-
-	beforeAll(entities: Entity[], params: UpdateParams): void {
-		this.joystick_base.style.left = `${this.touch_start.x - this.joystick_base.offsetWidth / 2}px`;
-		this.joystick_base.style.top = `${this.touch_start.y - this.joystick_base.offsetHeight / 2}px`;
-
-		this.joystick_top.style.left = `${this.touch_move.x - this.joystick_top.offsetWidth / 2}px`;
-		this.joystick_top.style.top = `${this.touch_move.y - this.joystick_top.offsetHeight / 2}px`;
-		//console.log(JOYSTICK.x.toFixed(2), JOYSTICK.y.toFixed(2));
-	}
-
-	updateEntity(entity: Entity, params: UpdateParams): void {}
-}
-
-export { Input, InputSystem, MobileInputSystem, MobileInputSystem2, MouseButton };
+export { Input, InputSystem, MobileInputSystem, MouseButton };
