@@ -16,8 +16,6 @@ import {
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
-const death_count: HTMLElement = document.getElementById("death-count") as HTMLElement;
-const level_display: HTMLElement = document.getElementById("level-display") as HTMLElement;
 
 export const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
@@ -47,6 +45,49 @@ const quadtree = new ECS.QuadTree(
 	2,
 	5
 );
+
+export class NumberRenderer {
+	private canvas: HTMLCanvasElement;
+	private context: CanvasRenderingContext2D;
+	private spritesheet: HTMLImageElement;
+	private offset: ECS.Vector;
+	private letterSize: ECS.Vector = new ECS.Vector(6, 8);
+
+	constructor(params: { spritesheet: HTMLImageElement; offset: ECS.Vector }) {
+		this.canvas = document.createElement("canvas");
+		this.context = this.canvas.getContext("2d");
+		this.canvas.width = 32;
+		this.canvas.height = 8;
+		this.spritesheet = params.spritesheet;
+		this.offset = params.offset;
+	}
+
+	renderInteger(context: CanvasRenderingContext2D, x: number, y: number, num: number) {
+		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.context.fillStyle = "rgba(0, 0, 0, 0)";
+		this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+		let str = num.toString();
+		for (let i = 0; i < str.length; i++) {
+			let digit = parseInt(str[i]);
+			//let digit = 1
+
+			this.context.drawImage(
+				this.spritesheet,
+				this.offset.x + digit * this.letterSize.x,
+				this.offset.y,
+				this.letterSize.x,
+				this.letterSize.y,
+				this.letterSize.x * i,
+				0,
+				this.letterSize.x,
+				this.letterSize.y
+			);
+		}
+
+		context.drawImage(this.canvas, x, y, this.canvas.width, this.canvas.height);
+	}
+}
 
 export class Sound {
 	audioContext: AudioContext;
@@ -105,6 +146,10 @@ export class Game extends ECS.ECS {
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
+	numbers: NumberRenderer = new NumberRenderer({
+		spritesheet: SPRITESHEET,
+		offset: new ECS.Vector(6 * TILESIZE, 0),
+	});
 
 	private frame: number = 0;
 	recording: boolean = false;
@@ -297,7 +342,6 @@ export class Game extends ECS.ECS {
 
 	set deaths(x: number) {
 		localStorage.setItem("deaths", x.toString());
-		death_count.innerText = `${this.deaths} Death${this.deaths > 1 || this.deaths == 0 ? "s" : ""}`;
 	}
 
 	get level() {
@@ -307,7 +351,6 @@ export class Game extends ECS.ECS {
 	set level(x: number) {
 		if (x > this.max_level || x < 1) return;
 		localStorage.setItem("level", x.toString());
-		level_display.innerText = `Level ${this.level}`;
 	}
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
@@ -410,6 +453,27 @@ export class Game extends ECS.ECS {
 				sound: this.sound,
 				shaker: this.shake,
 			});
+
+			/**
+			 * Render UI
+			 */
+
+			context.drawImage(
+				SPRITESHEET,
+				6 * TILESIZE,
+				1 * TILESIZE,
+				TILESIZE,
+				TILESIZE,
+				TILESIZE,
+				TILESIZE,
+				TILESIZE,
+				TILESIZE
+			);
+
+			// deaths
+			this.numbers.renderInteger(context, 2 * TILESIZE, TILESIZE, this.deaths);
+			// level
+			this.numbers.renderInteger(context, 38 * TILESIZE, TILESIZE, this.level);
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
