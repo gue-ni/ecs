@@ -460,18 +460,10 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-document.addEventListener(
-	"touchstart",
-	() => {
-		if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch((e) => console.log(e));
-	},
-	false
-);
+document.ontouchstart = () => {
+	if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch((e) => console.log(e));
+};
 
-document.addEventListener(
-	"touchstart",
-	() => {
-		screen.orientation.lock("landscape").catch((e) => console.log(e));
-	},
-	false
-);
+canvas.ontouchstart = () => {
+	screen.orientation.lock("landscape").catch((e) => console.log(e));
+};

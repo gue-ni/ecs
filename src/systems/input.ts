@@ -206,26 +206,6 @@ class MobileInputSystem extends System {
 	constructor() {
 		super([Input, Player]);
 
-		/*
-		const initialTouch = (e: TouchEvent, el: HTMLElement) => {
-			e.preventDefault();
-
-			let touch = null;
-			for (let i = 0; i < e.touches.length; i++) {
-				if (el == e.touches[i].target) touch = e.touches[i];
-			}
-			if (!touch) return;
-
-			console.log("touchstart", e.touches.length);
-
-			const x = touch.clientX;
-			const y = touch.clientY;
-
-			this.touch_start.set(x, y);
-			this.touch_move.set(x, y);
-		};
-
-		*/
 		const max_radius = 50;
 
 		const handleTouch = (e: TouchEvent, el: HTMLElement) => {
@@ -240,11 +220,10 @@ class MobileInputSystem extends System {
 
 			if (!this.down) {
 				//console.log("touchstart", e.touches.length);
-
 				this.down = true;
+				JOYSTICK.set(0, 0);
 				this.touch_start.set(x, y);
 				this.touch_move.set(x, y);
-				JOYSTICK.set(0, 0);
 				return;
 			}
 			//console.log("touchmove", e.touches.length);
