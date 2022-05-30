@@ -226,7 +226,7 @@ class MobileInputSystem extends System {
 		};
 
 		*/
-		const max_radius = 70;
+		const max_radius = 50;
 
 		const handleTouch = (e: TouchEvent, el: HTMLElement) => {
 			let touch = null;
@@ -239,7 +239,7 @@ class MobileInputSystem extends System {
 			const y = touch.clientY;
 
 			if (!this.down) {
-				console.log("touchstart", e.touches.length);
+				//console.log("touchstart", e.touches.length);
 
 				this.down = true;
 				this.touch_start.set(x, y);
@@ -247,7 +247,7 @@ class MobileInputSystem extends System {
 				JOYSTICK.set(0, 0);
 				return;
 			}
-			console.log("touchmove", e.touches.length);
+			//console.log("touchmove", e.touches.length);
 
 			let vec = new Vector(x - this.touch_start.x, y - this.touch_start.y);
 			let mag = vec.magnitude();
@@ -255,11 +255,14 @@ class MobileInputSystem extends System {
 			vec.scalarMult(Math.min(mag, max_radius));
 			this.touch_move.set(this.touch_start.x + vec.x, this.touch_start.y + vec.y);
 
-			JOYSTICK.x = (this.touch_move.x - this.touch_start.x) / max_radius;
-			JOYSTICK.y = (this.touch_move.y - this.touch_start.y) / max_radius;
+			const epsilon = 0.1;
+			let vx = (this.touch_move.x - this.touch_start.x) / max_radius;
+			let vy = (this.touch_move.y - this.touch_start.y) / max_radius;
+
+			JOYSTICK.set(Math.abs(vx) > epsilon ? vx : 0, Math.abs(vy) > epsilon ? vy : 0);
 
 			if (JOYSTICK.isNaN()) {
-				console.log("NaN", { joy: JOYSTICK, move: this.touch_move, start: this.touch_start });
+				//console.log("NaN", { joy: JOYSTICK, move: this.touch_move, start: this.touch_start });
 				JOYSTICK.set(0, 0);
 			}
 		};
@@ -282,10 +285,9 @@ class MobileInputSystem extends System {
 
 		const button_1 = document.querySelector("#button-1") as HTMLElement;
 		button_1.addEventListener("touchstart", () => {
-			console.log("button-1");
 			KEYS["KeyC"] = true;
 		});
-		
+
 		button_1.addEventListener("touchend", () => {
 			delete KEYS["KeyC"];
 			DISABLED["KeyC"] = false;
@@ -293,20 +295,12 @@ class MobileInputSystem extends System {
 
 		const button_2 = document.querySelector("#button-2") as HTMLElement;
 		button_2.addEventListener("touchstart", () => {
-			console.log("button-2");
 			KEYS["KeyX"] = true;
 		});
 		button_2.addEventListener("touchend", () => {
 			delete KEYS["KeyX"];
 			DISABLED["KeyX"] = false;
 		});
-
-		/*
-		const button_2 = document.querySelector("#button-2") as HTMLElement;
-		button_2.style.display = "flex";
-		button_2.addEventListener("touchstart", () => {});
-		button_2.addEventListener("touchend", () => {});
-		*/
 	}
 
 	beforeAll(entities: Entity[], params: UpdateParams): void {
@@ -315,7 +309,6 @@ class MobileInputSystem extends System {
 
 		this.joystick_top.style.left = `${this.touch_move.x - this.joystick_top.offsetWidth / 2}px`;
 		this.joystick_top.style.top = `${this.touch_move.y - this.joystick_top.offsetHeight / 2}px`;
-
 		//console.log(JOYSTICK.x.toFixed(2), JOYSTICK.y.toFixed(2));
 	}
 
