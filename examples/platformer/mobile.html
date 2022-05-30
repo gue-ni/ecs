@@ -101,9 +101,10 @@
 			}
 
 			.display {
+				font-size: x-small;
 				position: absolute;
-				left: 10vw;
-				top: 10vh;
+				left: 85vw;
+				top: 90vh;
 				color: white;
 			}
 
@@ -127,8 +128,8 @@
 			}
 
 			.small {
-				height: 25vh;
-				width: 25vh;
+				height: 10vw;
+				width: 10vw;
 				border-radius: 50%;
 				display: flex;
 				align-items: center;
@@ -173,29 +174,31 @@
 				<span id="fps-display">FPS</span>
 			</div>
 
-			<div class="button small blue" id="ArrowUp" style="left: 70vw; top: 30vh">
-				<div>Up</div>
-			</div>
-			<div class="button small blue" id="ArrowDown" style="left: 70vw; top: 70vh">
-				<div>Down</div>
-			</div>
-			<div class="button small blue" id="ArrowLeft" style="left: 60vw; top: 50vh">
-				<div>Left</div>
-			</div>
-			<div class="button small blue" id="ArrowRight" style="left: 80vw; top: 50vh">
-				<div>Right</div>
-			</div>
-
 			<!--
 			<div class="button big red" id="button-0" style="left: 50%; top: 0"></div>
 			<div class="base" id="base"></div>
 			<div class="top" id="top"></div>
 			-->
 
-			<div class="button small blue" id="button-1" style="left: 2vw; top: 60vh">
+			<div class="button small blue" id="ArrowUp" style="left: 75vw; top: 30vh">
+				<div>&UpArrow;</div>
+			</div>
+			<div class="button small blue" id="ArrowDown" style="left: 75vw; top: 70vh">
+				<div>&DownArrow;</div>
+			</div>
+			<div class="button small blue" id="ArrowLeft" style="left: calc(85vw - 40vh); top: 50vh">
+				<div>&LeftArrow;</div>
+			</div>
+			<div class="button small blue" id="ArrowRight" style="left: 85vw; top: 50vh">
+				<div>&RightArrow;</div>
+			</div>
+
+			<div class="button small blue" id="button-2" style="left: 2vw; top: 30vh">
+				<div>Dash</div>
+			</div>
+			<div class="button small blue" id="button-1" style="left: 2vw; top: 70vh">
 				<div>Jump</div>
 			</div>
-			<div class="button small blue" id="button-2" style="left: 2vw; top: 20vh"><div>Dash</div></div>
 		</div>
 	</body>
 </html>
