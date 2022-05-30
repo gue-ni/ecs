@@ -20,6 +20,9 @@ const death_count: HTMLElement = document.getElementById("death-count") as HTMLE
 const level_display: HTMLElement = document.getElementById("level-display") as HTMLElement;
 
 export const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+if (ON_MOBILE && !window.location.href.includes("mobile.html")){
+	window.location.href = "mobile.html"
+}
 
 export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#392946";
@@ -355,6 +358,7 @@ export class Game extends ECS.ECS {
 		this.deaths = this.deaths;
 
 		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
+		//this.addSystem(new ECS.InputSystem(canvas));
 		this.addSystem(new MovementSystem());
 		this.addSystem(new CollisionSystem(quadtree));
 		this.addSystem(new PhysicsSystem());

@@ -285,6 +285,7 @@ class MobileInputSystem extends System {
 			console.log("button-1");
 			KEYS["KeyC"] = true;
 		});
+		
 		button_1.addEventListener("touchend", () => {
 			delete KEYS["KeyC"];
 			DISABLED["KeyC"] = false;
