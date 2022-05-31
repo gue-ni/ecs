@@ -68,9 +68,11 @@ class ECS {
 		this.systems = this.systems.filter((s) => s != system);
 	}
 
+	/*
 	private _matching(entity: Entity, system: System) {
 		return system._componentMatch(entity) && entity.active;
 	}
+	*/
 
 	update(params: UpdateParams): void {
 		this._addQueuedEntities();
@@ -84,7 +86,8 @@ class ECS {
 		}
 
 		for (const system of this.systems) {
-			let entities = this.entities.filter((entity) => this._matching(entity, system));
+			//let entities = this.entities.filter((entity) => this._matching(entity, system));
+			let entities = this.entities.filter((entity) => (system.signature == (entity.signature & system.signature)));
 			system.updateSystem(entities, params);
 		}
 

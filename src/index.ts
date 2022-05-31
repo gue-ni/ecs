@@ -2,7 +2,7 @@
 export { ECS, UpdateParams } from "./ecs";
 export { System } from "./system";
 export { Entity, EntityID } from "./entity";
-export { Component, ComponentConstructor, getComponentType } from "./component";
+export { Component, ComponentConstructor, getComponentSignature } from "./component";
 
 // utils
 export { Vector } from "./util/vector";

@@ -1,4 +1,4 @@
-import { Component, ComponentConstructor, ComponentType, getComponentType } from "./component";
+import { Component, ComponentConstructor, Signature, getComponentSignature } from "./component";
 
 let _entities = 0;
 
@@ -9,7 +9,8 @@ class Entity {
 	readonly entityNumber: number;
 	active: boolean;
 	ttl?: number;
-	readonly components = new Map<ComponentType, Component>();
+	signature: number = 0;
+	readonly components = new Map<Signature, Component>();
 
 	constructor(params?: { id?: string; ttl?: number }) {
 		this.active = true;
@@ -26,15 +27,18 @@ class Entity {
 	}
 
 	addComponent(component: Component): Entity {
-		this.components.set(getComponentType(component), component);
+		const signature = getComponentSignature(component)
+		this.signature |= signature;
+		this.components.set(signature, component);
 		return this;
 	}
 
 	removeComponent(component: ComponentConstructor) {
-		const removed = this.components.get(component.type);
+		const removed = this.components.get(component.signature);
 		if (removed) {
 			removed.destroy();
-			this.components.delete(component.type);
+			this.signature ^= component.signature;
+			this.components.delete(component.signature);
 		}
 	}
 
@@ -45,7 +49,7 @@ class Entity {
 	*/
 
 	getComponent(component: ComponentConstructor): Component {
-		return this.components.get(component.type)!;
+		return this.components.get(component.signature)!;
 	}
 
 	_destroy() {

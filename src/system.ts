@@ -6,17 +6,26 @@ abstract class System {
 	private requiredComponents: ComponentConstructor[];
 
 	ecs?: ECS;
+	signature: number;
 
 	constructor(requiredComponents: any[]) {
 		this.requiredComponents = requiredComponents;
 		if (!this.requiredComponents || this.requiredComponents.length === 0)
 			throw new Error("A System must operate on some components!");
+
+		this.signature = 0;
+		for (const component of this.requiredComponents){
+			this.signature |= component.signature;
+		}
+
+		console.log({system_signature: this.signature})
 	}
 
 	get name(): string {
 		return this.constructor.name;
 	}
 
+	/*
 	_componentMatch(entity: Entity): boolean {
 		// TODO improve this
 		for (let required of this.requiredComponents) {
@@ -24,6 +33,7 @@ abstract class System {
 		}
 		return true;
 	}
+	*/
 
 	abstract updateEntity(entity: Entity, params: UpdateParams): void;
 

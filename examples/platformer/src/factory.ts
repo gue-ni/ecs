@@ -49,6 +49,7 @@ export class Factory {
 			]),
 		});
 
+
 		return new ECS.Entity().addComponents(
 			new_sprite,
 			new Gravity(),
