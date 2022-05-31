@@ -29,7 +29,6 @@ const BUTTONS = {
 	DOWN: "ArrowDown",
 	JUMP: "KeyC",
 	DASH: "KeyX",
-	HOLD: "KeyY",
 };
 
 export class LightSystem extends ECS.System {
