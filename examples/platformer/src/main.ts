@@ -17,7 +17,7 @@ const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanva
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
 
-export const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
 	window.location.href = "mobile.html";
 }

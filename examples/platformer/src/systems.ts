@@ -11,7 +11,9 @@ import {
 	ParticleEmitter,
 	Light,
 } from "./components";
-import { Game, ON_MOBILE, Shake, Sound } from "./main";
+import { Game, Shake, Sound } from "./main";
+
+const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 const JUMP = 200;
 const BOUNCE = 350;
@@ -31,10 +33,12 @@ const BUTTONS = {
 	DASH: "KeyX",
 };
 
+console.log({ GRAVITY, ON_MOBILE });
+
 export class LightSystem extends ECS.System {
 	private canvas: HTMLCanvasElement;
 	private context: CanvasRenderingContext2D;
-	private readonly darkness: number = 0.40;
+	private readonly darkness: number = 0.4;
 
 	constructor(canvas: HTMLCanvasElement) {
 		super([Light, ECS.Position]);
