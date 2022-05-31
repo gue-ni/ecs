@@ -85,9 +85,7 @@ class CollisionSystem extends System {
 			}
 		}
 
-		collisions.sort((a, b) => {
-			return a.time - b.time;
-		});
+		collisions.sort((a, b) => a.time - b.time);
 
 		collider.south = collider.east = collider.west = collider.north = false;
 
@@ -127,12 +125,12 @@ class CollisionSystem extends System {
 					case ColliderType.CUSTOM_SOLID: {
 						this.solidResponse(collision, velocity, collider);
 						if (possible[i].entity)
-							this.customSolidResponse(collision, entity, possible[i].entity!, params);
+							this.onSolidCollision(collision, entity, possible[i].entity!, params);
 						break;
 					}
 
 					case ColliderType.CUSTOM: {
-						if (possible[i].entity) this.customResponse(collision, entity, possible[i].entity!, params);
+						if (possible[i].entity) this.onTriggerCollision(collision, entity, possible[i].entity!, params);
 						break;
 					}
 
@@ -143,6 +141,7 @@ class CollisionSystem extends System {
 			}
 		}
 
+		/*
 		let bounce_factor = 0.7;
 
 		if (bounce.x != 0 || bounce.y != 0) {
@@ -154,6 +153,7 @@ class CollisionSystem extends System {
 			velocity.x -= bounce.x * bounce_factor;
 			velocity.y -= bounce.y * bounce_factor;
 		}
+		*/
 	}
 
 	solidResponse(collision: CollisionEvent, velocity: Velocity, collider: Collider) {
@@ -171,9 +171,9 @@ class CollisionSystem extends System {
 		this.solidResponse(collision, velocity, collider);
 	}
 
-	customResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
+	onTriggerCollision(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
 
-	customSolidResponse(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
+	onSolidCollision(collision: CollisionEvent, entity: Entity, target: Entity, params: UpdateParams) {}
 }
 
 export { Collider, CollisionSystem };
