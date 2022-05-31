@@ -254,7 +254,6 @@ export class Game extends ECS.ECS {
 		this.deaths = this.deaths;
 
 		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
-		//this.addSystem(new ECS.InputSystem(canvas));
 		this.addSystem(new MovementSystem());
 		this.addSystem(new CollisionSystem(quadtree));
 		this.addSystem(new PhysicsSystem());
@@ -337,13 +336,11 @@ export class Game extends ECS.ECS {
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
 
 			// fps
-			/*
 			if ((this.timer += dt) > 0.5) {
 				this.timer = 0;
 				this.FPS = (1 / dt).toFixed(2);
 			}
 			this.numbers.renderNumber(context, 36 * TILESIZE, 21 * TILESIZE, parseFloat(this.FPS));
-			*/
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
