@@ -343,7 +343,7 @@ export class SpawnSystem extends ECS.System {
 
 			waiting_for_respawn = true;
 
-			Game.autoTiling(`assets/level-${new_level}.png`)
+			Game.loadLevelFromImage(new_level)
 				.then((json) => {
 					game.clearLevel();
 					game.level = new_level;
