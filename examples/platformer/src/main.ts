@@ -10,6 +10,7 @@ import {
 	AnimationSystem,
 	CollectibleSystem,
 	LightSystem,
+	TileSystem,
 } from "./systems";
 import { parseTile } from "./tiling";
 
@@ -261,6 +262,7 @@ export class Game extends ECS.ECS {
 		this.addSystem(new ParticleSystem());
 		this.addSystem(new AnimationSystem());
 		this.addSystem(new CollectibleSystem());
+		this.addSystem(new TileSystem(canvas));
 		this.addSystem(new SpriteSystem());
 		this.addSystem(new LightSystem(canvas));
 
@@ -318,7 +320,6 @@ export class Game extends ECS.ECS {
 			);
 
 			// deaths
-			/*
 			this.numbers.renderNumber(context, 2 * TILESIZE, TILESIZE, this.deaths);
 
 			context.drawImage(
@@ -335,7 +336,6 @@ export class Game extends ECS.ECS {
 
 			// level
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
-			*/
 
 			// fps
 			if ((this.timer += dt) > 0.5) {

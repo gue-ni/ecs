@@ -72,14 +72,13 @@ export class Factory {
 
 	static createPlatform(pos: ECS.Vector) {
 		return new ECS.Entity().addComponents(
-			new Tile(),
-			new ECS.Position(pos.x, pos.y),
-			new Sprite({
+			new Tile({
 				width: TILESIZE,
 				height: TILESIZE,
 				image: SPRITESHEET,
 				offset: new ECS.Vector(1 * TILESIZE, 28 * TILESIZE),
 			}),
+			new ECS.Position(pos.x, pos.y),
 			new ECS.Collider({
 				width: TILESIZE,
 				height: TILESIZE,
@@ -173,9 +172,8 @@ export class Factory {
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
-			new Tile(),
-			new ECS.Position(pos.x, pos.y),
-			new Sprite({ width: TILESIZE, height: TILESIZE, image: SPRITESHEET, offset })
+			new Tile({ width: TILESIZE, height: TILESIZE, image: SPRITESHEET, offset }),
+			new ECS.Position(pos.x, pos.y)
 		);
 
 		if (side != "middle") {
@@ -243,7 +241,7 @@ export class Factory {
 		return new ECS.Entity().addComponents(
 			new Spike(),
 			new ECS.Position(pos.x, pos.y),
-			new Sprite({
+			new Tile({
 				width: TILESIZE,
 				height: TILESIZE,
 				image: SPRITESHEET,

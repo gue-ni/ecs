@@ -32,13 +32,15 @@ abstract class System {
 	afterAll(entities: Entity[], params: UpdateParams) {}
 
 	updateSystem(entities: Entity[], params: UpdateParams): void {
-		this.beforeAll(entities, params);
+		if (entities.length) {
+			this.beforeAll(entities, params);
 
-		for (let entity of entities) {
-			this.updateEntity(entity, params);
+			for (let entity of entities) {
+				this.updateEntity(entity, params);
+			}
+
+			this.afterAll(entities, params);
 		}
-
-		this.afterAll(entities, params);
 	}
 }
 

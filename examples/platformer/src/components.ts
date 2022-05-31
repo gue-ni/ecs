@@ -85,15 +85,31 @@ export class Animations {
 	}
 }
 
+export class Tile extends ECS.Component {
+	width: number;
+	height: number;
+	image: HTMLImageElement;
+	offset: ECS.Vector;
+
+	constructor(params: { width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement }) {
+		super();
+		this.width = params.width;
+		this.height = params.height;
+		this.image = params.image;
+		this.offset = params.offset ?? new ECS.Vector();
+	}
+}
+
 export class Sprite extends ECS.Component {
 	width: number;
 	height: number;
+	image: HTMLImageElement;
+	offset: ECS.Vector;
+
 	color: string;
 	visible: boolean = true;
-	image: HTMLImageElement;
 	time: number = 0;
 	animations: Animations;
-	offset: ECS.Vector;
 
 	constructor(params: {
 		width: number;
@@ -103,17 +119,18 @@ export class Sprite extends ECS.Component {
 		image?: HTMLImageElement;
 		animations?: Animations;
 	}) {
+		//super({ ...params });
 		super();
+
 		this.width = params.width;
 		this.height = params.height;
-		this.color = params.color ?? "red";
 		this.image = params.image;
 		this.offset = params.offset ?? new ECS.Vector();
+
+		this.color = params.color ?? "red";
 		this.animations = params.animations;
 	}
 }
-
-export class Tile extends ECS.Component {}
 
 export class Health extends ECS.Component {
 	value: number = 100;

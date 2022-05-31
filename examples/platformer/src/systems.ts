@@ -10,6 +10,7 @@ import {
 	Controller,
 	ParticleEmitter,
 	Light,
+	Tile,
 } from "./components";
 import { Game, Shake, Sound } from "./main";
 
@@ -144,6 +145,53 @@ export class AnimationSystem extends ECS.System {
 			}
 		}
 	}
+}
+
+export class TileSystem extends ECS.System {
+	private canvas: HTMLCanvasElement;
+	private context: CanvasRenderingContext2D;
+	private currentLevel: number = -1;
+
+	constructor(canvas: HTMLCanvasElement) {
+		super([Tile, ECS.Position]);
+		this.canvas = document.createElement("canvas");
+		this.context = this.canvas.getContext("2d");
+		this.canvas.width = canvas.width;
+		this.canvas.height = canvas.height;
+	}
+
+	beforeAll(entities: ECS.Entity[], params: ECS.UpdateParams): void {
+		const game = params.game as Game;
+		const shake = params.shaker as Shake;
+
+		if (game.level != this.currentLevel) {
+			this.currentLevel = game.level;
+			console.log("render tiles");
+
+			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+			this.context.fillStyle = `rgba(0, 0, 0, 1.0)`;
+
+			for (const entity of entities) {
+				const tile = entity.getComponent(Tile) as Tile;
+				const position = entity.getComponent(ECS.Position) as ECS.Position;
+				this.context.drawImage(
+					tile.image,
+					tile.offset.x,
+					tile.offset.y,
+					tile.width,
+					tile.height,
+					Math.round(position.x),
+					Math.round(position.y),
+					tile.width,
+					tile.height
+				);
+			}
+		}
+		// render tiles only once
+		params.context.drawImage(this.canvas, shake.OFFSET_X, shake.OFFSET_Y, this.canvas.width, this.canvas.height);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {}
 }
 
 export class SpriteSystem extends ECS.System {
