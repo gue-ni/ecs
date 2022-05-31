@@ -46,8 +46,7 @@
 			html,
 			body {
 				font-family: Arial, Helvetica, sans-serif;
-				margin: 0 !important;
-				padding: 0 !important;
+				margin: 0;
 				width: 100vw;
 				height: 100vh;
 			}
@@ -65,17 +64,12 @@
 				image-rendering: crisp-edges;
 			}
 
-			.x1 {
-				width: 320px;
-				height: 180px;
-			}
-
-			.x2 {
+			.p640 {
 				width: 640px;
 				height: 360px;
 			}
 
-			.x3 {
+			.p1280 {
 				width: 1280px;
 				height: 720px;
 			}
@@ -84,7 +78,7 @@
 	<body>
 		<div class="container">
 			<div>
-				<canvas class="pixelated x2" id="canvas" width="320" height="180"></canvas>
+				<canvas class="pixelated p640" id="canvas" width="320" height="180"></canvas>
 				<p>
 					<span id="fps-display">FPS</span>
 				</p>
