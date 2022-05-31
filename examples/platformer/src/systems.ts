@@ -11,14 +11,13 @@ import {
 	ParticleEmitter,
 	Light,
 } from "./components";
-
 import { Game, ON_MOBILE, Shake, Sound } from "./main";
 
 const JUMP = 200;
 const BOUNCE = 350;
 const SPEED = 110;
 //const GRAVITY = 610;
-const GRAVITY = 510;
+const GRAVITY = ON_MOBILE ? 410 : 610;
 const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
@@ -36,7 +35,7 @@ const BUTTONS = {
 export class LightSystem extends ECS.System {
 	private canvas: HTMLCanvasElement;
 	private context: CanvasRenderingContext2D;
-	private readonly darkness: number = 0.6;
+	private readonly darkness: number = 0.40;
 
 	constructor(canvas: HTMLCanvasElement) {
 		super([Light, ECS.Position]);
@@ -123,7 +122,6 @@ export class AnimationSystem extends ECS.System {
 
 		const controller = entity.getComponent(Controller) as Controller;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
-
 
 		//console.log("goal", controller.goal.x)
 
@@ -224,7 +222,7 @@ export class CollectibleSystem extends ECS.System {
 }
 
 export class CollisionSystem extends ECS.CollisionSystem {
-	customSolidResponse(
+	onSolidCollision(
 		collision: ECS.CollisionEvent,
 		entity: ECS.Entity,
 		target: ECS.Entity,
@@ -267,7 +265,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 		}
 	}
 
-	customResponse(
+	onTriggerCollision(
 		collision: ECS.CollisionEvent,
 		entity: ECS.Entity,
 		target: ECS.Entity,
