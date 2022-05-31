@@ -313,7 +313,7 @@ export class Game extends ECS.ECS {
 				1 * TILESIZE,
 				TILESIZE,
 				TILESIZE,
-				TILESIZE,
+				TILESIZE - 2,
 				TILESIZE,
 				TILESIZE,
 				TILESIZE

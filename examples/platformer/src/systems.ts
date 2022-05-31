@@ -34,7 +34,6 @@ const BUTTONS = {
 	DASH: "KeyX",
 };
 
-console.log({ GRAVITY, ON_MOBILE });
 
 export class LightSystem extends ECS.System {
 	private canvas: HTMLCanvasElement;
@@ -396,7 +395,6 @@ export class SpawnSystem extends ECS.System {
 					game.clearLevel();
 					game.level = new_level;
 					game.data = json;
-					game.deaths = 0;
 					console.log("loaded level", new_level);
 
 					setTimeout(() => {
@@ -406,7 +404,6 @@ export class SpawnSystem extends ECS.System {
 				})
 				.catch((e) => {
 					console.log("error", e);
-					//alert(`ERROR: failed to load level ${level}!`);
 					waiting_for_respawn = false;
 					position.x = ECS.clamp(position.x, 0, params.canvas.width - sprite.width);
 				});
