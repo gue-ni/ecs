@@ -337,11 +337,13 @@ export class Game extends ECS.ECS {
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
 
 			// fps
+			/*
 			if ((this.timer += dt) > 0.5) {
 				this.timer = 0;
 				this.FPS = (1 / dt).toFixed(2);
 			}
 			this.numbers.renderNumber(context, 36 * TILESIZE, 21 * TILESIZE, parseFloat(this.FPS));
+			*/
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
