@@ -331,7 +331,7 @@ export class SpawnSystem extends ECS.System {
 				old_player_pos.x = params.canvas.width - sprite.width;
 			}
 
-			if (new_level == 0) {
+			if (new_level < 0) {
 				position.x = 0;
 				velocity.x = 0;
 				return;

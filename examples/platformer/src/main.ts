@@ -138,7 +138,7 @@ export class Shake {
 }
 
 export class Game extends ECS.ECS {
-	max_level: number = 8;
+	max_level: number = 19;
 	data: any;
 
 	private then: number = 0;
@@ -162,7 +162,12 @@ export class Game extends ECS.ECS {
 			const objects = [];
 
 			const image = new Image();
-			image.src = `assets/level-${level}.png`;
+			//image.src = `assets/level-${level}.png`;
+			let tmp = Math.floor(level / 10);
+			let lvl = level % 10;
+
+			console.log({ tmp, lvl });
+			image.src = `assets/levels-${tmp}.png`;
 			image.onerror = (e) => reject(e);
 
 			image.onload = () => {
@@ -170,7 +175,7 @@ export class Game extends ECS.ECS {
 				(cnvs.width = image.width), (cnvs.height = image.height);
 				const ctx = cnvs.getContext("2d");
 				ctx.drawImage(image, 0, 0);
-				const data = ctx.getImageData(0, 0, image.width, image.height);
+				const data = ctx.getImageData((level % 10) * 40, 0, 40, 23);
 
 				for (let x = 0; x < image.width; x++) {
 					for (let y = 0; y < image.height; y++) {
@@ -193,11 +198,11 @@ export class Game extends ECS.ECS {
 	}
 
 	get level() {
-		return parseInt(localStorage.getItem("level")) || 1;
+		return parseInt(localStorage.getItem("level")) || 0;
 	}
 
 	set level(x: number) {
-		if (x > this.max_level || x < 1) return;
+		if (x > this.max_level || x < 0) return;
 		localStorage.setItem("level", x.toString());
 	}
 
