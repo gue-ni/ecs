@@ -2,9 +2,7 @@
 
 const MAX_COMPONENTS = 35;
 let _component_types = 0;
-let _component_signatures = 0;
 
-// TODO should be bitmask
 type Signature = number;
 
 interface IComponent {
@@ -29,19 +27,13 @@ abstract class Component {
 
 	public static get signature() {
 		if (this._signature == null) {
-			this._signature = 0b1 << _component_signatures++;
+			this._signature = 0b1 << _component_types++;
 		}
 		return this._signature;
 	}
 
 	destroy() {}
 }
-/*
-
-function getComponentType(component: Component): ComponentType {
-	return (component.constructor as ComponentConstructor).type;
-}
-*/
 
 function getComponentSignature(component: Component): Signature {
 	return (component.constructor as ComponentConstructor).signature;

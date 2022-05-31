@@ -27,7 +27,7 @@ class Entity {
 	}
 
 	addComponent(component: Component): Entity {
-		const signature = getComponentSignature(component)
+		const signature = getComponentSignature(component);
 		this.signature |= signature;
 		this.components.set(signature, component);
 		return this;
@@ -41,12 +41,6 @@ class Entity {
 			this.components.delete(component.signature);
 		}
 	}
-
-	/*
-	getComponent<T extends Component>(component: ComponentConstructor): T | undefined {
-		return this.components.get(component.type) as T;
-	}
-	*/
 
 	getComponent(component: ComponentConstructor): Component {
 		return this.components.get(component.signature)!;
