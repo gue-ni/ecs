@@ -163,11 +163,11 @@ export class Game extends ECS.ECS {
 
 			const image = new Image();
 			//image.src = `assets/level-${level}.png`;
-			let tmp = Math.floor(level / 10);
+			let map = Math.floor(level / 10);
 			let lvl = level % 10;
 
-			console.log({ tmp, lvl });
-			image.src = `assets/levels-${tmp}.png`;
+			console.log({ tmp: map, lvl });
+			image.src = `assets/levels-${map}.png`;
 			image.onerror = (e) => reject(e);
 
 			image.onload = () => {
