@@ -15,7 +15,6 @@ import { parseTile } from "./tiling";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
-const fps: HTMLElement = document.getElementById("fps-display") as HTMLElement;
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
@@ -141,6 +140,7 @@ export class Game extends ECS.ECS {
 	max_level: number = 19;
 	data: any;
 
+	private FPS: string = "0";
 	private then: number = 0;
 	private timer: number = 0;
 
@@ -283,11 +283,6 @@ export class Game extends ECS.ECS {
 		this.then = now;
 		if (dt > 1 / 30) dt = 1 / 30;
 
-		if ((this.timer += dt) > 0.5) {
-			this.timer = 0;
-			fps.innerText = `${(1 / dt).toFixed(2)} FPS`;
-		}
-
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
 			//context.fillStyle = BACKGROUND_COLOR;
@@ -340,6 +335,13 @@ export class Game extends ECS.ECS {
 
 			// level
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
+
+			// fps
+			if ((this.timer += dt) > 0.5) {
+				this.timer = 0;
+				this.FPS = (1 / dt).toFixed(2);
+			}
+			this.numbers.renderNumber(context, 36 * TILESIZE, 21 * TILESIZE, parseFloat(this.FPS));
 
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
