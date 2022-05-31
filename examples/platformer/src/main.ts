@@ -318,6 +318,7 @@ export class Game extends ECS.ECS {
 			);
 
 			// deaths
+			/*
 			this.numbers.renderNumber(context, 2 * TILESIZE, TILESIZE, this.deaths);
 
 			context.drawImage(
@@ -334,6 +335,7 @@ export class Game extends ECS.ECS {
 
 			// level
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
+			*/
 
 			// fps
 			if ((this.timer += dt) > 0.5) {
