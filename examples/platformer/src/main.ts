@@ -138,7 +138,7 @@ export class Shake {
 }
 
 export class Game extends ECS.ECS {
-	max_level: number = 19;
+	level_num: number = 24;
 	data: any;
 
 	private FPS: string = "0";
@@ -152,8 +152,8 @@ export class Game extends ECS.ECS {
 		offset: new ECS.Vector(6 * TILESIZE, 0),
 	});
 
-	private frame: number = 0;
 	recording: boolean = false;
+	private frame: number = 0;
 	private frameTimer: number = 0;
 
 	static loadLevelFromImage(level: number) {
@@ -210,12 +210,12 @@ export class Game extends ECS.ECS {
 	}
 
 	set level(x: number) {
-		if (x > this.max_level || x < 0) return;
+		if (x > this.level_num - 1 || x < 0) return;
 		localStorage.setItem("level", x.toString());
 	}
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
-		const TILESIZE = 8;
+		const biome = Math.floor(this.level / 10)
 		for (const { x, y, type, side } of this.data) {
 			const pos = new ECS.Vector(x * TILESIZE, y * TILESIZE);
 
@@ -226,7 +226,8 @@ export class Game extends ECS.ECS {
 				}
 
 				case "tile": {
-					this.addEntity(Factory.createTile(pos, side));
+					this.addEntity(Factory.createTile(pos, side, biome));
+
 					break;
 				}
 
@@ -271,7 +272,7 @@ export class Game extends ECS.ECS {
 					console.log("new version", info.version, version);
 					localStorage.setItem("version", info.version);
 
-					for (let i = 0; i < Math.ceil(this.max_level / 10); i++) {
+					for (let i = 0; i < Math.ceil(this.level_num / 10); i++) {
 						let filename = `assets/levels-${i}.png`;
 						console.log("invalidate", filename);
 						localStorage.removeItem(filename);

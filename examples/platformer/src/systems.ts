@@ -382,7 +382,7 @@ export class SpawnSystem extends ECS.System {
 				position.x = 0;
 				velocity.x = 0;
 				return;
-			} else if (new_level > game.max_level) {
+			} else if (new_level > game.level_num) {
 				position.x = params.canvas.width - sprite.width;
 				velocity.x = 0;
 				return;

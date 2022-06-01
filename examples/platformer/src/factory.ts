@@ -60,7 +60,7 @@ export class Factory {
 				width: 128,
 				height: 128,
 				emitterSize: new ECS.Vector(size.x, size.y),
-				offset: new ECS.Vector(14 * TILESIZE, 21 * TILESIZE),
+				offset: new ECS.Vector(14 * TILESIZE, 27 * TILESIZE),
 			}),
 			new Health(),
 			new ECS.Player(),
@@ -167,9 +167,9 @@ export class Factory {
 		return offset;
 	}
 
-	static createTile(pos: ECS.Vector, side: string): ECS.Entity {
+	static createTile(pos: ECS.Vector, side: string, biome: number = 2): ECS.Entity {
 		const offset = Factory.tileOffset(side);
-		offset.x += 10 * TILESIZE;
+		offset.x += (biome * 4) * TILESIZE;
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
