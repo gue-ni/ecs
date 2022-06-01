@@ -34,10 +34,10 @@ export const BACKGROUND_COLOR = "#000";
 
 export const TILESIZE = 8;
 
+let paused = true;
 export const SPRITESHEET = new Image();
 SPRITESHEET.src = "assets/spritesheet.png";
-
-let paused = false;
+SPRITESHEET.onload = () => (paused = false);
 
 const quadtree = new ECS.QuadTree(
 	0,
@@ -156,36 +156,43 @@ export class Game extends ECS.ECS {
 	recording: boolean = false;
 	private frameTimer: number = 0;
 
-	animateBind: FrameRequestCallback = this.animate.bind(this);
-
 	static loadLevelFromImage(level: number) {
-		return new Promise((resolve, reject) => {
+		const parseTiles = (data: ImageData) => {
 			const objects = [];
+			for (let x = 0; x < 40; x++) {
+				for (let y = 0; y < 23; y++) {
+					const object = parseTile(x, y, data);
+					if (object) objects.push(object);
+				}
+			}
+			return objects;
+		};
+
+		return new Promise((resolve, reject) => {
+			const map_num = Math.floor(level / 10);
+			const filename = `assets/levels-${map_num}.png`;
+
+			const cached = localStorage.getItem(filename);
 
 			const image = new Image();
-			//image.src = `assets/level-${level}.png`;
-			let map = Math.floor(level / 10);
-			let lvl = level % 10;
-
-			console.log({ tmp: map, lvl });
-			image.src = `assets/levels-${map}.png`;
-			image.onerror = (e) => reject(e);
-
+			image.src = cached || filename;
 			image.onload = () => {
 				const cnvs = document.createElement("canvas");
 				(cnvs.width = image.width), (cnvs.height = image.height);
 				const ctx = cnvs.getContext("2d");
 				ctx.drawImage(image, 0, 0);
-				const data = ctx.getImageData((level % 10) * 40, 0, 40, 23);
 
-				for (let x = 0; x < image.width; x++) {
-					for (let y = 0; y < image.height; y++) {
-						const object = parseTile(x, y, data);
-						if (object) objects.push(object);
-					}
+				if (!localStorage.getItem(filename)) {
+					localStorage.setItem(filename, cnvs.toDataURL());
 				}
 
+				const data = ctx.getImageData((level % 10) * 40, 0, 40, 23);
+				const objects = parseTiles(data);
 				resolve(objects);
+			};
+			image.onerror = (e) => {
+				console.log("error loading iamge");
+				reject(e);
 			};
 		});
 	}
@@ -250,31 +257,52 @@ export class Game extends ECS.ECS {
 		this.clearEntities();
 	}
 
-	setup() {
+	async setup() {
 		this.level = this.level;
 		this.deaths = this.deaths;
 
-		this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
-		this.addSystem(new MovementSystem());
-		this.addSystem(new CollisionSystem(quadtree));
-		this.addSystem(new PhysicsSystem());
-		this.addSystem(new SpawnSystem());
-		this.addSystem(new ParticleSystem());
-		this.addSystem(new AnimationSystem());
-		this.addSystem(new CollectibleSystem());
-		this.addSystem(new TileSystem(canvas));
-		this.addSystem(new SpriteSystem());
-		this.addSystem(new LightSystem(canvas));
+		fetch(`assets/info.json`)
+			.then((res) => res.json())
+			.then((info) => {
+				console.log({ info });
 
-		console.log("setup level:", this.level);
-		Game.loadLevelFromImage(this.level)
-			.then((json) => {
-				this.data = json;
-				this.createLevel();
-				this.animate(0);
+				const version = localStorage.getItem("version");
+				if (version != info.version) {
+					console.log("new version", info.version, version);
+					localStorage.setItem("version", info.version);
+
+					for (let i = 0; i < Math.ceil(this.max_level / 10); i++) {
+						let filename = `assets/levels-${i}.png`;
+						console.log("invalidate", filename);
+						localStorage.removeItem(filename);
+					}
+				}
+
+				this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
+				this.addSystem(new MovementSystem());
+				this.addSystem(new CollisionSystem(quadtree));
+				this.addSystem(new PhysicsSystem());
+				this.addSystem(new SpawnSystem());
+				this.addSystem(new ParticleSystem());
+				this.addSystem(new AnimationSystem());
+				this.addSystem(new CollectibleSystem());
+				this.addSystem(new TileSystem(canvas));
+				this.addSystem(new SpriteSystem());
+				this.addSystem(new LightSystem(canvas));
+
+				console.log("setup level:", this.level);
+				Game.loadLevelFromImage(this.level)
+					.then((json) => {
+						this.data = json;
+						this.createLevel();
+						this.animate(0);
+					})
+					.catch((e) => {
+						console.log("failed to load level", e);
+					});
 			})
 			.catch((e) => {
-				console.log("failed to load level", e);
+				console.log(e);
 			});
 	}
 
@@ -307,6 +335,7 @@ export class Game extends ECS.ECS {
 			 * Render UI
 			 */
 
+			// little skull
 			context.drawImage(
 				SPRITESHEET,
 				6 * TILESIZE,
@@ -322,6 +351,7 @@ export class Game extends ECS.ECS {
 			// deaths
 			this.numbers.renderNumber(context, 2 * TILESIZE, TILESIZE, this.deaths);
 
+			// lvl
 			context.drawImage(
 				SPRITESHEET,
 				7 * TILESIZE,
@@ -334,7 +364,7 @@ export class Game extends ECS.ECS {
 				TILESIZE
 			);
 
-			// level
+			// level number
 			this.numbers.renderNumber(context, 37 * TILESIZE, TILESIZE, this.level);
 
 			// fps
@@ -353,7 +383,7 @@ export class Game extends ECS.ECS {
 			}
 		}
 
-		requestAnimationFrame(this.animateBind);
+		requestAnimationFrame(this.animate.bind(this));
 	}
 }
 

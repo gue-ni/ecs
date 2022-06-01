@@ -12,7 +12,7 @@ import {
 	Light,
 	Tile,
 } from "./components";
-import { Game, Shake, Sound } from "./main";
+import { Game, Shake, Sound, TILESIZE } from "./main";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -33,7 +33,6 @@ const BUTTONS = {
 	JUMP: "KeyC",
 	DASH: "KeyX",
 };
-
 
 export class LightSystem extends ECS.System {
 	private canvas: HTMLCanvasElement;
@@ -165,7 +164,7 @@ export class TileSystem extends ECS.System {
 
 		if (game.level != this.currentLevel) {
 			this.currentLevel = game.level;
-			console.log("render tiles");
+			console.log("render tiles", entities.length);
 
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 			this.context.fillStyle = `rgba(0, 0, 0, 1.0)`;
@@ -266,7 +265,8 @@ export class CollectibleSystem extends ECS.System {
 		this.time += params.dt;
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const value = Math.sin(this.time + entity.entityNumber) * 0.2;
+		let s = Math.sin(this.time * 3 + entity.entityNumber);
+		const value = s * 0.2;
 		position.y += value;
 	}
 }
