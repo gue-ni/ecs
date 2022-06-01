@@ -472,7 +472,7 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
-		if (input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0 && !collider.south) {
+		if (input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0) {
 			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
