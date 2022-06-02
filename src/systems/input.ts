@@ -217,20 +217,9 @@ class MobileInputSystem extends System {
 			delete KEYS["KeyC"];
 			DISABLED["KeyC"] = false;
 		};
-
-		const dash = document.querySelector("#dash") as HTMLElement;
-		dash.ontouchstart = () => {
-			KEYS["KeyX"] = true;
-		};
-		dash.ontouchend = () => {
-			delete KEYS["KeyX"];
-			DISABLED["KeyX"] = false;
-		};
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {}
 }
-
-
 
 export { Input, InputSystem, MobileInputSystem, MouseButton };
