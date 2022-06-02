@@ -19,12 +19,11 @@ const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini
 const JUMP = 200;
 const BOUNCE = 350;
 const SPEED = 110;
-//const GRAVITY = 610;
-const GRAVITY = ON_MOBILE ? 450 : 610;
+const GRAVITY = ON_MOBILE ? 500 : 610;
 const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
-const ACCELERATION = 25;
+const ACCELERATION = 15;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
