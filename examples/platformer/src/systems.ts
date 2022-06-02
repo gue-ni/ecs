@@ -136,11 +136,7 @@ export class AnimationSystem extends ECS.System {
 				sprite.animations.play(controller.last_dir > 0 ? "idle-right" : "idle-left");
 			}
 		} else {
-			if (controller.goal.x >= 0) {
-				sprite.animations.play("jump-right");
-			} else {
-				sprite.animations.play("jump-left");
-			}
+			sprite.animations.play(controller.last_dir > 0 ? "jump-right" : "jump-left");
 		}
 	}
 }
@@ -164,7 +160,6 @@ export class TileSystem extends ECS.System {
 
 		if (game.level != this.currentLevel) {
 			this.currentLevel = game.level;
-			console.log("render tiles", entities.length);
 
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 			this.context.fillStyle = `rgba(0, 0, 0, 1.0)`;
@@ -469,9 +464,6 @@ export class MovementSystem extends ECS.System {
 			controller.goal.y = 0;
 		}
 
-		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
-		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
-
 		if (
 			(ON_MOBILE ? input.is_key_pressed(BUTTONS.JUMP, 0, true) : input.is_key_pressed(BUTTONS.JUMP)) &&
 			!controller.dashing &&
@@ -527,11 +519,8 @@ export class MovementSystem extends ECS.System {
 			return;
 		}
 
-		/*
-		if ((collider.east || collider.west) && Math.abs(velocity.x) > 20) {
-			controller.allowed_jumps = 1;
-		}
-		*/
+		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
+		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (!controller.dashing) {
 			if (!collider.south && input_dir.x == 0 && input_dir.y == 0) {
