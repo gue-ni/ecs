@@ -183,6 +183,7 @@ export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
 	holding: boolean = false;
+	last_dir: number = 1;
 	allowed_jumps: number = 1;
 	allowed_dashes: number = 1;
 	goal: ECS.Vector = new ECS.Vector();

@@ -133,7 +133,7 @@ export class AnimationSystem extends ECS.System {
 			} else if (controller.goal.x < 0) {
 				sprite.animations.play("run-left");
 			} else {
-				sprite.animations.play("idle-right");
+				sprite.animations.play(controller.last_dir > 0 ? "idle-right" : "idle-left");
 			}
 		} else {
 			if (controller.goal.x >= 0) {
@@ -454,9 +454,9 @@ export class MovementSystem extends ECS.System {
 		const input_dir = new ECS.Vector();
 
 		if (input.is_key_pressed(BUTTONS.RIGHT)) {
-			controller.goal.x = input_dir.x = 1;
+			controller.goal.x = input_dir.x = controller.last_dir = +1;
 		} else if (input.is_key_pressed(BUTTONS.LEFT)) {
-			controller.goal.x = input_dir.x = -1;
+			controller.goal.x = input_dir.x = controller.last_dir = -1;
 		} else {
 			if (collider.south) controller.goal.x = 0;
 		}
@@ -473,14 +473,15 @@ export class MovementSystem extends ECS.System {
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, 0, true) &&
+			(ON_MOBILE ? input.is_key_pressed(BUTTONS.JUMP, 0, true) : input.is_key_pressed(BUTTONS.JUMP)) &&
 			!controller.dashing &&
 			(collider.south || controller.coyote_time > 0) &&
 			controller.allowed_jumps > 0
 		) {
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
-			input.disable_until_key_release(BUTTONS.JUMP);
+
+			if (ON_MOBILE) input.disable_until_key_release(BUTTONS.JUMP);
 
 			controller.jumping = true;
 			setTimeout(() => (controller.jumping = false), 50);

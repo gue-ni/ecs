@@ -41,14 +41,13 @@ export class Factory {
 			offset: new ECS.Vector(TILESIZE * 8, TILESIZE * 1),
 			animations: new Animations([
 				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
-				new Animation({ name: "idle-left", y: 1, repeat: true }),
+				new Animation({ name: "idle-left", y: 5, frames: 6, repeat: true }),
 				new Animation({ name: "jump-right", y: 2, repeat: true }),
 				new Animation({ name: "jump-left", y: 3, repeat: true }),
 				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
 				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
 			]),
 		});
-
 
 		return new ECS.Entity().addComponents(
 			new_sprite,
@@ -169,7 +168,7 @@ export class Factory {
 
 	static createTile(pos: ECS.Vector, side: string, biome: number = 2): ECS.Entity {
 		const offset = Factory.tileOffset(side);
-		offset.x += (biome * 4) * TILESIZE;
+		offset.x += biome * 4 * TILESIZE;
 		offset.y += 24 * TILESIZE;
 
 		const e = new ECS.Entity().addComponents(
