@@ -472,16 +472,20 @@ export class MovementSystem extends ECS.System {
 		controller.current.x = ECS.approach(controller.goal.x, controller.current.x, params.dt * ACCELERATION);
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
-		if (input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0) {
+		if (
+			ON_MOBILE
+				? input.is_key_pressed(BUTTONS.JUMP) && controller.allowed_dashes > 0 && !collider.south
+				: input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0
+		) {
 			const x = Math.abs(input_dir.x) >= Math.abs(input_dir.y) ? input_dir.x : 0;
 			const y = Math.abs(input_dir.y) >= Math.abs(input_dir.x) ? input_dir.y : 0;
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
-			if (dash.isNaN()) {
-				return;
-			}
+			if (dash.isNaN()) return;
+			
 
 			input.disable_until_key_release(BUTTONS.DASH);
+			input.disable_until_key_release(BUTTONS.JUMP);
 
 			(params.sound as Sound).play(150, 200, 0.5);
 			(params.shaker as Shake).shake();
@@ -509,28 +513,12 @@ export class MovementSystem extends ECS.System {
 		}
 		*/
 
-		/*
-		if (input.is_key_pressed(BUTTONS.HOLD)) {
-			if ((collider.east || collider.west)) {
-				console.log("hold");
-				controller.holding = true;
-				controller.allowed_jumps = 1;
-
-				//entity.removeComponent(Gravity);
-				//setTimeout(() => (controller.holding = false), 200);
-			}
-		} else {
-			controller.holding = false;
-		}
-		*/
-
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, 0, false) &&
+			input.is_key_pressed(BUTTONS.JUMP, 0) &&
 			!controller.dashing &&
 			(collider.south || controller.coyote_time > 0) &&
 			controller.allowed_jumps > 0
 		) {
-			//input.disable_until_key_release(BUTTONS.JUMP);
 
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
