@@ -146,6 +146,7 @@ enum ColliderType {
 	BOUNCE,
 	CUSTOM,
 	CUSTOM_SOLID,
+	SOLID_FROM_TOP,
 }
 
 class Rectangle {

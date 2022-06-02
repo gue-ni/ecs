@@ -55,16 +55,13 @@ class CollisionSystem extends System {
 
 			this.quadtree.insert(collider.aabb);
 		}
-		if (params.context) {
-			//this.quadtree.debug_draw(params.context, "#A0A0A0");
-		}
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
 		const velocity = entity.getComponent(Velocity) as Velocity;
 		if (!velocity) return;
 
-		const context = params.context!;
+		const velocity_before_collision = new Vector(velocity.x, velocity.y);
 		const collider = entity.getComponent(Collider) as Collider;
 
 		/*
@@ -72,47 +69,28 @@ class CollisionSystem extends System {
 		 collisons must be checked in new position, not in old 
 		*/
 		//const possible = this.quadtree.query(collider.aabb);
-		const possible = this.quadtree.all();
+		const colliders = this.quadtree.all();
 
 		const collisions = [];
 
-		for (let i = 0; i < possible.length; i++) {
-			if (possible[i].entity === entity) continue;
+		// detect collisions
+		for (let i = 0; i < colliders.length; i++) {
+			if (colliders[i].entity === entity) continue;
 
-			const collision = DynamicRectVsRect(collider.aabb, possible[i], params.dt);
-			if (collision) {
-				collisions.push({ i, time: collision.time });
-			}
+			const collision = DynamicRectVsRect(collider.aabb, colliders[i], params.dt);
+			if (collision) collisions.push({ i, time: collision.time });
 		}
 
 		collisions.sort((a, b) => a.time - b.time);
 
 		collider.south = collider.east = collider.west = collider.north = false;
 
-		let bounce = new Vector();
-
+		// handle collisions
 		for (let { i } of collisions) {
-			const collision = DynamicRectVsRect(collider.aabb, possible[i], params.dt);
+			const collision = DynamicRectVsRect(collider.aabb, colliders[i], params.dt);
 			if (collision) {
-				switch (possible[i].type) {
+				switch (colliders[i].type) {
 					case ColliderType.BOUNCE: {
-						if (collision.contact_normal.x != 0) {
-							if (collision.contact_normal.x > 0) {
-								bounce.x = Math.min(bounce.x, velocity.x);
-							} else {
-								bounce.x = Math.max(bounce.x, velocity.x);
-							}
-							//console.log(velocity.x, bounce.x);
-						}
-
-						if (collision.contact_normal.y != 0) {
-							if (collision.contact_normal.y > 0) {
-								bounce.y = Math.min(bounce.y, velocity.y);
-							} else {
-								bounce.y = Math.max(bounce.y, velocity.y);
-							}
-						}
-
 						this.solidResponse(collision, velocity, collider);
 						break;
 					}
@@ -122,15 +100,22 @@ class CollisionSystem extends System {
 						break;
 					}
 
+					case ColliderType.SOLID_FROM_TOP: {
+						if (collision.contact_normal.y < 0) {
+							this.solidResponse(collision, velocity, collider);
+						}
+						break;
+					}
+
 					case ColliderType.CUSTOM_SOLID: {
 						this.solidResponse(collision, velocity, collider);
-						if (possible[i].entity)
-							this.onSolidCollision(collision, entity, possible[i].entity!, params);
+						if (colliders[i].entity) this.onSolidCollision(collision, entity, colliders[i].entity!, params);
 						break;
 					}
 
 					case ColliderType.CUSTOM: {
-						if (possible[i].entity) this.onTriggerCollision(collision, entity, possible[i].entity!, params);
+						if (colliders[i].entity)
+							this.onTriggerCollision(collision, entity, colliders[i].entity!, params);
 						break;
 					}
 
@@ -140,20 +125,6 @@ class CollisionSystem extends System {
 				}
 			}
 		}
-
-		/*
-		let bounce_factor = 0.7;
-
-		if (bounce.x != 0 || bounce.y != 0) {
-			console.log({ bounce });
-
-			bounce.x = Math.abs(bounce.x) > Math.abs(bounce.y) ? bounce.x : 0;
-			bounce.y = Math.abs(bounce.y) > Math.abs(bounce.x) ? bounce.y : 0;
-
-			velocity.x -= bounce.x * bounce_factor;
-			velocity.y -= bounce.y * bounce_factor;
-		}
-		*/
 	}
 
 	solidResponse(collision: CollisionEvent, velocity: Velocity, collider: Collider) {

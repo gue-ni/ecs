@@ -83,7 +83,7 @@ export class Factory {
 			new ECS.Collider({
 				width: TILESIZE,
 				height: TILESIZE,
-				colliderType: ECS.ColliderType.CUSTOM_SOLID,
+				colliderType: ECS.ColliderType.SOLID_FROM_TOP,
 			})
 		);
 	}
