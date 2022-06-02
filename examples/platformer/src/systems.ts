@@ -490,7 +490,7 @@ export class MovementSystem extends ECS.System {
 
 		if (
 			ON_MOBILE
-				? input.is_key_pressed(BUTTONS.JUMP) &&
+				? input.is_key_pressed(BUTTONS.JUMP, 0, true) &&
 				  controller.allowed_dashes > 0 &&
 				  !collider.south &&
 				  controller.coyote_time < 0
