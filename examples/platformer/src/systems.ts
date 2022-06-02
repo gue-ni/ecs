@@ -473,13 +473,14 @@ export class MovementSystem extends ECS.System {
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (
-			input.is_key_pressed(BUTTONS.JUMP, 0) &&
+			input.is_key_pressed(BUTTONS.JUMP, 0, true) &&
 			!controller.dashing &&
 			(collider.south || controller.coyote_time > 0) &&
 			controller.allowed_jumps > 0
 		) {
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
+			input.disable_until_key_release(BUTTONS.JUMP);
 
 			controller.jumping = true;
 			setTimeout(() => (controller.jumping = false), 50);
