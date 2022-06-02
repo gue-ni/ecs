@@ -19,7 +19,7 @@ export {
 	RayVsRect,
 	DynamicRectVsRect,
 } from "./util/collision";
-export { Particle, ParticleEmitter, ParticleSystem } from "./util/particles";
+export { Particle,  ParticleSystem } from "./util/particles";
 
 // useful systems & components
 export { Input, InputSystem, MobileInputSystem, MouseButton } from "./systems/input";

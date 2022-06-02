@@ -203,7 +203,7 @@ export class ParticleEmitter extends ECS.Component {
 		maxCount: 500,
 		particlesPerSecond: 150,
 		speed: 0,
-		color: FOREGROUND_COLOR,
+		color: "random",
 	});
 
 	dust: ECS.ParticleSystem = new ECS.ParticleSystem({
@@ -212,7 +212,6 @@ export class ParticleEmitter extends ECS.Component {
 		minSize: 1,
 		maxSize: 2,
 		maxCount: 20,
-		color: FOREGROUND_COLOR,
 		offset: new ECS.Vector(0, 7),
 		drag: 0.3,
 		speed: 50,
@@ -242,7 +241,6 @@ export class ParticleEmitter extends ECS.Component {
 	jump: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.1,
 		maxTTL: 0.4,
-		color: FOREGROUND_COLOR,
 		minSize: 1,
 		maxSize: 2,
 		offset: new ECS.Vector(0, 8),
@@ -259,7 +257,6 @@ export class ParticleEmitter extends ECS.Component {
 		minSize: 1,
 		maxSize: 2,
 		maxCount: 10,
-		color: FOREGROUND_COLOR,
 		drag: 0.1,
 		speed: 40,
 		active: false,

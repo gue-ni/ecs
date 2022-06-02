@@ -23,7 +23,7 @@ const GRAVITY = ON_MOBILE ? 500 : 610;
 const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
-const ACCELERATION = 15;
+const ACCELERATION = 20;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",

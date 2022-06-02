@@ -2,33 +2,21 @@ import { IVector, Vector } from "./vector";
 import { randomFloat, randomInteger } from "./index";
 import { UpdateParams } from "../ecs";
 
+type HEX = `#${string}`;
+type RGB = `rgb(${number}, ${number}, ${number})`;
+type RGBA = `rgba(${number}, ${number}, ${number}, ${number})`;
+type Color = RGB | RGBA | HEX;
+
+type ParticleColor = Color | "random";
+
 interface Particle {
 	pos: Vector;
 	vel: Vector;
 	ttl: number;
 	size: number;
+	color: Color;
 	gravity: number;
 	active: boolean;
-	alpha: number;
-	color: string;
-}
-
-interface ParticleEmitter {
-	particles: Particle[];
-	maxCount: number;
-	minSize: number;
-	maxSize: number;
-	minTTL: number;
-	maxTTL: number;
-	speed: number;
-	alpha?: number;
-	particlePerSecond?: number;
-	positionSpread?: number;
-	positionOffset?: Vector;
-	gravity?: number;
-	explosive?: boolean;
-	emit?: boolean;
-	color?: string;
 }
 
 class ParticleSystem {
@@ -48,7 +36,7 @@ class ParticleSystem {
 	private emitterSize: Vector;
 	private drag: number;
 	private offset: Vector;
-	private color: string;
+	private color: ParticleColor;
 
 	active: boolean = true;
 
@@ -66,7 +54,7 @@ class ParticleSystem {
 		drag?: number;
 		maxCount: number;
 		particlesPerSecond: number;
-		color?: string;
+		color?: ParticleColor;
 	}) {
 		this.minTTL = params.minTTL;
 		this.maxTTL = params.maxTTL;
@@ -77,7 +65,6 @@ class ParticleSystem {
 		this.active = params.active ?? true;
 		this.gravity = params.gravity;
 		this.maxCount = params.maxCount;
-		//this.emitterRadius = params.emitterRadius || 1;
 		this.drag = params.drag || 0;
 		this.emitterSize = params.emitterSize || new Vector(1, 1);
 		this.offset = params.offset || new Vector();
@@ -88,19 +75,22 @@ class ParticleSystem {
 	private createParticle(position: IVector): Particle {
 		//const shape_offset = new Vector().random_unit_vector().scalarMult(this.emitterRadius);
 
-
 		let A = this.emitterSize.x / 2;
 		let B = this.emitterSize.y / 2;
 		let r = A * Math.sqrt(Math.random());
 		let phi = 2 * Math.PI * Math.random();
 		const shape_offset = new Vector(r * Math.cos(phi), (B / A) * r * Math.sin(phi));
 
+		const color: Color =
+			this.color == "random"
+				? `rgb(${randomInteger(0, 255)}, ${randomInteger(0, 255)}, ${randomInteger(0, 255)})`
+				: this.color;
+
 		const particle: Particle = {
 			ttl: randomFloat(this.minTTL, this.maxTTL),
 			size: randomInteger(this.minSize, this.maxSize),
 			active: true,
-			color: this.color,
-			alpha: 1,
+			color,
 			gravity: this.gravity,
 			pos: new Vector(position.x + this.offset.x + shape_offset.x, position.y + this.offset.y + shape_offset.y),
 			vel: new Vector().random_unit_vector().scalarMult(this.speed),
@@ -148,12 +138,10 @@ class ParticleSystem {
 
 			particle.vel.y += particle.gravity * params.dt;
 
-			//particle.pos.round();
-
 			params.context.fillStyle = particle.color;
 			params.context.fillRect(
-				Math.round(particle.pos.x - Math.round(particle.size / 2)),
-				Math.round(particle.pos.y - Math.round(particle.size / 2)),
+				Math.round(particle.pos.x - particle.size / 2),
+				Math.round(particle.pos.y - particle.size / 2),
 				particle.size,
 				particle.size
 			);
@@ -165,4 +153,4 @@ class ParticleSystem {
 	}
 }
 
-export { Particle, ParticleSystem, ParticleEmitter };
+export { Particle, ParticleSystem };
