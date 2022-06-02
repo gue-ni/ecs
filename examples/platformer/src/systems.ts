@@ -473,6 +473,22 @@ export class MovementSystem extends ECS.System {
 		controller.current.y = ECS.approach(controller.goal.y, controller.current.y, params.dt * ACCELERATION);
 
 		if (
+			input.is_key_pressed(BUTTONS.JUMP, 0) &&
+			!controller.dashing &&
+			(collider.south || controller.coyote_time > 0) &&
+			controller.allowed_jumps > 0
+		) {
+			velocity.y = -JUMP;
+			controller.allowed_jumps--;
+
+			controller.jumping = true;
+			setTimeout(() => (controller.jumping = false), 50);
+			(params.sound as Sound).play(150, 150, 0.5);
+
+			return;
+		}
+
+		if (
 			ON_MOBILE
 				? input.is_key_pressed(BUTTONS.JUMP) && controller.allowed_dashes > 0 && !collider.south
 				: input.is_key_pressed(BUTTONS.DASH, 0, true) && controller.allowed_dashes > 0
@@ -482,7 +498,6 @@ export class MovementSystem extends ECS.System {
 			const dash = new ECS.Vector(Math.sign(x), Math.sign(y)).normalize().scalarMult(DASH_SPEED);
 
 			if (dash.isNaN()) return;
-			
 
 			input.disable_until_key_release(BUTTONS.DASH);
 			input.disable_until_key_release(BUTTONS.JUMP);
@@ -512,21 +527,6 @@ export class MovementSystem extends ECS.System {
 			controller.allowed_jumps = 1;
 		}
 		*/
-
-		if (
-			input.is_key_pressed(BUTTONS.JUMP, 0) &&
-			!controller.dashing &&
-			(collider.south || controller.coyote_time > 0) &&
-			controller.allowed_jumps > 0
-		) {
-
-			velocity.y = -JUMP;
-			controller.allowed_jumps--;
-
-			controller.jumping = true;
-			setTimeout(() => (controller.jumping = false), 50);
-			(params.sound as Sound).play(150, 150, 0.5);
-		}
 
 		if (!controller.dashing) {
 			if (!collider.south && input_dir.x == 0 && input_dir.y == 0) {
