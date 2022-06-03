@@ -17,16 +17,12 @@ frames = []
 
 for key in data:
 
-    if (key == "deaths" or key == "level"):
-        continue
-
-
     frame = 0
-    try: 
+    try:
         frame = int(key)
     except:
         continue
-    
+
     value = data[key].replace("data:image/png;base64,", "")
     img = Image.open(io.BytesIO(base64.decodebytes(bytes(value, "utf-8"))))
     img = img.resize((img.width * 2, img.height*2), Image.NEAREST)

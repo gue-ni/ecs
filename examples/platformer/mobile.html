@@ -94,6 +94,11 @@
 				--color: rgba(255, 255, 255, 0.5);
 				color: var(--color);
 				border: 1px solid var(--color);
+
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
 			}
 
 			.button:active {
@@ -103,10 +108,11 @@
 			.small {
 				height: 10vw;
 				width: 10vw;
-				border-radius: 50%;
-				display: flex;
-				align-items: center;
-				justify-content: center;
+			}
+
+			.big {
+				height: 15vw;
+				width: 15vw;
 			}
 
 			#canvas {
@@ -167,7 +173,7 @@
 				<div>&RightArrow;</div>
 			</div>
 
-			<div class="button small" id="jump" style="left: 2vw; top: 70vh">
+			<div class="button big" id="jump" style="left: 5vw; top: 50vh">
 				<div>Jump</div>
 			</div>
 		</div>
