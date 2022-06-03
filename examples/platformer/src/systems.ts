@@ -256,12 +256,14 @@ export class CollectibleSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		/*
 		this.time += params.dt;
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		let s = Math.sin(this.time + entity.entityNumber);
 		const value = s * 0.2;
 		position.y += value;
+		*/
 	}
 }
 

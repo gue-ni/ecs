@@ -13,7 +13,7 @@ module.exports = {
     ]
   },
   optimization: {
-    minimize: false
+    minimize: true
   },
   resolve: {
     extensions: ['.ts', '.js'],

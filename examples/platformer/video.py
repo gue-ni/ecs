@@ -7,9 +7,6 @@ import cv2
 import numpy as np
 from datetime import datetime
 
-file = open("media/img.json", 'r')
-
-data = json.load(file)
 
 # https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#gif
 
@@ -19,10 +16,13 @@ frames = []
 
 fps = 20.0
 now = datetime.now().strftime("%Y-%m-%d_%H%M")
-videodims = (640 * 2, 360 * 2)
 writer = cv2.VideoWriter_fourcc(*'avc1')
 video = cv2.VideoWriter(
-    f"media/mp4/video_{now}.mp4", writer, fps, videodims)
+    f"media/mp4/video_{now}.mp4", writer, fps, (320 * 4, 180 * 4))
+
+
+file = open("media/img.json", 'r')
+data = json.load(file)
 
 for key in data:
 
@@ -34,14 +34,13 @@ for key in data:
 
     value = data[key].replace("data:image/png;base64,", "")
     img = Image.open(io.BytesIO(base64.decodebytes(bytes(value, "utf-8"))))
-    img = img.resize((img.width * 4, img.height*4), Image.NEAREST)
+    img = img.resize((img.width * 4, img.height * 4), Image.NEAREST)
 
-    #imtemp = img.copy()
     video.write(cv2.cvtColor(np.array(img.copy()), cv2.COLOR_RGB2BGR))
 
     frames.append(img)
 
-    img.save(f"media/frames/{key}.png")
+    # img.save(f"media/frames/{key}.png")
 
 
 frames[0].save(f'media/gif/video_{now}.gif',  format='GIF', append_images=frames[1:],
