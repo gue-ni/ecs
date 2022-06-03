@@ -1,9 +1,11 @@
 import base64
-import time
 import io
 import json
 import base64
 from PIL import Image
+import cv2
+import numpy as np
+from datetime import datetime
 
 file = open("media/img.json", 'r')
 
@@ -15,6 +17,13 @@ i = 0
 
 frames = []
 
+fps = 20.0
+now = datetime.now().strftime("%Y-%m-%d_%H%M")
+videodims = (640 * 2, 360 * 2)
+writer = cv2.VideoWriter_fourcc(*'avc1')
+video = cv2.VideoWriter(
+    f"media/mp4/video_{now}.mp4", writer, fps, videodims)
+
 for key in data:
 
     frame = 0
@@ -25,17 +34,18 @@ for key in data:
 
     value = data[key].replace("data:image/png;base64,", "")
     img = Image.open(io.BytesIO(base64.decodebytes(bytes(value, "utf-8"))))
-    img = img.resize((img.width * 2, img.height*2), Image.NEAREST)
+    img = img.resize((img.width * 4, img.height*4), Image.NEAREST)
+
+    #imtemp = img.copy()
+    video.write(cv2.cvtColor(np.array(img.copy()), cv2.COLOR_RGB2BGR))
 
     frames.append(img)
 
     img.save(f"media/frames/{key}.png")
 
 
-fps = 20.0
-timestamp = int(time.time())
-frames[0].save(f'media/video_{timestamp}.gif',  format='GIF', append_images=frames[1:],
+frames[0].save(f'media/gif/video_{now}.gif',  format='GIF', append_images=frames[1:],
                save_all=True, duration=int(1000.0 / fps), loop=0)
 
-frames[0].save(f'media/video_{timestamp}.webp',  format='WEBP', append_images=frames[1:], quality=100,
+frames[0].save(f'media/webp/video_{now}.webp',  format='WEBP', append_images=frames[1:], quality=100,
                save_all=True, duration=int(1000.0 / fps), loop=0)
