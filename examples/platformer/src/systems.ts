@@ -16,10 +16,17 @@ import { Game, Shake, Sound, TILESIZE } from "./main";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-const JUMP = 200;
+const jump_height = 32; // jump height
+const jump_time = ON_MOBILE ? 0.4 : 0.33; // seconds
+
+const JUMP = (2 * jump_height) / jump_time;
+const GRAVITY = (2 * jump_height) / jump_time ** 2;
+//console.log({ JUMP, GRAVITY });
+//const JUMP = 200;
+//const GRAVITY = ON_MOBILE ? 500 : 610;
+
 const BOUNCE = 350;
 const SPEED = 110;
-const GRAVITY = ON_MOBILE ? 500 : 610;
 const DASH_SPEED = 280;
 const DASH_DURATION = 150;
 const DRAG_FACTOR = 0.4;
