@@ -58,6 +58,8 @@ export class ParallaxSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 
+		const shaker = params.shaker as Shake;
+
 		const sky = "#89ABB9";
 		const ctx = params.context;
 		ctx.clearRect(0, 0, params.canvas.width, params.canvas.height);
@@ -65,8 +67,8 @@ export class ParallaxSystem extends ECS.System {
 		ctx.fillRect(0, 0, params.canvas.width, params.canvas.height);
 
 		for (const layer of this.layers) {
-			const x = -position.x * layer.depth;
-			const y = params.canvas.height - layer.size.y;
+			const x = -position.x * layer.depth + shaker.OFFSET_X;
+			const y = params.canvas.height - layer.size.y + shaker.OFFSET_Y;
 
 			const draw = (dx: number, dy: number) => {
 				ctx.drawImage(
