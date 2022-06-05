@@ -40,6 +40,54 @@ const BUTTONS = {
 	DASH: "KeyX",
 };
 
+interface ParallaxLayer {
+	image: HTMLImageElement;
+	size: ECS.Vector;
+	origin: ECS.Vector;
+	depth: number;
+	vertical?: boolean;
+}
+
+export class ParallaxSystem extends ECS.System {
+	layers: ParallaxLayer[];
+	constructor(layers: ParallaxLayer[]) {
+		super([ECS.Position, ECS.Player]);
+		this.layers = layers.sort((a, b) => a.depth - b.depth);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const position = entity.getComponent(ECS.Position) as ECS.Position;
+
+		const sky = "#89ABB9";
+		const ctx = params.context;
+		ctx.clearRect(0, 0, params.canvas.width, params.canvas.height);
+		ctx.fillStyle = sky;
+		ctx.fillRect(0, 0, params.canvas.width, params.canvas.height);
+
+		for (const layer of this.layers) {
+			const x = -position.x * layer.depth;
+			const y = params.canvas.height - layer.size.y;
+
+			const draw = (dx: number, dy: number) => {
+				ctx.drawImage(
+					layer.image,
+					layer.origin.x,
+					layer.origin.y,
+					layer.size.x,
+					layer.size.y,
+					Math.round(dx),
+					Math.round(dy),
+					layer.size.x,
+					layer.size.y
+				);
+			};
+
+			draw(x, y);
+			if (x + layer.size.x < params.canvas.width) draw(x + layer.size.x, y);
+		}
+	}
+}
+
 export class LightSystem extends ECS.System {
 	private canvas: HTMLCanvasElement;
 	private context: CanvasRenderingContext2D;
@@ -175,8 +223,8 @@ export class TileSystem extends ECS.System {
 				const position = entity.getComponent(ECS.Position) as ECS.Position;
 				this.context.drawImage(
 					tile.image,
-					tile.offset.x,
-					tile.offset.y,
+					tile.origin.x,
+					tile.origin.y,
 					tile.width,
 					tile.height,
 					Math.round(position.x),

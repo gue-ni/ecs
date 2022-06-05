@@ -89,14 +89,14 @@ export class Tile extends ECS.Component {
 	width: number;
 	height: number;
 	image: HTMLImageElement;
-	offset: ECS.Vector;
+	origin: ECS.Vector;
 
 	constructor(params: { width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement }) {
 		super();
 		this.width = params.width;
 		this.height = params.height;
 		this.image = params.image;
-		this.offset = params.offset ?? new ECS.Vector();
+		this.origin = params.offset ?? new ECS.Vector();
 	}
 }
 
@@ -192,7 +192,11 @@ export class Controller extends ECS.Component {
 	current: ECS.Vector = new ECS.Vector();
 }
 
+const light_blue = "#DAE5E9"
+
 export class ParticleEmitter extends ECS.Component {
+
+
 	dash: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.2,
 		maxTTL: 0.5,
@@ -203,7 +207,7 @@ export class ParticleEmitter extends ECS.Component {
 		maxCount: 500,
 		particlesPerSecond: 150,
 		speed: 0,
-		color: "random",
+		color: light_blue,
 	});
 
 	dust: ECS.ParticleSystem = new ECS.ParticleSystem({

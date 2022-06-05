@@ -138,8 +138,9 @@ class ParticleSystem {
 
 			particle.vel.y += particle.gravity * params.dt;
 
-			params.context.fillStyle = particle.color;
-			params.context.fillRect(
+			const ctx = params.context;
+			ctx.fillStyle = particle.color;
+			ctx.fillRect(
 				Math.round(particle.pos.x - particle.size / 2),
 				Math.round(particle.pos.y - particle.size / 2),
 				particle.size,

@@ -11,6 +11,7 @@ import {
 	CollectibleSystem,
 	LightSystem,
 	TileSystem,
+	ParallaxSystem,
 } from "./systems";
 import { parseTile } from "./tiling";
 
@@ -23,15 +24,7 @@ if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
 }
 
 export const FOREGROUND_COLOR = "#ffffff";
-export const BACKGROUND_COLOR = "#392946";
-
-/*
-export const BACKGROUND_COLOR = "#382B26";
-export const FOREGROUND_COLOR = "#ffffff";
-export const FOREGROUND_COLOR = "#B8C2B9";
-export const BACKGROUND_COLOR = "#000";
-*/
-
+export const BACKGROUND_COLOR = "#170e2e";
 export const TILESIZE = 8;
 
 let paused = true;
@@ -215,7 +208,7 @@ export class Game extends ECS.ECS {
 	}
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
-		const biome = Math.floor(this.level / 10)
+		const biome = Math.floor(this.level / 10);
 		for (const { x, y, type, side } of this.data) {
 			const pos = new ECS.Vector(x * TILESIZE, y * TILESIZE);
 
@@ -284,14 +277,43 @@ export class Game extends ECS.ECS {
 				this.addSystem(new CollisionSystem(quadtree));
 				this.addSystem(new PhysicsSystem());
 				this.addSystem(new SpawnSystem());
-				this.addSystem(new ParticleSystem());
 				this.addSystem(new AnimationSystem());
 				this.addSystem(new CollectibleSystem());
-				this.addSystem(new TileSystem(canvas));
-				this.addSystem(new SpriteSystem());
-				this.addSystem(new LightSystem(canvas));
+				this.addSystem(
+					new ParallaxSystem([
+						{
+							image: SPRITESHEET,
+							origin: new ECS.Vector(40 * TILESIZE, 0),
+							size: new ECS.Vector(320, 130),
+							depth: 0.05,
+						},
+						{
+							image: SPRITESHEET,
+							origin: new ECS.Vector(40 * TILESIZE, 130),
+							size: new ECS.Vector(320, 180),
+							depth: 0.08,
+						},
 
-				console.log("setup level:", this.level);
+						{
+							image: SPRITESHEET,
+							origin: new ECS.Vector(120 * TILESIZE, 0),
+							size: new ECS.Vector(320, 120),
+							depth: 0.1,
+						},
+
+						{
+							image: SPRITESHEET,
+							origin: new ECS.Vector(80 * TILESIZE, 0),
+							size: new ECS.Vector(320, 120),
+							depth: 0.2,
+						},
+					])
+				);
+				this.addSystem(new TileSystem(canvas));
+				this.addSystem(new ParticleSystem());
+				this.addSystem(new SpriteSystem());
+				//this.addSystem(new LightSystem(canvas));
+
 				Game.loadLevelFromImage(this.level)
 					.then((json) => {
 						this.data = json;
@@ -315,9 +337,7 @@ export class Game extends ECS.ECS {
 
 		if (!paused) {
 			context.clearRect(0, 0, canvas.width, canvas.height);
-			//context.fillStyle = BACKGROUND_COLOR;
-			//context.fillStyle = "#0F022E";
-			context.fillStyle = "#170e2e";
+			context.fillStyle = BACKGROUND_COLOR;
 			context.fillRect(0, 0, canvas.width, canvas.height);
 
 			this.shake.update(dt);
