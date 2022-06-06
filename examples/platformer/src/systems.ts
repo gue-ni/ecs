@@ -181,7 +181,12 @@ export class AnimationSystem extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 
-		//console.log("goal", controller.goal.x)
+		const dir = controller.last_dir > 0 ? "right" : "left";
+
+		if (controller.dashing) {
+			sprite.animations.play(`jump-${dir}-float`);
+			return;
+		}
 
 		if (collider.south) {
 			if (controller.goal.x > 0) {
@@ -189,23 +194,19 @@ export class AnimationSystem extends ECS.System {
 			} else if (controller.goal.x < 0) {
 				sprite.animations.play("run-left");
 			} else {
-				sprite.animations.play(controller.last_dir > 0 ? "idle-right" : "idle-left");
+				sprite.animations.play(`idle-${dir}`);
 			}
 		} else {
-			let x = controller.last_dir > 0 ? "right" : "left";
-			//let y = velocity.y > 0 ? "up" : "down";
+			let y = "float";
+			let epsilon = 60;
 
-			let y = ""
-			let epsilon = 50;
-			if (velocity.y > epsilon){
-				y = "up"
-			} else if (velocity.y < -epsilon){
-				y = "down"
-			} else {
-				y = "float"
+			if (velocity.y > epsilon) {
+				y = "up";
+			} else if (velocity.y < -epsilon) {
+				y = "down";
 			}
 
-			sprite.animations.play(`jump-${x}-${y}`);
+			sprite.animations.play(`jump-${dir}-${y}`);
 		}
 	}
 }
