@@ -299,8 +299,12 @@ export class PhysicsSystem extends ECS.System {
 		position.y += velocity.y * params.dt;
 
 		if (entity.getComponent(Gravity)) {
-			if (controller && controller.holding) return;
-			velocity.y += GRAVITY * params.dt;
+			if (controller) {
+				const multiplier = velocity.y < 0 ? controller.gravity_multiplier : 1;
+				velocity.y += GRAVITY * multiplier * params.dt;
+			} else {
+				velocity.y += GRAVITY * params.dt;
+			}
 		}
 	}
 }
@@ -489,16 +493,11 @@ export class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
 
-		/*
-		if (collider.east || collider.west) {
-			controller.allowed_jumps = 1;
-		}
-		*/
-
 		if (collider.south) {
 			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
 			controller.coyote_time = 0.1;
+			controller.gravity_multiplier = 1;
 		} else {
 			if (controller.coyote_time > 0) controller.coyote_time -= params.dt;
 		}
@@ -521,6 +520,34 @@ export class MovementSystem extends ECS.System {
 			controller.goal.y = 0;
 		}
 
+		if (controller.jump_button_time >= 0 && velocity.y < 0) {
+			controller.jump_button_time += params.dt;
+			if (controller.jump_button_time > jump_time * .25 && !input.is_down(BUTTONS.JUMP)) {
+				console.log("low jump")
+				velocity.y *= 0.5;
+				controller.jump_button_time = -1;
+			}
+		}
+
+		/*
+		if (controller.jump_time >= 0 && velocity.y < 0) {
+			if (input.is_down(BUTTONS.JUMP)) {
+				controller.jump_time += params.dt;
+			} else {
+				console.log("jump button time", controller.jump_time.toFixed(2));
+				if (controller.jump_time < jump_time) {
+					console.log("low jump");
+					velocity.y *= 0.5;
+					//controller.gravity_multiplier = 2.5; // low jump if held short
+				} else {
+					console.log("high jump");
+				}
+				controller.jump_time = -1;
+			}
+		}
+		*/
+
+		// jump
 		if (
 			(ON_MOBILE ? input.is_key_pressed(BUTTONS.JUMP, 0, true) : input.is_key_pressed(BUTTONS.JUMP)) &&
 			!controller.dashing &&
@@ -529,8 +556,10 @@ export class MovementSystem extends ECS.System {
 		) {
 			velocity.y = -JUMP;
 			controller.allowed_jumps--;
+			controller.jump_button_time = 0;
 
-			if (ON_MOBILE) input.disable_until_key_release(BUTTONS.JUMP);
+			//if (ON_MOBILE) input.disable_until_key_release(BUTTONS.JUMP);
+			input.disable_until_key_release(BUTTONS.JUMP);
 
 			controller.jumping = true;
 			setTimeout(() => (controller.jumping = false), 50);
@@ -539,6 +568,7 @@ export class MovementSystem extends ECS.System {
 			return;
 		}
 
+		// dash
 		if (
 			ON_MOBILE
 				? input.is_key_pressed(BUTTONS.JUMP, 0, true) &&

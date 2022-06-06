@@ -67,6 +67,10 @@ class Input extends Component {
 		return false;
 	}
 
+	is_down(key: string){
+		return KEYS[key]
+	}
+
 	is_mouse_pressed(side: MouseButton, delay?: number): boolean {
 		if (this.mouse[side]) {
 			if (!delay || !this.mouse_last_pressed[side] || Date.now() - this.mouse_last_pressed[side] > delay) {
