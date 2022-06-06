@@ -16,7 +16,7 @@ import { Game, Shake, Sound, TILESIZE } from "./main";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-const jump_height = 32; // jump height
+const jump_height = 40; // jump height
 const jump_time = ON_MOBILE ? 0.4 : 0.33; // seconds
 
 const JUMP = (2 * jump_height) / jump_time;
@@ -62,9 +62,8 @@ export class ParallaxSystem extends ECS.System {
 
 		const sky = "#89ABB9";
 		const ctx = params.context;
-		ctx.clearRect(0, 0, params.canvas.width, params.canvas.height);
 		ctx.fillStyle = sky;
-		ctx.fillRect(0, 0, params.canvas.width, params.canvas.height);
+		ctx.fillRect(shaker.OFFSET_X, shaker.OFFSET_Y, params.canvas.width, params.canvas.height);
 
 		for (const layer of this.layers) {
 			const x = -position.x * layer.depth + shaker.OFFSET_X;
