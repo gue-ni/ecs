@@ -40,7 +40,7 @@ for key in data:
 
     frames.append(img)
 
-    # img.save(f"media/frames/{key}.png")
+    img.save(f"media/frames/{key}.png")
 
 
 frames[0].save(f'media/gif/video_{now}.gif',  format='GIF', append_images=frames[1:],

@@ -42,8 +42,23 @@ export class Factory {
 			animations: new Animations([
 				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
 				new Animation({ name: "idle-left", y: 5, frames: 6, repeat: true }),
-				new Animation({ name: "jump-right", y: 2, repeat: true }),
-				new Animation({ name: "jump-left", y: 3, repeat: true }),
+
+				new Animation({ name: "jump-left-up", y: 2, repeat: true }),
+				new Animation({ name: "jump-left-down", y: 1, repeat: true }),
+
+				new Animation({ name: "jump-right-up", y: 4, repeat: true }),
+				new Animation({ name: "jump-right-down", y: 3, repeat: true }),
+
+				new Animation({ name: "jump-right-float", y: 9, repeat: true }),
+				new Animation({ name: "jump-left-float", y: 10, repeat: true }),
+
+
+
+				/*
+				new Animation({ name: "jump-right", y: 3, repeat: true }),
+				new Animation({ name: "jump-left", y: 4, repeat: true }),
+				*/
+
 				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
 				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
 			]),

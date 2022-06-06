@@ -28,7 +28,7 @@ const GRAVITY = (2 * jump_height) / jump_time ** 2;
 const BOUNCE = 350;
 const SPEED = 110;
 const DASH_SPEED = 280;
-const DASH_DURATION = 150;
+const DASH_DURATION = 180;
 const DRAG_FACTOR = 0.4;
 const ACCELERATION = 20;
 const BUTTONS = {
@@ -170,11 +170,12 @@ export class ParticleSystem extends ECS.System {
 
 export class AnimationSystem extends ECS.System {
 	constructor() {
-		super([Sprite, Controller, ECS.Collider]);
+		super([Sprite, Controller, ECS.Collider, ECS.Velocity]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const sprite = entity.getComponent(Sprite) as Sprite;
+		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 		if (!sprite.animations) return;
 
 		const controller = entity.getComponent(Controller) as Controller;
@@ -191,7 +192,20 @@ export class AnimationSystem extends ECS.System {
 				sprite.animations.play(controller.last_dir > 0 ? "idle-right" : "idle-left");
 			}
 		} else {
-			sprite.animations.play(controller.last_dir > 0 ? "jump-right" : "jump-left");
+			let x = controller.last_dir > 0 ? "right" : "left";
+			//let y = velocity.y > 0 ? "up" : "down";
+
+			let y = ""
+			let epsilon = 50;
+			if (velocity.y > epsilon){
+				y = "up"
+			} else if (velocity.y < -epsilon){
+				y = "down"
+			} else {
+				y = "float"
+			}
+
+			sprite.animations.play(`jump-${x}-${y}`);
 		}
 	}
 }
@@ -214,8 +228,9 @@ export class TileSystem extends ECS.System {
 		const shake = params.shaker as Shake;
 
 		if (game.level != this.currentLevel) {
-			this.currentLevel = game.level;
+			console.log("render tiles");
 
+			this.currentLevel = game.level;
 			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 			this.context.fillStyle = `rgba(0, 0, 0, 1.0)`;
 
@@ -522,8 +537,8 @@ export class MovementSystem extends ECS.System {
 
 		if (controller.jump_button_time >= 0 && velocity.y < 0) {
 			controller.jump_button_time += params.dt;
-			if (controller.jump_button_time > jump_time * .25 && !input.is_down(BUTTONS.JUMP)) {
-				console.log("low jump")
+			if (controller.jump_button_time > jump_time * 0.33 && !input.is_down(BUTTONS.JUMP)) {
+				console.log("low jump");
 				velocity.y *= 0.5;
 				controller.jump_button_time = -1;
 			}

@@ -8,11 +8,13 @@ export class Forces extends ECS.VectorComponent {
 export class Animation {
 	repeat: boolean;
 	frame: ECS.Vector = new ECS.Vector();
+	origin: ECS.Vector = new ECS.Vector();
 	frames: number;
 	name: string;
 	constructor(params: { name: string; repeat?: boolean; frames?: number; y?: number; x?: number }) {
 		this.name = params.name;
 		this.repeat = params.repeat;
+		this.origin.set(params.x ?? 0, params.y ?? 0);
 		this.frame.set(params.x ?? 0, params.y ?? 0);
 		this.frames = params.frames ?? 1;
 	}
@@ -68,7 +70,7 @@ export class Animations {
 
 		if (this.current.frames > 1) {
 			if ((this.time += dt) > 1 / 10) {
-				this.current.frame.x = (this.current.frame.x + 1) % this.current.frames;
+				this.current.frame.x = this.current.origin.x + ((this.current.frame.x + 1) % this.current.frames);
 				this.time = 0;
 			}
 		}
@@ -182,7 +184,7 @@ export class Light extends ECS.Component {
 export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
-	jump_button_time:number = -1;
+	jump_button_time: number = -1;
 	gravity_multiplier: number = 1;
 	last_dir: number = 1;
 	allowed_jumps: number = 1;
@@ -193,11 +195,9 @@ export class Controller extends ECS.Component {
 	current: ECS.Vector = new ECS.Vector();
 }
 
-const light_blue = "#DAE5E9"
+const light_blue = "#DAE5E9";
 
 export class ParticleEmitter extends ECS.Component {
-
-
 	dash: ECS.ParticleSystem = new ECS.ParticleSystem({
 		minTTL: 0.2,
 		maxTTL: 0.5,
