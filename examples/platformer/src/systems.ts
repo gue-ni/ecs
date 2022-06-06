@@ -17,7 +17,7 @@ import { Game, Shake, Sound, TILESIZE } from "./main";
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 const jump_height = 40; // jump height
-const jump_time = ON_MOBILE ? 0.4 : 0.33; // seconds
+const jump_time = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump peak
 
 const JUMP = (2 * jump_height) / jump_time;
 const GRAVITY = (2 * jump_height) / jump_time ** 2;
