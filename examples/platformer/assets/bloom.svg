@@ -1,0 +1,18 @@
+<!--
+  https://developer.mozilla.org/en-US/docs/Web/SVG/Element/filter
+  https://inz.fi/posts/css-svg-filters-for-fun-and-profit.html
+-->
+<svg
+   xmlns="http://www.w3.org/2000/svg"
+   width="0"
+   height="0">
+    <filter
+       id="filter">
+      <feGaussianBlur
+         in="SourceGraphic"
+         stdDeviation="2" />
+      <feComposite
+         in2="SourceGraphic"
+         operator="arithmetic" k2="0.5" k3="1.0" />
+    </filter>
+</svg>

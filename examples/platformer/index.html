@@ -62,6 +62,7 @@
 			.pixelated {
 				image-rendering: pixelated;
 				image-rendering: crisp-edges;
+				filter: url(assets/bloom.svg#filter)
 			}
 
 			.p640 {
@@ -78,7 +79,12 @@
 	<body>
 		<div class="container">
 			<div>
-				<canvas class="pixelated p640" id="canvas" width="320" height="180"></canvas>
+				<canvas
+					class="pixelated p640"
+					id="canvas"
+					width="320"
+					height="180"
+				></canvas>
 				<p style="width: 640px; line-height: 1.5">
 					Use the <i>Arrow Keys</i> for movement. Press <i>C</i> to jump. Hold <i>X</i> and
 					<i>Arrow Keys</i> to dash. Coins give you one additional dash.

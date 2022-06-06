@@ -272,6 +272,35 @@ export class Game extends ECS.ECS {
 					}
 				}
 
+				const parallax = new ParallaxSystem([
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(40 * TILESIZE, 0),
+						size: new ECS.Vector(320, 130),
+						depth: 0.05,
+					},
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(40 * TILESIZE, 130),
+						size: new ECS.Vector(320, 180),
+						depth: 0.08,
+					},
+
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(120 * TILESIZE, 0),
+						size: new ECS.Vector(320, 120),
+						depth: 0.1,
+					},
+
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(80 * TILESIZE, 0),
+						size: new ECS.Vector(320, 120),
+						depth: 0.2,
+					},
+				]);
+
 				this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
 				this.addSystem(new MovementSystem());
 				this.addSystem(new CollisionSystem(quadtree));
@@ -279,36 +308,7 @@ export class Game extends ECS.ECS {
 				this.addSystem(new SpawnSystem());
 				this.addSystem(new AnimationSystem());
 				this.addSystem(new CollectibleSystem());
-				this.addSystem(
-					new ParallaxSystem([
-						{
-							image: SPRITESHEET,
-							origin: new ECS.Vector(40 * TILESIZE, 0),
-							size: new ECS.Vector(320, 130),
-							depth: 0.05,
-						},
-						{
-							image: SPRITESHEET,
-							origin: new ECS.Vector(40 * TILESIZE, 130),
-							size: new ECS.Vector(320, 180),
-							depth: 0.08,
-						},
-
-						{
-							image: SPRITESHEET,
-							origin: new ECS.Vector(120 * TILESIZE, 0),
-							size: new ECS.Vector(320, 120),
-							depth: 0.1,
-						},
-
-						{
-							image: SPRITESHEET,
-							origin: new ECS.Vector(80 * TILESIZE, 0),
-							size: new ECS.Vector(320, 120),
-							depth: 0.2,
-						},
-					])
-				);
+				//this.addSystem(parallax);
 				this.addSystem(new TileSystem(canvas));
 				this.addSystem(new ParticleSystem());
 				this.addSystem(new SpriteSystem());
