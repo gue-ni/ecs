@@ -65,6 +65,12 @@ class ECS {
 		return system;
 	}
 
+	addSystems(systems: System[]){
+		for (const system of systems){
+			this.addSystem(system);
+		}
+	}
+
 	removeSystem(system: System): void {
 		this.systems = this.systems.filter((s) => s != system);
 	}

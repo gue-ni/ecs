@@ -548,7 +548,6 @@ export class MovementSystem extends ECS.System {
 		if (controller.dash_button_time >= 0) {
 			controller.dash_button_time += params.dt;
 			if (controller.dash_button_time > DASH_DURATION / 1000 || !input.is_down( ON_MOBILE ? BUTTONS.JUMP : BUTTONS.DASH)) {
-			//if (controller.dash_button_time > DASH_DURATION / 1000) {
 				controller.dash_button_time = -1;
 				velocity.set(0, 0);
 				controller.goal.set(0, 0);

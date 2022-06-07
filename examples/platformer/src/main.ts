@@ -109,7 +109,7 @@ export class Sound {
 }
 
 export class Shake {
-	OFFSET_X:ECS.pixels = 0;
+	OFFSET_X: ECS.pixels = 0;
 	OFFSET_Y: ECS.pixels = 0;
 
 	magnitude: ECS.pixels = 3;
@@ -303,18 +303,20 @@ export class Game extends ECS.ECS {
 					},
 				]);
 
-				this.addSystem(ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas));
-				this.addSystem(new MovementSystem());
-				this.addSystem(new CollisionSystem(quadtree));
-				this.addSystem(new PhysicsSystem());
-				this.addSystem(new SpawnSystem());
-				this.addSystem(new AnimationSystem());
-				this.addSystem(new CollectibleSystem());
-				//this.addSystem(parallax);
-				this.addSystem(new TileSystem(canvas));
-				this.addSystem(new ParticleSystem());
-				this.addSystem(new SpriteSystem());
-				this.addSystem(new LightSystem(canvas));
+				this.addSystems([
+					ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas),
+					new MovementSystem(),
+					new CollisionSystem(quadtree),
+					new PhysicsSystem(),
+					new SpawnSystem(),
+					new AnimationSystem(),
+					new CollectibleSystem(),
+					//parallax,
+					new TileSystem(canvas),
+					new ParticleSystem(),
+					new SpriteSystem(),
+					new LightSystem(canvas),
+				]);
 
 				Game.loadLevelFromImage(this.level)
 					.then((json) => {
