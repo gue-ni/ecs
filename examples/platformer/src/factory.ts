@@ -52,7 +52,8 @@ export class Factory {
 				new Animation({ name: "jump-right-float", y: 9, repeat: true }),
 				new Animation({ name: "jump-left-float", y: 10, repeat: true }),
 
-
+				new Animation({ name: "dash-right", y: 0, frames: 4, framerate: 16, repeat: true }),
+				new Animation({ name: "dash-left", y: 0, x: 5, frames: 4, framerate: 16, repeat: true }),
 
 				/*
 				new Animation({ name: "jump-right", y: 3, repeat: true }),

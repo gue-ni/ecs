@@ -10,13 +10,15 @@ export class Animation {
 	frame: ECS.Vector = new ECS.Vector();
 	origin: ECS.Vector = new ECS.Vector();
 	frames: number;
+	framerate: number;
 	name: string;
-	constructor(params: { name: string; repeat?: boolean; frames?: number; y?: number; x?: number }) {
+	constructor(params: { name: string; repeat?: boolean; frames?: number; y?: number; x?: number, framerate?: number }) {
 		this.name = params.name;
 		this.repeat = params.repeat;
 		this.origin.set(params.x ?? 0, params.y ?? 0);
 		this.frame.set(params.x ?? 0, params.y ?? 0);
 		this.frames = params.frames ?? 1;
+		this.framerate = params.framerate ?? 10;
 	}
 }
 
@@ -54,7 +56,7 @@ export class Animations {
 		if (name == this.current.name) return;
 
 		const next = this.animations.get(name);
-		next.frame.x = 0;
+		next.frame.x = next.origin.x;
 
 		if (this.current.repeat) {
 			this.last = this.current;
@@ -69,7 +71,7 @@ export class Animations {
 		if (!this.current) return;
 
 		if (this.current.frames > 1) {
-			if ((this.time += dt) > 1 / 10) {
+			if ((this.time += dt) >= 1 / this.current.framerate) {
 				this.current.frame.x = this.current.origin.x + ((this.current.frame.x + 1) % this.current.frames);
 				this.time = 0;
 			}

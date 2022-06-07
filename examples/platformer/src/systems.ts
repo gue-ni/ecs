@@ -16,21 +16,20 @@ import { Game, Shake, Sound, TILESIZE } from "./main";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-const jump_height = 40; // jump height
-const jump_time = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump peak
+const JUMP_HEIGHT = 40; // jump height
+const JUMP_DURATION = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump peak
 
-const JUMP = (2 * jump_height) / jump_time;
-const GRAVITY = (2 * jump_height) / jump_time ** 2;
-//console.log({ JUMP, GRAVITY });
-//const JUMP = 200;
-//const GRAVITY = ON_MOBILE ? 500 : 610;
+const JUMP = (2 * JUMP_HEIGHT) / JUMP_DURATION;
+const GRAVITY = (2 * JUMP_HEIGHT) / JUMP_DURATION ** 2;
 
-const BOUNCE = 350;
-const SPEED = 110;
-const DASH_SPEED = 280;
-const DASH_DURATION = 180;
+const DASH_DISTANCE = 50;
+const DASH_DURATION = 250; // milliseconds
+const DASH_SPEED = DASH_DISTANCE / (DASH_DURATION / 1000);
+
 const DRAG_FACTOR = 0.4;
+const SPEED = 110;
 const ACCELERATION = 20;
+const BOUNCE = 350;
 const BUTTONS = {
 	LEFT: "ArrowLeft",
 	RIGHT: "ArrowRight",
@@ -184,7 +183,8 @@ export class AnimationSystem extends ECS.System {
 		const dir = controller.last_dir > 0 ? "right" : "left";
 
 		if (controller.dashing) {
-			sprite.animations.play(`jump-${dir}-float`);
+			//sprite.animations.play(`jump-${dir}-float`);
+			sprite.animations.play(`dash-${dir}`);
 			return;
 		}
 
@@ -538,7 +538,7 @@ export class MovementSystem extends ECS.System {
 
 		if (controller.jump_button_time >= 0 && velocity.y < 0) {
 			controller.jump_button_time += params.dt;
-			if (controller.jump_button_time > jump_time * 0.33 && !input.is_down(BUTTONS.JUMP)) {
+			if (controller.jump_button_time > JUMP_DURATION * 0.33 && !input.is_down(BUTTONS.JUMP)) {
 				console.log("low jump");
 				velocity.y *= 0.5;
 				controller.jump_button_time = -1;
@@ -603,7 +603,7 @@ export class MovementSystem extends ECS.System {
 			input.disable_until_key_release(BUTTONS.JUMP);
 
 			(params.sound as Sound).play(150, 200, 0.5);
-			(params.shaker as Shake).shake();
+			(params.shaker as Shake).shake(2);
 
 			controller.dashing = true;
 			controller.allowed_dashes--;

@@ -111,22 +111,23 @@ export class Shake {
 	OFFSET_X = 0;
 	OFFSET_Y = 0;
 
-	private static magnitude: number = 3;
+	magnitude: number = 3;
 	private static duration: number = 0.25;
 	private time: number = 0;
 
 	update(dt: number) {
 		if ((this.time -= dt) > 0) {
-			this.OFFSET_X = ECS.randomFloat(-Shake.magnitude, Shake.magnitude);
-			this.OFFSET_Y = ECS.randomFloat(-Shake.magnitude, Shake.magnitude);
+			this.OFFSET_X = ECS.randomFloat(-this.magnitude, this.magnitude);
+			this.OFFSET_Y = ECS.randomFloat(-this.magnitude, this.magnitude);
 		} else {
 			this.OFFSET_X = 0;
 			this.OFFSET_Y = 0;
 		}
 	}
 
-	shake() {
+	shake(mag: number = 3) {
 		this.time = Shake.duration;
+		this.magnitude = mag;
 	}
 }
 
@@ -375,7 +376,7 @@ export class Game extends ECS.ECS {
 			// lvl
 			context.drawImage(
 				SPRITESHEET,
-				7 * TILESIZE,
+				4 * TILESIZE,
 				1 * TILESIZE,
 				13,
 				TILESIZE,
