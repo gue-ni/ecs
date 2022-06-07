@@ -313,7 +313,7 @@ export class Game extends ECS.ECS {
 				this.addSystem(new TileSystem(canvas));
 				this.addSystem(new ParticleSystem());
 				this.addSystem(new SpriteSystem());
-				//this.addSystem(new LightSystem(canvas));
+				this.addSystem(new LightSystem(canvas));
 
 				Game.loadLevelFromImage(this.level)
 					.then((json) => {
