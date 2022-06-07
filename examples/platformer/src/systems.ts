@@ -11,6 +11,7 @@ import {
 	ParticleEmitter,
 	Light,
 	Tile,
+	Fragile as FragilePlatform,
 } from "./components";
 import { Game, Shake, Sound, TILESIZE } from "./main";
 
@@ -84,6 +85,29 @@ export class ParallaxSystem extends ECS.System {
 
 			draw(x, y);
 			if (x + layer.size.x < params.canvas.width) draw(x + layer.size.x, y);
+		}
+	}
+}
+
+export class FragilePlatformSystem extends ECS.System {
+	constructor() {
+		super([FragilePlatform, Sprite, ECS.Position]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const fragile = entity.getComponent(FragilePlatform) as FragilePlatform;
+		const sprite = entity.getComponent(Sprite) as Sprite;
+		const pos = entity.getComponent(ECS.Position) as ECS.Position;
+
+		if (fragile.hit) {
+			if ((fragile.lifetime -= params.dt) < 0) {
+				if (!entity.getComponent(ECS.Velocity)) {
+					entity.addComponent(new Gravity());
+					entity.addComponent(new ECS.Velocity(0, 0));
+					entity.removeComponent(ECS.Collider);
+					setTimeout(() => params.ecs.removeEntity(entity), 500);
+				}
+			}
 		}
 	}
 }
@@ -357,6 +381,12 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			return;
 		}
 
+		const fragile = target.getComponent(FragilePlatform) as FragilePlatform;
+		if (velocity && fragile) {
+			fragile.hit = true;
+			//velocity.y = -BOUNCE;
+		}
+
 		// spikes
 		if (health && health.value != 0 && target.getComponent(Spike)) {
 			(params.sound as Sound).play(200, 50, 0.5);
@@ -547,7 +577,10 @@ export class MovementSystem extends ECS.System {
 
 		if (controller.dash_button_time >= 0) {
 			controller.dash_button_time += params.dt;
-			if (controller.dash_button_time > DASH_DURATION / 1000 || !input.is_down( ON_MOBILE ? BUTTONS.JUMP : BUTTONS.DASH)) {
+			if (
+				controller.dash_button_time > DASH_DURATION / 1000 ||
+				!input.is_down(ON_MOBILE ? BUTTONS.JUMP : BUTTONS.DASH)
+			) {
 				controller.dash_button_time = -1;
 				velocity.set(0, 0);
 				controller.goal.set(0, 0);

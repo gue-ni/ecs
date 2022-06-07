@@ -3,20 +3,17 @@ const parse_xy = (x: number, y: number, image: ImageData) => {
 
 	const [r, g, b, a] = pixel(x, y, image);
 
-	if (r == 255 && g == 0 && b == 0) {
-		return "player";
-	} else if (r == 0 && g == 255 && b == 0) {
-		return "tile";
-	} else if (r == 0 && g == 0 && b == 255) {
-		return "spike";
-	} else if (r == 0 && g == 255 && b == 255) {
-		return "bounce";
-	} else if (r == 255 && g == 0 && b == 255) {
-		return "dash";
-	} else if (r == 255 && g == 255 && b == 0) {
-		return "platform";
-	} else {
-		return null;
+	const hex = r + g + b;
+
+	//const str = `rgb(${r}, ${g}, ${b})`
+
+	if (r == 255 && g == 0 && b == 0) {return "player";
+	} else if (r == 0 && g == 255 && b == 0) { return "tile";
+	} else if (r == 255 && g == 255 && b == 0) { return "platform";
+	} else if (r == 0 && g == 0 && b == 255) { return "spike";
+	} else if (r == 255 && g == 0 && b == 255) {return "dash";
+	} else if (r == 0 && g == 255 && b == 255) { return "fragile";
+	} else {	return null;
 	}
 };
 

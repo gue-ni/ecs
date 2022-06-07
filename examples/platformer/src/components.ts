@@ -12,7 +12,14 @@ export class Animation {
 	frames: number;
 	framerate: number;
 	name: string;
-	constructor(params: { name: string; repeat?: boolean; frames?: number; y?: number; x?: number, framerate?: number }) {
+	constructor(params: {
+		name: string;
+		repeat?: boolean;
+		frames?: number;
+		y?: number;
+		x?: number;
+		framerate?: number;
+	}) {
 		this.name = params.name;
 		this.repeat = params.repeat;
 		this.origin.set(params.x ?? 0, params.y ?? 0);
@@ -181,6 +188,11 @@ export class Light extends ECS.Component {
 		this.height = params.height;
 		this.offset = params.offset;
 	}
+}
+
+export class Fragile extends ECS.Component {
+	lifetime: ECS.seconds = ECS.randomFloat(0.25, 0.5);
+	hit: boolean = false;
 }
 
 export class Controller extends ECS.Component {

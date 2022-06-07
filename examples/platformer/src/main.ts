@@ -13,6 +13,7 @@ import {
 	LightSystem,
 	TileSystem,
 	ParallaxSystem,
+	FragilePlatformSystem,
 } from "./systems";
 import { parseTile } from "./tiling";
 
@@ -220,6 +221,11 @@ export class Game extends ECS.ECS {
 					break;
 				}
 
+				case "fragile": {
+					this.addEntity(Factory.createFragile(pos));
+					break;
+				}
+
 				case "tile": {
 					this.addEntity(Factory.createTile(pos, side, biome));
 
@@ -309,6 +315,7 @@ export class Game extends ECS.ECS {
 					new CollisionSystem(quadtree),
 					new PhysicsSystem(),
 					new SpawnSystem(),
+					new FragilePlatformSystem(),
 					new AnimationSystem(),
 					new CollectibleSystem(),
 					//parallax,

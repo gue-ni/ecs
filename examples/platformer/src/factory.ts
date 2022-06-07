@@ -12,6 +12,7 @@ import {
 	ParticleEmitter,
 	Animation,
 	Animations,
+	Fragile,
 } from "./components";
 import { TILESIZE, SPRITESHEET } from "./main";
 
@@ -99,6 +100,24 @@ export class Factory {
 				width: TILESIZE,
 				height: TILESIZE,
 				colliderType: ECS.ColliderType.SOLID_FROM_TOP,
+			})
+		);
+	}
+
+static createFragile(pos: ECS.Vector) {
+		return new ECS.Entity().addComponents(
+			new Sprite({
+				width: TILESIZE,
+				height: TILESIZE,
+				image: SPRITESHEET,
+				offset: new ECS.Vector(3 * TILESIZE, 28 * TILESIZE),
+			}),
+			new Fragile(),
+			new ECS.Position(pos.x, pos.y),
+			new ECS.Collider({
+				width: TILESIZE,
+				height: TILESIZE,
+				colliderType: ECS.ColliderType.CUSTOM_SOLID,
 			})
 		);
 	}
