@@ -22,7 +22,7 @@ const JUMP_DURATION = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump pea
 const JUMP = (2 * JUMP_HEIGHT) / JUMP_DURATION;
 const GRAVITY = (2 * JUMP_HEIGHT) / JUMP_DURATION ** 2;
 
-const DASH_DISTANCE = 60;
+const DASH_DISTANCE: ECS.pixels = 60;
 const DASH_DURATION: ECS.milliseconds = 250; // milliseconds
 const DASH_SPEED = DASH_DISTANCE / (DASH_DURATION / 1000);
 
@@ -368,7 +368,15 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			const sprite = entity.getComponent(Sprite) as Sprite;
 			if (sprite) sprite.visible = false;
 
-			if (emitter) emitter.explosion.start_emitting();
+			const controller = entity.getComponent(Controller) as Controller;
+			if (controller) controller.dashing = false;
+
+			if (emitter) {
+				emitter.explosion.start_emitting();
+				emitter.dash.stop_emitting();
+				emitter.jump.stop_emitting();
+				emitter.dust.stop_emitting();
+			}
 
 			setTimeout(() => (health.value = 0), 700);
 			return;
@@ -424,7 +432,7 @@ export class SpawnSystem extends ECS.System {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
 
-		if (position.y > params.canvas.height + 16 * 3) {
+		if (position.y > params.canvas.height) {
 			health.value = 0;
 			return;
 		}

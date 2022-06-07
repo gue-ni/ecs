@@ -1,3 +1,4 @@
+import { ScopedEmitHelper } from "typescript";
 import * as ECS from "../../../src";
 import { Factory } from "./factory";
 import {
@@ -108,12 +109,12 @@ export class Sound {
 }
 
 export class Shake {
-	OFFSET_X = 0;
-	OFFSET_Y = 0;
+	OFFSET_X:ECS.pixels = 0;
+	OFFSET_Y: ECS.pixels = 0;
 
-	magnitude: number = 3;
-	private static duration: number = 0.25;
-	private time: number = 0;
+	magnitude: ECS.pixels = 3;
+	private static duration: ECS.seconds = 0.25;
+	private time: ECS.seconds = 0;
 
 	update(dt: number) {
 		if ((this.time -= dt) > 0) {
@@ -125,7 +126,7 @@ export class Shake {
 		}
 	}
 
-	shake(mag: number = 3) {
+	shake(mag: ECS.pixels = 3) {
 		this.time = Shake.duration;
 		this.magnitude = mag;
 	}
@@ -330,9 +331,9 @@ export class Game extends ECS.ECS {
 			});
 	}
 
-	animate(now: number) {
+	animate(now: ECS.seconds) {
 		now *= 0.001;
-		let dt = now - this.then;
+		let dt: ECS.seconds = now - this.then;
 		this.then = now;
 		if (dt > 1 / 30) dt = 1 / 30;
 
