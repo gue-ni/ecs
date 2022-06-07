@@ -81,7 +81,7 @@ class ParticleSystem {
 		let phi = 2 * Math.PI * Math.random();
 		const shape_offset = new Vector(r * Math.cos(phi), (B / A) * r * Math.sin(phi));
 
-		const color: Color =
+		const color: Color=
 			this.color == "random"
 				? `rgb(${randomInteger(0, 255)}, ${randomInteger(0, 255)}, ${randomInteger(0, 255)})`
 				: this.color;

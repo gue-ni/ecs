@@ -1,3 +1,8 @@
+// usefull types
+type seconds = number;
+type milliseconds = number;
+type pixels = number;
+
 function randomInteger(min: number, max: number): number {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
@@ -36,4 +41,4 @@ function clamp(val: number, min: number, max: number): number {
 	return Math.max(min, Math.min(val, max));
 }
 
-export { randomFloat, randomInteger, clamp, lerp, approach };
+export { randomFloat, randomInteger, clamp, lerp, approach, seconds, milliseconds, pixels };

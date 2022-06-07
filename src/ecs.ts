@@ -1,9 +1,10 @@
 import { Entity, EntityID } from "./entity";
 import { System } from "./system";
+import { seconds } from "./util";
 
 interface UpdateParams {
-	dt: number;
-	now?: number;
+	dt: seconds;
+	now?: seconds;
 	canvas: HTMLCanvasElement;
 	context: CanvasRenderingContext2D;
 	ecs?: ECS;

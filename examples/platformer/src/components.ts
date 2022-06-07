@@ -186,8 +186,8 @@ export class Light extends ECS.Component {
 export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
-	jump_button_time: number = -1;
-	gravity_multiplier: number = 1;
+	jump_button_time: ECS.seconds = -1;
+	dash_button_time: ECS.seconds = -1;
 	last_dir: number = 1;
 	allowed_jumps: number = 1;
 	allowed_dashes: number = 1;

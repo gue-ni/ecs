@@ -22,8 +22,8 @@ const JUMP_DURATION = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump pea
 const JUMP = (2 * JUMP_HEIGHT) / JUMP_DURATION;
 const GRAVITY = (2 * JUMP_HEIGHT) / JUMP_DURATION ** 2;
 
-const DASH_DISTANCE = 50;
-const DASH_DURATION = 250; // milliseconds
+const DASH_DISTANCE = 60;
+const DASH_DURATION: ECS.milliseconds = 250; // milliseconds
 const DASH_SPEED = DASH_DISTANCE / (DASH_DURATION / 1000);
 
 const DRAG_FACTOR = 0.4;
@@ -309,18 +309,12 @@ export class PhysicsSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-		const controller = entity.getComponent(Controller) as Controller;
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
 
 		if (entity.getComponent(Gravity)) {
-			if (controller) {
-				const multiplier = velocity.y < 0 ? controller.gravity_multiplier : 1;
-				velocity.y += GRAVITY * multiplier * params.dt;
-			} else {
-				velocity.y += GRAVITY * params.dt;
-			}
+			velocity.y += GRAVITY * params.dt;
 		}
 	}
 }
@@ -513,7 +507,6 @@ export class MovementSystem extends ECS.System {
 			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
 			controller.coyote_time = 0.1;
-			controller.gravity_multiplier = 1;
 		} else {
 			if (controller.coyote_time > 0) controller.coyote_time -= params.dt;
 		}
@@ -539,29 +532,22 @@ export class MovementSystem extends ECS.System {
 		if (controller.jump_button_time >= 0 && velocity.y < 0) {
 			controller.jump_button_time += params.dt;
 			if (controller.jump_button_time > JUMP_DURATION * 0.33 && !input.is_down(BUTTONS.JUMP)) {
-				console.log("low jump");
 				velocity.y *= 0.5;
 				controller.jump_button_time = -1;
 			}
 		}
 
-		/*
-		if (controller.jump_time >= 0 && velocity.y < 0) {
-			if (input.is_down(BUTTONS.JUMP)) {
-				controller.jump_time += params.dt;
-			} else {
-				console.log("jump button time", controller.jump_time.toFixed(2));
-				if (controller.jump_time < jump_time) {
-					console.log("low jump");
-					velocity.y *= 0.5;
-					//controller.gravity_multiplier = 2.5; // low jump if held short
-				} else {
-					console.log("high jump");
-				}
-				controller.jump_time = -1;
+		if (controller.dash_button_time >= 0) {
+			controller.dash_button_time += params.dt;
+			if (controller.dash_button_time > DASH_DURATION / 1000 || !input.is_down(BUTTONS.DASH)) {
+				controller.dash_button_time = -1;
+				velocity.set(0, 0);
+				controller.goal.set(0, 0);
+				controller.current.set(0, 0);
+				controller.dashing = false;
+				entity.addComponent(new Gravity());
 			}
 		}
-		*/
 
 		// jump
 		if (
@@ -607,10 +593,12 @@ export class MovementSystem extends ECS.System {
 
 			controller.dashing = true;
 			controller.allowed_dashes--;
+			controller.dash_button_time = 0;
 			velocity.set(dash.x, dash.y);
 
 			entity.removeComponent(Gravity);
 
+			/*
 			setTimeout(() => {
 				velocity.set(0, 0);
 				controller.goal.set(0, 0);
@@ -618,6 +606,7 @@ export class MovementSystem extends ECS.System {
 				controller.dashing = false;
 				entity.addComponent(new Gravity());
 			}, DASH_DURATION);
+			*/
 
 			return;
 		}
