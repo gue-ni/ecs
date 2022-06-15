@@ -54,7 +54,7 @@ export class Factory {
 				new Animation({ name: "jump-left-float", y: 10, repeat: true }),
 
 				new Animation({ name: "dash-right", y: 0, frames: 4, framerate: 16, repeat: true }),
-				new Animation({ name: "dash-left", y: 0, x: 5, frames: 4, framerate: 16, repeat: true }),
+				new Animation({ name: "dash-left", y: 0, x: 5, frames: 0, framerate: 16, repeat: true }),
 
 				/*
 				new Animation({ name: "jump-right", y: 3, repeat: true }),
@@ -104,7 +104,7 @@ export class Factory {
 		);
 	}
 
-static createFragile(pos: ECS.Vector) {
+	static createFragile(pos: ECS.Vector) {
 		return new ECS.Entity().addComponents(
 			new Sprite({
 				width: TILESIZE,
@@ -246,10 +246,9 @@ static createFragile(pos: ECS.Vector) {
 		);
 	}
 
-	static createBounce(pos: ECS.Vector): ECS.Entity {
-		console.log("create bounce");
+	static createTrampoline(pos: ECS.Vector): ECS.Entity {
 		return new ECS.Entity().addComponents(
-			new Bouncy(),
+			new Bouncy(0,-1),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite({
 				width: TILESIZE,

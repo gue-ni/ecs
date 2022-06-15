@@ -146,4 +146,47 @@ const parseTile = (x: number, y: number, image: ImageData) => {
 	return { x, y, type: t, side };
 };
 
-export { parseTile };
+function loadLevelFromImage(level: number) {
+		const parseTiles = (data: ImageData) => {
+			const objects = [];
+			for (let x = 0; x < 40; x++) {
+				for (let y = 0; y < 23; y++) {
+					const object = parseTile(x, y, data);
+					if (object) objects.push(object);
+				}
+			}
+			return objects;
+		};
+
+		return new Promise((resolve, reject) => {
+			const map_num = Math.floor(level / 10);
+			const filename = `assets/levels-${map_num}.png`;
+
+			const cached = localStorage.getItem(filename);
+
+			const image = new Image();
+			image.src = cached || filename;
+			image.onload = () => {
+				const cnvs = document.createElement("canvas");
+				(cnvs.width = image.width), (cnvs.height = image.height);
+				const ctx = cnvs.getContext("2d");
+				ctx.drawImage(image, 0, 0);
+
+				if (!localStorage.getItem(filename)) {
+					localStorage.setItem(filename, cnvs.toDataURL());
+				}
+
+				const data = ctx.getImageData((level % 10) * 40, 0, 40, 23);
+				const objects = parseTiles(data);
+				resolve(objects);
+			};
+			image.onerror = (e) => {
+				console.log("error loading iamge");
+				reject(e);
+			};
+		});
+	}
+
+
+
+export { parseTile, loadLevelFromImage };

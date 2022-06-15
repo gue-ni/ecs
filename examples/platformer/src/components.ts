@@ -1,10 +1,6 @@
 import * as ECS from "../../../src";
 import { BACKGROUND_COLOR, FOREGROUND_COLOR } from "./main";
 
-export class Forces extends ECS.VectorComponent {
-	mass: number = 10;
-}
-
 export class Animation {
 	repeat: boolean;
 	frame: ECS.Vector = new ECS.Vector();
@@ -147,11 +143,9 @@ export class Health extends ECS.Component {
 	value: number = 100;
 }
 
-export class Acceleration extends ECS.VectorComponent {}
-
 export class Gravity extends ECS.Component {}
 
-export class Bouncy extends ECS.Component {}
+export class Bouncy extends ECS.VectorComponent {}
 
 export class Spike extends ECS.Component {
 	name: string = "spike";

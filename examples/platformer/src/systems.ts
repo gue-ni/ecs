@@ -14,6 +14,7 @@ import {
 	Fragile as FragilePlatform,
 } from "./components";
 import { Game, Shake, Sound, TILESIZE } from "./main";
+import { loadLevelFromImage } from "./tiling";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -52,7 +53,8 @@ export class ParallaxSystem extends ECS.System {
 	layers: ParallaxLayer[];
 	constructor(layers: ParallaxLayer[]) {
 		super([ECS.Position, ECS.Player]);
-		this.layers = layers.sort((a, b) => a.depth - b.depth);
+		//this.layers = layers.sort((a, b) => b.depth - a.depth);
+		this.layers = layers;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
@@ -66,7 +68,8 @@ export class ParallaxSystem extends ECS.System {
 		ctx.fillRect(shaker.OFFSET_X, shaker.OFFSET_Y, params.canvas.width, params.canvas.height);
 
 		for (const layer of this.layers) {
-			const x = -position.x * layer.depth + shaker.OFFSET_X;
+			//const x = -position.x * layer.depth + shaker.OFFSET_X;
+			const x = 0 + position.x * layer.depth;
 			const y = params.canvas.height - layer.size.y + shaker.OFFSET_Y;
 
 			const draw = (dx: number, dy: number) => {
@@ -85,19 +88,31 @@ export class ParallaxSystem extends ECS.System {
 
 			draw(x, y);
 			if (x + layer.size.x < params.canvas.width) draw(x + layer.size.x, y);
+			if (x > 0) draw(x - layer.size.x, y)
 		}
 	}
 }
 
+export class CameraSystem extends ECS.System {
+	offset: ECS.Vector
+	constructor(offset: ECS.Vector){
+		super( [ECS.Player])
+		this.offset = offset;
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+			
+	}
+
+}
+
 export class FragilePlatformSystem extends ECS.System {
 	constructor() {
-		super([FragilePlatform, Sprite, ECS.Position]);
+		super([FragilePlatform]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const fragile = entity.getComponent(FragilePlatform) as FragilePlatform;
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const pos = entity.getComponent(ECS.Position) as ECS.Position;
 
 		if (fragile.hit) {
 			if ((fragile.lifetime -= params.dt) < 0) {
@@ -494,7 +509,7 @@ export class SpawnSystem extends ECS.System {
 
 			waiting_for_respawn = true;
 
-			Game.loadLevelFromImage(new_level)
+			loadLevelFromImage(new_level)
 				.then((json) => {
 					game.clearLevel();
 					game.level = new_level;

@@ -15,7 +15,7 @@ import {
 	ParallaxSystem,
 	FragilePlatformSystem,
 } from "./systems";
-import { parseTile } from "./tiling";
+import { loadLevelFromImage, parseTile } from "./tiling";
 
 const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -152,46 +152,7 @@ export class Game extends ECS.ECS {
 	private frame: number = 0;
 	private frameTimer: number = 0;
 
-	static loadLevelFromImage(level: number) {
-		const parseTiles = (data: ImageData) => {
-			const objects = [];
-			for (let x = 0; x < 40; x++) {
-				for (let y = 0; y < 23; y++) {
-					const object = parseTile(x, y, data);
-					if (object) objects.push(object);
-				}
-			}
-			return objects;
-		};
 
-		return new Promise((resolve, reject) => {
-			const map_num = Math.floor(level / 10);
-			const filename = `assets/levels-${map_num}.png`;
-
-			const cached = localStorage.getItem(filename);
-
-			const image = new Image();
-			image.src = cached || filename;
-			image.onload = () => {
-				const cnvs = document.createElement("canvas");
-				(cnvs.width = image.width), (cnvs.height = image.height);
-				const ctx = cnvs.getContext("2d");
-				ctx.drawImage(image, 0, 0);
-
-				if (!localStorage.getItem(filename)) {
-					localStorage.setItem(filename, cnvs.toDataURL());
-				}
-
-				const data = ctx.getImageData((level % 10) * 40, 0, 40, 23);
-				const objects = parseTiles(data);
-				resolve(objects);
-			};
-			image.onerror = (e) => {
-				console.log("error loading iamge");
-				reject(e);
-			};
-		});
-	}
 
 	get deaths() {
 		return parseInt(localStorage.getItem("deaths")) || 0;
@@ -238,7 +199,7 @@ export class Game extends ECS.ECS {
 				}
 
 				case "bounce": {
-					this.addEntity(Factory.createBounce(pos));
+					this.addEntity(Factory.createTrampoline(pos));
 					break;
 				}
 
@@ -285,27 +246,27 @@ export class Game extends ECS.ECS {
 						image: SPRITESHEET,
 						origin: new ECS.Vector(40 * TILESIZE, 0),
 						size: new ECS.Vector(320, 130),
-						depth: 0.05,
+						depth: 0.95,
 					},
 					{
 						image: SPRITESHEET,
 						origin: new ECS.Vector(40 * TILESIZE, 130),
 						size: new ECS.Vector(320, 180),
-						depth: 0.08,
+						depth: 0.55,
 					},
 
 					{
 						image: SPRITESHEET,
 						origin: new ECS.Vector(120 * TILESIZE, 0),
 						size: new ECS.Vector(320, 120),
-						depth: 0.1,
+						depth: 0.5,
 					},
 
 					{
 						image: SPRITESHEET,
 						origin: new ECS.Vector(80 * TILESIZE, 0),
 						size: new ECS.Vector(320, 120),
-						depth: 0.2,
+						depth: 0.25,
 					},
 				]);
 
@@ -318,14 +279,13 @@ export class Game extends ECS.ECS {
 					new FragilePlatformSystem(),
 					new AnimationSystem(),
 					new CollectibleSystem(),
-					//parallax,
 					new TileSystem(canvas),
 					new ParticleSystem(),
 					new SpriteSystem(),
-					new LightSystem(canvas),
+					//new LightSystem(canvas),
 				]);
 
-				Game.loadLevelFromImage(this.level)
+				loadLevelFromImage(this.level)
 					.then((json) => {
 						this.data = json;
 						this.createLevel();

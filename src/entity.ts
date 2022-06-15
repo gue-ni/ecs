@@ -42,8 +42,14 @@ class Entity {
 		}
 	}
 
+	/*
 	getComponent(component: ComponentConstructor): Component {
 		return this.components.get(component.signature)!;
+	}
+	*/
+
+	getComponent<T extends Component>(component: ComponentConstructor): T {
+		return this.components.get(component.signature) as T;
 	}
 
 	_destroy() {
