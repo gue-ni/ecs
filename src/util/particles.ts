@@ -1,11 +1,7 @@
 import { IVector, Vector } from "./vector";
-import { randomFloat, randomInteger } from "./index";
+import { Color, randomFloat, randomInteger } from "./index";
 import { UpdateParams } from "../ecs";
 
-type HEX = `#${string}`;
-type RGB = `rgb(${number}, ${number}, ${number})`;
-type RGBA = `rgba(${number}, ${number}, ${number}, ${number})`;
-type Color = RGB | RGBA | HEX;
 
 type ParticleColor = Color | "random";
 

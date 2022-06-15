@@ -2,6 +2,12 @@
 type seconds = number;
 type milliseconds = number;
 type pixels = number;
+type HEX = `#${string}`;
+type RGB = `rgb(${number}, ${number}, ${number})`;
+type RGBA = `rgba(${number}, ${number}, ${number}, ${number})`;
+type Color = RGB | RGBA | HEX;
+
+
 
 function randomInteger(min: number, max: number): number {
 	return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -41,4 +47,4 @@ function clamp(val: number, min: number, max: number): number {
 	return Math.max(min, Math.min(val, max));
 }
 
-export { randomFloat, randomInteger, clamp, lerp, approach, seconds, milliseconds, pixels };
+export { randomFloat, randomInteger, clamp, lerp, approach, seconds, milliseconds, pixels, HEX, RGB, RGBA, Color };

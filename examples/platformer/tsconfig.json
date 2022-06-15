@@ -5,7 +5,8 @@
 		"lib": ["es5", "DOM", "esnext"],
 		"sourceMap": true,
 		"allowJs": false,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"incremental": true
 	},
 	"exclude": ["resources/**/*", "assets/**/*"]
 }

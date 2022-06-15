@@ -13,7 +13,7 @@ import {
 	Tile,
 	Fragile as FragilePlatform,
 } from "./components";
-import { Game, Shake, Sound, TILESIZE } from "./main";
+import { Game, Shake, Sound, TILESIZE, canvas, context } from "./main";
 import { loadLevelFromImage } from "./tiling";
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -41,6 +41,9 @@ const BUTTONS = {
 	DASH: "KeyX",
 };
 
+
+
+
 interface ParallaxLayer {
 	image: HTMLImageElement;
 	size: ECS.Vector;
@@ -65,12 +68,12 @@ export class ParallaxSystem extends ECS.System {
 		const sky = "#89ABB9";
 		const ctx = params.context;
 		ctx.fillStyle = sky;
-		ctx.fillRect(shaker.OFFSET_X, shaker.OFFSET_Y, params.canvas.width, params.canvas.height);
+		ctx.fillRect(shaker.x, shaker.y, params.canvas.width, params.canvas.height);
 
 		for (const layer of this.layers) {
 			//const x = -position.x * layer.depth + shaker.OFFSET_X;
 			const x = 0 + position.x * layer.depth;
-			const y = params.canvas.height - layer.size.y + shaker.OFFSET_Y;
+			const y = params.canvas.height - layer.size.y + shaker.y;
 
 			const draw = (dx: number, dy: number) => {
 				ctx.drawImage(
@@ -94,13 +97,43 @@ export class ParallaxSystem extends ECS.System {
 }
 
 export class CameraSystem extends ECS.System {
-	offset: ECS.Vector
+
+	private offset: ECS.Vector;
+	private speed: number = 2;
+	private center = new ECS.Vector(canvas.width/ 2, canvas.height / 2);
+	private size = new ECS.Vector(canvas.width * .4, canvas.height)
+	private focusArea = new ECS.Rectangle(
+		new ECS.Vector(this.center.x - this.size.x / 2, 0),
+		new ECS.Vector(this.size.x, this.size.y)
+	);
+
 	constructor(offset: ECS.Vector){
-		super( [ECS.Player])
+		super( [ECS.Player, ECS.Position])
 		this.offset = offset;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const pos = entity.getComponent<ECS.Position>(ECS.Position);
+
+		const game = params.game as Game
+		const canvas_pos =game.canvas_coordinates(pos) 
+
+		const diff = new ECS.Vector()
+
+		if (ECS.PointVsRect(canvas_pos, this.focusArea)){
+			console.log("inside focus arae")
+		} else {
+			diff.x = canvas_pos.x - this.center.x;
+			diff.x -= Math.sign(diff.x) * this.size.x / 2;
+			console.log("outside focus area", diff.x.toFixed(2))
+		}
+
+		if (Math.abs(diff.x) > 0){
+			this.offset.x -= diff.x * params.dt * this.speed;
+		}
+
+
+		//this.focusArea.debug_draw(context)
 			
 	}
 
@@ -162,8 +195,8 @@ export class LightSystem extends ECS.System {
 			light.offset.y,
 			light.width,
 			light.height,
-			Math.round(position.x + light.emitterSize.x / 2 - light.width / 2 + shaker.OFFSET_X),
-			Math.round(position.y + light.emitterSize.y / 2 - light.height / 2 + shaker.OFFSET_X),
+			Math.round(position.x + light.emitterSize.x / 2 - light.width / 2 + shaker.x),
+			Math.round(position.y + light.emitterSize.y / 2 - light.height / 2 + shaker.x),
 			light.width,
 			light.height
 		);
@@ -188,6 +221,9 @@ export class ParticleSystem extends ECS.System {
 		const controller = entity.getComponent(Controller) as Controller;
 
 		let p = new ECS.Vector(position.x + sprite.width / 2, position.y + sprite.height / 2);
+
+		const game = params.game as Game;
+		p = game.canvas_coordinates(p);
 
 		if (controller.dashing) {
 			emitter.dash.active = true;
@@ -277,21 +313,34 @@ export class TileSystem extends ECS.System {
 			for (const entity of entities) {
 				const tile = entity.getComponent(Tile) as Tile;
 				const position = entity.getComponent(ECS.Position) as ECS.Position;
-				this.context.drawImage(
-					tile.image,
-					tile.origin.x,
-					tile.origin.y,
-					tile.width,
-					tile.height,
-					Math.round(position.x),
-					Math.round(position.y),
-					tile.width,
-					tile.height
-				);
+
+				if (tile.color){
+					this.context.fillStyle = tile.color;
+					this.context.fillRect(position.x, position.y, tile.width, tile.height)
+				} else {
+					this.context.drawImage(
+						tile.image,
+						tile.origin.x,
+						tile.origin.y,
+						tile.width,
+						tile.height,
+						Math.round(position.x),
+						Math.round(position.y),
+						tile.width,
+						tile.height
+					);
+
+				}
+
+
 			}
 		}
 		// render tiles only once
-		params.context.drawImage(this.canvas, shake.OFFSET_X, shake.OFFSET_Y, this.canvas.width, this.canvas.height);
+			let pos = game.canvas_coordinates(new ECS.Vector())
+		params.context.drawImage(this.canvas, 
+			pos.x, 
+			pos.y,
+			this.canvas.width, this.canvas.height);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {}
@@ -308,9 +357,9 @@ export class SpriteSystem extends ECS.System {
 
 		const position = entity.getComponent(ECS.Position) as ECS.Position;
 		const shaker = params.shaker as Shake;
+		const game = params.game as Game;
 
-		const pos_x = Math.round(position.x + shaker.OFFSET_X);
-		const pos_y = Math.round(position.y + shaker.OFFSET_Y);
+		const pos = game.canvas_coordinates(position)
 
 		if (sprite.image) {
 			let frame_x = 0;
@@ -328,14 +377,14 @@ export class SpriteSystem extends ECS.System {
 				sprite.offset.y + frame_y * sprite.height,
 				sprite.width,
 				sprite.height,
-				pos_x,
-				pos_y,
+				pos.x,
+				pos.y,
 				sprite.width,
 				sprite.height
 			);
 		} else {
 			params.context.fillStyle = sprite.color || "red";
-			params.context.fillRect(pos_x - 0.5, pos_y - 0.5, sprite.width, sprite.height);
+			params.context.fillRect(pos.x - 0.5, pos.y - 0.5, sprite.width, sprite.height);
 		}
 	}
 }

@@ -1,5 +1,6 @@
 import { ScopedEmitHelper } from "typescript";
 import * as ECS from "../../../src";
+import { IVector } from "../../../src/util/vector";
 import { Factory } from "./factory";
 import {
 	SpriteSystem,
@@ -14,11 +15,12 @@ import {
 	TileSystem,
 	ParallaxSystem,
 	FragilePlatformSystem,
+	CameraSystem,
 } from "./systems";
 import { loadLevelFromImage, parseTile } from "./tiling";
 
-const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+export const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+export const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const ON_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
@@ -110,8 +112,8 @@ export class Sound {
 }
 
 export class Shake {
-	OFFSET_X: ECS.pixels = 0;
-	OFFSET_Y: ECS.pixels = 0;
+	x: ECS.pixels = 0;
+	y: ECS.pixels = 0;
 
 	magnitude: ECS.pixels = 3;
 	private static duration: ECS.seconds = 0.25;
@@ -119,11 +121,11 @@ export class Shake {
 
 	update(dt: number) {
 		if ((this.time -= dt) > 0) {
-			this.OFFSET_X = ECS.randomFloat(-this.magnitude, this.magnitude);
-			this.OFFSET_Y = ECS.randomFloat(-this.magnitude, this.magnitude);
+			this.x = ECS.randomFloat(-this.magnitude, this.magnitude);
+			this.y = ECS.randomFloat(-this.magnitude, this.magnitude);
 		} else {
-			this.OFFSET_X = 0;
-			this.OFFSET_Y = 0;
+			this.x = 0;
+			this.y = 0;
 		}
 	}
 
@@ -143,6 +145,7 @@ export class Game extends ECS.ECS {
 
 	shake: Shake = new Shake();
 	sound: Sound = new Sound();
+	cameraOffset = new ECS.Vector();
 	numbers: NumberRenderer = new NumberRenderer({
 		spritesheet: SPRITESHEET,
 		offset: new ECS.Vector(6 * TILESIZE, 0),
@@ -151,25 +154,6 @@ export class Game extends ECS.ECS {
 	recording: boolean = false;
 	private frame: number = 0;
 	private frameTimer: number = 0;
-
-
-
-	get deaths() {
-		return parseInt(localStorage.getItem("deaths")) || 0;
-	}
-
-	set deaths(x: number) {
-		localStorage.setItem("deaths", x.toString());
-	}
-
-	get level() {
-		return parseInt(localStorage.getItem("level")) || 0;
-	}
-
-	set level(x: number) {
-		if (x > this.level_num - 1 || x < 0) return;
-		localStorage.setItem("level", x.toString());
-	}
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
 		const biome = Math.floor(this.level / 10);
@@ -212,12 +196,23 @@ export class Game extends ECS.ECS {
 					this.addEntity(Factory.createSpike(pos, side));
 					break;
 				}
+
+				case null: {
+					break;
+				}
 			}
 		}
 	}
 
 	clearLevel() {
 		this.clearEntities();
+	}
+
+	canvas_coordinates(pos: IVector) {
+		return new ECS.Vector(
+			pos.x + this.shake.x + this.cameraOffset.x,
+			pos.y + this.shake.y + this.cameraOffset.y
+		).round();
 	}
 
 	async setup() {
@@ -284,6 +279,10 @@ export class Game extends ECS.ECS {
 					new SpriteSystem(),
 					//new LightSystem(canvas),
 				]);
+
+				if (ON_MOBILE) {
+					this.addSystem(new CameraSystem(this.cameraOffset));
+				}
 
 				loadLevelFromImage(this.level)
 					.then((json) => {
@@ -376,6 +375,23 @@ export class Game extends ECS.ECS {
 		}
 
 		requestAnimationFrame(this.animate.bind(this));
+	}
+
+	get deaths() {
+		return parseInt(localStorage.getItem("deaths")) || 0;
+	}
+
+	set deaths(x: number) {
+		localStorage.setItem("deaths", x.toString());
+	}
+
+	get level() {
+		return parseInt(localStorage.getItem("level")) || 0;
+	}
+
+	set level(x: number) {
+		if (x > this.level_num - 1 || x < 0) return;
+		localStorage.setItem("level", x.toString());
 	}
 }
 

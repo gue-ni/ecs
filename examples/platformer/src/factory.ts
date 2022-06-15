@@ -87,6 +87,8 @@ export class Factory {
 		);
 	}
 
+	
+
 	static createPlatform(pos: ECS.Vector) {
 		return new ECS.Entity().addComponents(
 			new Tile({

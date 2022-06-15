@@ -97,9 +97,11 @@ export class Tile extends ECS.Component {
 	height: number;
 	image: HTMLImageElement;
 	origin: ECS.Vector;
+	color: ECS.Color;
 
-	constructor(params: { width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement }) {
+	constructor(params: { color?: ECS.Color, width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement }) {
 		super();
+		this.color = params.color;
 		this.width = params.width;
 		this.height = params.height;
 		this.image = params.image;

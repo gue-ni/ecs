@@ -28,7 +28,8 @@ const pixel = (x: number, y: number, image: ImageData) => {
 
 const parseTile = (x: number, y: number, image: ImageData) => {
 	const t = parse_xy(x, y, image);
-	if (!t) return null;
+	//if (!t) return null;
+	if (!t) return { x, y, type: t };
 
 	let side = "up";
 

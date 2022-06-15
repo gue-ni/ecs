@@ -1,4 +1,4 @@
-import { Vector } from "./vector";
+import { Vector, IVector } from "./vector";
 import { Entity } from "../entity";
 import { clamp } from "./index";
 
@@ -13,11 +13,11 @@ const EPSILON = 0.000001;
 
 //const EPSILON = 1e-8;
 
-function PointVsRect(p: Vector, r: AABB): boolean {
+function PointVsRect(p: IVector, r: Rectangle): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
 }
 
-function RectVsRect(r1: AABB, r2: AABB): boolean {
+function RectVsRect(r1: Rectangle, r2: Rectangle): boolean {
 	return (
 		r1.pos.x < r2.pos.x + r2.size.x &&
 		r1.pos.x + r1.size.x > r2.pos.x &&
@@ -147,14 +147,32 @@ enum ColliderType {
 	CUSTOM,
 	CUSTOM_SOLID,
 	SOLID_FROM_TOP,
+	CUSTOM_SOLID_FROM_TOP,
 }
 
+/**
+ * 
+ */
 class Rectangle {
 	pos: Vector;
 	size: Vector;
+
+	/**
+	 * 
+	 * @param pos 
+	 * @param size 
+	 */
 	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
 		this.pos = pos;
 		this.size = size;
+	}
+
+	get top_left(): Vector{
+		return this.pos.clone();
+	}
+
+	get bottom_right(): Vector{
+		return new Vector(this.pos.x + this.size.x, this.pos.y + this.pos.y)
 	}
 
 	debug_draw(context: CanvasRenderingContext2D, color: string = "red", x_offset: number = 0, y_offset: number = 0) {

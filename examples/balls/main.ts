@@ -1,7 +1,7 @@
 import * as ECS from "../../lib";
 
-const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
-const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
+export const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
+export const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
 
 const GRAVITY = 500;
 

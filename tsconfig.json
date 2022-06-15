@@ -5,10 +5,8 @@
 		"moduleResolution": "node",
 		"declaration": true,
 		"outDir": "lib",
-		"sourceMap": true,
+		"sourceMap": false,
 		"strict": true,
-		"experimentalDecorators": true,
-		"emitDecoratorMetadata": true
 	},
 	"include": ["src", "test"],
 	"exclude": ["node_modules"]

@@ -83,6 +83,14 @@ class Vector implements IVector {
 		return this;
 	}
 
+	static 	random_unit_vector(): Vector  {
+		const phi = randomFloat(0, Math.PI * 2)
+		const vec = new Vector()
+		vec.x = Math.cos(phi)
+		vec.y = Math.sin(phi)
+		return vec;
+	}
+
 	random_unit_vector(): Vector  {
 		const phi = randomFloat(0, Math.PI * 2)
 		this.x = Math.cos(phi)
