@@ -46,6 +46,10 @@
 		<script defer src="main.js?reload=1"></script>
 
 		<style>
+			:root {
+				--color: rgba(255, 255, 255, 0.5);
+			}
+
 			html,
 			body {
 				margin: 0;
@@ -72,6 +76,31 @@
 				user-select: none;
 			}
 
+			.menu {
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100vw;
+				height: 100vh;
+				background-color: rgba(0, 0, 0, 0.5);
+
+				display: flex;
+				justify-content: center;
+				align-items: center;
+			}
+
+
+			.menu-item {
+				margin: 1em;
+				padding: 2em;
+				color: white;
+				border: 1px solid var(--color);
+				border-radius: 2px;
+				width: 20vw;
+				text-align: center;
+
+			}
+
 			.display {
 				font-size: x-small;
 				position: absolute;
@@ -91,11 +120,9 @@
 				position: absolute;
 				background: transparent;
 
-				--color: rgba(255, 255, 255, 0.5);
 				color: var(--color);
 				border: 1px solid var(--color);
 
-				border-radius: 50%;
 				display: flex;
 				align-items: center;
 				justify-content: center;
@@ -105,10 +132,18 @@
 				background: rgba(255, 255, 255, 0.25);
 			}
 
+			.round {
+				border-radius: 50%;
+			}
+
 			.small {
 				height: 10vw;
 				width: 10vw;
 			}
+
+			.very-small {
+				padding: 0.5em;
+			} 
 
 			.big {
 				height: 15vw;
@@ -153,6 +188,9 @@
 		</style>
 	</head>
 	<body>
+
+
+
 		<div class="container">
 			<canvas id="canvas" width="320" height="180"></canvas>
 
@@ -160,22 +198,36 @@
 				<div class="centered">Please rotate the screen!</div>
 			</div>
 
-			<div class="button small" id="ArrowUp" style="left: 75vw; top: 30vh">
+			<div class="button round small" id="ArrowUp" style="left: 75vw; top: 30vh">
 				<div>&UpArrow;</div>
 			</div>
-			<div class="button small" id="ArrowDown" style="left: 75vw; top: 70vh">
+			<div class="button round small" id="ArrowDown" style="left: 75vw; top: 70vh">
 				<div>&DownArrow;</div>
 			</div>
-			<div class="button small" id="ArrowLeft" style="left: calc(75vw - 20vh); top: 50vh">
+			<div class="button round small" id="ArrowLeft" style="left: calc(75vw - 20vh); top: 50vh">
 				<div>&LeftArrow;</div>
 			</div>
-			<div class="button small" id="ArrowRight" style="left: calc(75vw + 20vh); top: 50vh">
+			<div class="button round small" id="ArrowRight" style="left: calc(75vw + 20vh); top: 50vh">
 				<div>&RightArrow;</div>
 			</div>
 
-			<div class="button big" id="jump" style="left: 5vw; top: 50vh">
+			<div class="button round big" id="jump" style="left: 5vw; top: 50vh">
 				<div>Jump</div>
 			</div>
+
+			<div class="button very-small" id="pause" style="left: 85vw; top: 5vh">
+				<div>Pause</div>
+			</div>
+
+
 		</div>
+
+		<div class="menu" id="menu" style="visibility: hidden;">
+			<div>
+				<div class="menu-item" id="continue-game">Continue</div>
+				<div class="menu-item" id="reset-game">Reset Game</div>
+			</div>
+		</div>
+
 	</body>
 </html>

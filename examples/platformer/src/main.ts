@@ -429,6 +429,27 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
+
+if (ON_MOBILE){
+	const pause = document.querySelector('#pause') as HTMLElement;
+	const menu = document.querySelector('#menu') as HTMLElement;
+	const continue_game = document.querySelector('#continue-game') as HTMLElement;
+	const reset_game = document.querySelector('#reset-game') as HTMLElement;
+
+	continue_game.onclick = () => {
+		menu.style.visibility = "hidden"
+		paused = !paused
+	}
+	pause.onclick = () => {
+		menu.style.visibility = "visible"
+		paused = !paused
+	}
+	reset_game.onclick = () => {
+		localStorage.clear();
+		location.reload()
+	}
+}
+
 document.ontouchstart = () => {
 	if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch((e) => console.log(e));
 };
