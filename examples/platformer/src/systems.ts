@@ -41,9 +41,6 @@ const BUTTONS = {
 	DASH: "KeyX",
 };
 
-
-
-
 interface ParallaxLayer {
 	image: HTMLImageElement;
 	size: ECS.Vector;
@@ -91,52 +88,48 @@ export class ParallaxSystem extends ECS.System {
 
 			draw(x, y);
 			if (x + layer.size.x < params.canvas.width) draw(x + layer.size.x, y);
-			if (x > 0) draw(x - layer.size.x, y)
+			if (x > 0) draw(x - layer.size.x, y);
 		}
 	}
 }
 
 export class CameraSystem extends ECS.System {
-
 	private offset: ECS.Vector;
 	private speed: number = 2;
-	private center = new ECS.Vector(canvas.width/ 2, canvas.height / 2);
-	private size = new ECS.Vector(canvas.width * .4, canvas.height)
+	private center = new ECS.Vector(canvas.width / 2, canvas.height / 2);
+	private size = new ECS.Vector(canvas.width * 0.4, canvas.height);
 	private focusArea = new ECS.Rectangle(
 		new ECS.Vector(this.center.x - this.size.x / 2, 0),
 		new ECS.Vector(this.size.x, this.size.y)
 	);
 
-	constructor(offset: ECS.Vector){
-		super( [ECS.Player, ECS.Position])
+	constructor(offset: ECS.Vector) {
+		super([ECS.Player, ECS.Position]);
 		this.offset = offset;
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const pos = entity.getComponent<ECS.Position>(ECS.Position);
 
-		const game = params.game as Game
-		const canvas_pos =game.canvas_coordinates(pos) 
+		const game = params.game as Game;
+		const canvas_pos = game.canvas_coordinates(pos);
 
-		const diff = new ECS.Vector()
+		const diff = new ECS.Vector();
 
-		if (ECS.PointVsRect(canvas_pos, this.focusArea)){
-			console.log("inside focus arae")
+		if (ECS.PointVsRect(canvas_pos, this.focusArea)) {
+			console.log("inside focus arae");
 		} else {
 			diff.x = canvas_pos.x - this.center.x;
-			diff.x -= Math.sign(diff.x) * this.size.x / 2;
-			console.log("outside focus area", diff.x.toFixed(2))
+			diff.x -= (Math.sign(diff.x) * this.size.x) / 2;
+			console.log("outside focus area", diff.x.toFixed(2));
 		}
 
-		if (Math.abs(diff.x) > 0){
+		if (Math.abs(diff.x) > 0) {
 			this.offset.x -= diff.x * params.dt * this.speed;
 		}
 
-
 		//this.focusArea.debug_draw(context)
-			
 	}
-
 }
 
 export class FragilePlatformSystem extends ECS.System {
@@ -314,9 +307,9 @@ export class TileSystem extends ECS.System {
 				const tile = entity.getComponent(Tile) as Tile;
 				const position = entity.getComponent(ECS.Position) as ECS.Position;
 
-				if (tile.color){
+				if (tile.color) {
 					this.context.fillStyle = tile.color;
-					this.context.fillRect(position.x, position.y, tile.width, tile.height)
+					this.context.fillRect(position.x, position.y, tile.width, tile.height);
 				} else {
 					this.context.drawImage(
 						tile.image,
@@ -329,18 +322,12 @@ export class TileSystem extends ECS.System {
 						tile.width,
 						tile.height
 					);
-
 				}
-
-
 			}
 		}
 		// render tiles only once
-			let pos = game.canvas_coordinates(new ECS.Vector())
-		params.context.drawImage(this.canvas, 
-			pos.x, 
-			pos.y,
-			this.canvas.width, this.canvas.height);
+		let pos = game.canvas_coordinates(new ECS.Vector());
+		params.context.drawImage(this.canvas, pos.x, pos.y, this.canvas.width, this.canvas.height);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {}
@@ -359,7 +346,7 @@ export class SpriteSystem extends ECS.System {
 		const shaker = params.shaker as Shake;
 		const game = params.game as Game;
 
-		const pos = game.canvas_coordinates(position)
+		const pos = game.canvas_coordinates(position);
 
 		if (sprite.image) {
 			let frame_x = 0;
@@ -557,6 +544,7 @@ export class SpawnSystem extends ECS.System {
 			}
 
 			waiting_for_respawn = true;
+			fetch(`https://www.jakobmaier.at/webhook?app=mia&level=${new_level}&deaths=${game.deaths}`).catch(() => {});
 
 			loadLevelFromImage(new_level)
 				.then((json) => {
