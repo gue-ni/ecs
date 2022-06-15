@@ -5,7 +5,7 @@ export { Entity, EntityID } from "./entity";
 export { Component, ComponentConstructor, getComponentSignature } from "./component";
 
 // utils
-export { Vector } from "./util/vector";
+export { Vector, IVector } from "./util/vector";
 export { QuadTree } from "./util/quadtree";
 export { randomFloat, randomInteger, clamp, lerp, approach, seconds, milliseconds, pixels, RGB, RGBA, HEX, Color } from "./util/index";
 export { State, ElementState, FiniteStateMachine } from "./util/fsm";

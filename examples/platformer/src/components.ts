@@ -1,5 +1,4 @@
-import * as ECS from "../../../src";
-import { BACKGROUND_COLOR, FOREGROUND_COLOR } from "./main";
+import * as ECS from "../../../lib";
 
 export class Animation {
 	repeat: boolean;

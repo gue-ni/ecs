@@ -1,6 +1,4 @@
-import { ScopedEmitHelper } from "typescript";
-import * as ECS from "../../../src";
-import { IVector } from "../../../src/util/vector";
+import * as ECS from "../../../lib";
 import { Factory } from "./factory";
 import {
 	SpriteSystem,
@@ -17,7 +15,7 @@ import {
 	FragilePlatformSystem,
 	CameraSystem,
 } from "./systems";
-import { loadLevelFromImage, parseTile } from "./tiling";
+import { loadLevelFromImage } from "./tiling";
 
 export const canvas: HTMLCanvasElement = document.getElementById("canvas") as HTMLCanvasElement;
 export const context: CanvasRenderingContext2D = canvas.getContext("2d") as CanvasRenderingContext2D;
@@ -208,7 +206,7 @@ export class Game extends ECS.ECS {
 		this.clearEntities();
 	}
 
-	canvas_coordinates(pos: IVector) {
+	canvas_coordinates(pos: ECS.IVector) {
 		return new ECS.Vector(
 			pos.x + this.shake.x + this.cameraOffset.x,
 			pos.y + this.shake.y + this.cameraOffset.y

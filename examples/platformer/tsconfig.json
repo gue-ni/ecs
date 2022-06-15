@@ -3,7 +3,7 @@
 		"target": "ES2017",
 		"module": "commonjs",
 		"lib": ["es5", "DOM", "esnext"],
-		"sourceMap": true,
+		"sourceMap": false,
 		"allowJs": false,
 		"esModuleInterop": true,
 		"incremental": true
