@@ -10,7 +10,7 @@
 		"tsc": "tsc",
 		"test": "mocha -r ts-node/register src/**/*.test.ts",
 		"test2": "mocha -r esm   src/**/*.test.ts",
-    "test3": "mocha"
+    "test3": "mocha src/**/*.test.ts"
 	},
 	"author": "Jakob Maier",
 	"license": "ISC",

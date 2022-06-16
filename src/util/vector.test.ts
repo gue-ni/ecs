@@ -1,6 +1,6 @@
 import { expect } from "chai";
 
-import { Vector } from "../src/util/vector";
+import { Vector } from "./vector";
 
 describe("Vector", () => {
 	it("basic", () => {
