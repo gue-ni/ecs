@@ -1,12 +1,9 @@
 {
 	"compilerOptions": {
-		"target": "ES2017",
+		"target": "esnext",
 		"module": "commonjs",
-		"lib": ["es5", "DOM", "esnext"],
 		"sourceMap": false,
-		"allowJs": false,
-		"esModuleInterop": true,
-		"incremental": true
+		"strict": false
 	},
-	"exclude": ["resources/**/*", "assets/**/*"]
+	"exclude": ["resources/**/*", "assets/**/*", "node_modules"]
 }
