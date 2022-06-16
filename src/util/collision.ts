@@ -8,7 +8,6 @@ import { clamp } from "./index";
  * https://gamedev.stackexchange.com/questions/144817/swept-aabb-3d-incorrect-collision-resolution-along-negative-normals
  */
 
-
 function PointVsRect(p: IVector, r: Rectangle): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
 }
@@ -36,7 +35,7 @@ const _DEBUG = false;
  * @param ray_origin origin of ray
  * @param ray_dir ray direction, not normalized
  * @param target AABB to collide with
- * @returns 
+ * @returns
  */
 function RayVsRect(ray_origin: Vector, ray_dir: Vector, target: AABB): CollisionEvent | null {
 	const t_near = new Vector(0, 0);
@@ -147,7 +146,7 @@ enum ColliderType {
 }
 
 /**
- * 
+ *
  */
 class Rectangle {
 	pos: Vector;
@@ -155,27 +154,22 @@ class Rectangle {
 
 	/**
 	 * 
-	 * @param pos 
-	 * @param size 
+	 * @param x coordinate
+	 * @param y coordinate
+	 * @param w width
+	 * @param h height
 	 */
-	/*
-	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
-		this.pos = pos;
-		this.size = size;
-	}
-	*/
-
-	constructor(x:number, y:number, w:number, h:number){
-		this.pos = new Vector(x,y)
-		this.size = new Vector(w,h)
+	constructor(x: number, y: number, w: number, h: number) {
+		this.pos = new Vector(x, y);
+		this.size = new Vector(w, h);
 	}
 
-	get top_left(): Vector{
+	get top_left(): Vector {
 		return this.pos.clone();
 	}
 
-	get bottom_right(): Vector{
-		return new Vector(this.pos.x + this.size.x, this.pos.y + this.pos.y)
+	get bottom_right(): Vector {
+		return new Vector(this.pos.x + this.size.x, this.pos.y + this.pos.y);
 	}
 
 	debug_draw(context: CanvasRenderingContext2D, color: string = "red", x_offset: number = 0, y_offset: number = 0) {
