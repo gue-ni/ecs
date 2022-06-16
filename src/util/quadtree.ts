@@ -91,7 +91,7 @@ class QuadTree implements BroadPhase {
 		// top left
 		this.nodes[0] = new QuadTree(
 			this.level + 1,
-			new Rectangle(new Vector(x, y), new Vector(w, h)),
+			new Rectangle(x, y,w, h),
 			this.max_objects,
 			this.max_levels
 		);
@@ -99,7 +99,7 @@ class QuadTree implements BroadPhase {
 		// top right
 		this.nodes[1] = new QuadTree(
 			this.level + 1,
-			new Rectangle(new Vector(x + w, y), new Vector(w, h)),
+			new Rectangle(x + w, y, w, h),
 			this.max_objects,
 			this.max_levels
 		);
@@ -107,7 +107,7 @@ class QuadTree implements BroadPhase {
 		// bottom right
 		this.nodes[2] = new QuadTree(
 			this.level + 1,
-			new Rectangle(new Vector(x + w, y + h), new Vector(w, h)),
+			new Rectangle(x + w, y + h, w, h),
 			this.max_objects,
 			this.max_levels
 		);
@@ -115,7 +115,7 @@ class QuadTree implements BroadPhase {
 		// bottom left
 		this.nodes[3] = new QuadTree(
 			this.level + 1,
-			new Rectangle(new Vector(x, y + h), new Vector(w, h)),
+			new Rectangle(x, y + h, w, h),
 			this.max_objects,
 			this.max_levels
 		);

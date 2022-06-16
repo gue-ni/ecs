@@ -34,12 +34,7 @@ export const SPRITESHEET = new Image();
 SPRITESHEET.src = "assets/spritesheet.png";
 SPRITESHEET.onload = () => (paused = false);
 
-const quadtree = new ECS.QuadTree(
-	0,
-	new ECS.Rectangle(new ECS.Vector(), new ECS.Vector(canvas.width, canvas.height)),
-	2,
-	5
-);
+const quadtree = new ECS.QuadTree(0, new ECS.Rectangle(0, 0, canvas.width, canvas.height), 2, 5);
 
 export class NumberRenderer {
 	private canvas: HTMLCanvasElement;
@@ -429,25 +424,24 @@ document.addEventListener("keydown", (e) => {
 	}
 });
 
-
-if (ON_MOBILE){
-	const pause = document.querySelector('#pause') as HTMLElement;
-	const menu = document.querySelector('#menu') as HTMLElement;
-	const continue_game = document.querySelector('#continue-game') as HTMLElement;
-	const reset_game = document.querySelector('#reset-game') as HTMLElement;
+if (ON_MOBILE) {
+	const pause = document.querySelector("#pause") as HTMLElement;
+	const menu = document.querySelector("#menu") as HTMLElement;
+	const continue_game = document.querySelector("#continue-game") as HTMLElement;
+	const reset_game = document.querySelector("#reset-game") as HTMLElement;
 
 	continue_game.onclick = () => {
-		menu.style.visibility = "hidden"
-		paused = !paused
-	}
+		menu.style.visibility = "hidden";
+		paused = !paused;
+	};
 	pause.onclick = () => {
-		menu.style.visibility = "visible"
-		paused = !paused
-	}
+		menu.style.visibility = "visible";
+		paused = !paused;
+	};
 	reset_game.onclick = () => {
 		localStorage.clear();
-		location.reload()
-	}
+		location.reload();
+	};
 }
 
 document.ontouchstart = () => {

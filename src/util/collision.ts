@@ -8,10 +8,6 @@ import { clamp } from "./index";
  * https://gamedev.stackexchange.com/questions/144817/swept-aabb-3d-incorrect-collision-resolution-along-negative-normals
  */
 
-// tutorial
-const EPSILON = 0.000001;
-
-//const EPSILON = 1e-8;
 
 function PointVsRect(p: IVector, r: Rectangle): boolean {
 	return p.x >= r.pos.x && p.y >= r.pos.y && p.x < r.pos.x + r.size.x && p.y < r.pos.y + r.size.y;
@@ -162,9 +158,16 @@ class Rectangle {
 	 * @param pos 
 	 * @param size 
 	 */
+	/*
 	constructor(pos: Vector = new Vector(), size: Vector = new Vector()) {
 		this.pos = pos;
 		this.size = size;
+	}
+	*/
+
+	constructor(x:number, y:number, w:number, h:number){
+		this.pos = new Vector(x,y)
+		this.size = new Vector(w,h)
 	}
 
 	get top_left(): Vector{
@@ -193,7 +196,7 @@ class AABB extends Rectangle {
 		vel: Vector = new Vector(),
 		type: ColliderType = ColliderType.SOLID
 	) {
-		super(pos, size);
+		super(pos.x, pos.y, size.x, size.y);
 		this.entity = entity;
 		this.vel = vel;
 		this.type = type;

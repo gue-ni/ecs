@@ -98,10 +98,7 @@ export class CameraSystem extends ECS.System {
 	private speed: number = 2;
 	private center = new ECS.Vector(canvas.width / 2, canvas.height / 2);
 	private size = new ECS.Vector(canvas.width * 0.4, canvas.height);
-	private focusArea = new ECS.Rectangle(
-		new ECS.Vector(this.center.x - this.size.x / 2, 0),
-		new ECS.Vector(this.size.x, this.size.y)
-	);
+	private focusArea = new ECS.Rectangle(this.center.x - this.size.x / 2, 0, this.size.x, this.size.y);
 
 	constructor(offset: ECS.Vector) {
 		super([ECS.Player, ECS.Position]);
