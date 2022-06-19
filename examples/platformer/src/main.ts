@@ -229,34 +229,7 @@ export class Game extends ECS.ECS {
 					}
 				}
 
-				const parallax = new ParallaxSystem([
-					{
-						image: SPRITESHEET,
-						origin: new ECS.Vector(40 * TILESIZE, 0),
-						size: new ECS.Vector(320, 130),
-						depth: 0.95,
-					},
-					{
-						image: SPRITESHEET,
-						origin: new ECS.Vector(40 * TILESIZE, 130),
-						size: new ECS.Vector(320, 180),
-						depth: 0.55,
-					},
 
-					{
-						image: SPRITESHEET,
-						origin: new ECS.Vector(120 * TILESIZE, 0),
-						size: new ECS.Vector(320, 120),
-						depth: 0.5,
-					},
-
-					{
-						image: SPRITESHEET,
-						origin: new ECS.Vector(80 * TILESIZE, 0),
-						size: new ECS.Vector(320, 120),
-						depth: 0.25,
-					},
-				]);
 
 				this.addSystems([
 					ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas),
@@ -273,9 +246,11 @@ export class Game extends ECS.ECS {
 					//new LightSystem(canvas),
 				]);
 
+				/*
 				if (ON_MOBILE) {
 					this.addSystem(new CameraSystem(this.cameraOffset));
 				}
+				*/
 
 				loadLevelFromImage(this.level)
 					.then((json) => {
