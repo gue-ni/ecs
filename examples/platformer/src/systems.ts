@@ -58,7 +58,7 @@ export class ParallaxSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
 
 		const shaker = params.shaker as Shake;
 
@@ -135,7 +135,7 @@ export class FragilePlatformSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const fragile = entity.getComponent(FragilePlatform) as FragilePlatform;
+		const fragile = entity.getComponent<FragilePlatform>(FragilePlatform); 
 
 		if (fragile.hit) {
 			if ((fragile.lifetime -= params.dt) < 0) {
@@ -172,8 +172,8 @@ export class LightSystem extends ECS.System {
 	};
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const light = entity.getComponent(Light) as Light;
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const light = entity.getComponent<Light>(Light); 
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
 		const shaker = params.shaker as Shake;
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/globalCompositeOperation
@@ -205,10 +205,10 @@ export class ParticleSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const controller = entity.getComponent(Controller) as Controller;
+		const emitter = entity.getComponent<ParticleEmitter>(ParticleEmitter); 
+		const sprite = entity.getComponent<Sprite>(Sprite); 
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
+		const controller = entity.getComponent<Controller>(Controller); 
 
 		let p = new ECS.Vector(position.x + sprite.width / 2, position.y + sprite.height / 2);
 
@@ -238,12 +238,12 @@ export class AnimationSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const sprite = entity.getComponent<Sprite>(Sprite); 
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
 		if (!sprite.animations) return;
 
-		const controller = entity.getComponent(Controller) as Controller;
-		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
+		const controller = entity.getComponent<Controller>(Controller); 
+		const collider = entity.getComponent<ECS.Collider>(ECS.Collider); 
 
 		const dir = controller.last_dir > 0 ? "right" : "left";
 
@@ -301,8 +301,8 @@ export class TileSystem extends ECS.System {
 			this.context.fillStyle = `rgba(0, 0, 0, 1.0)`;
 
 			for (const entity of entities) {
-				const tile = entity.getComponent(Tile) as Tile;
-				const position = entity.getComponent(ECS.Position) as ECS.Position;
+				const tile = entity.getComponent<Tile>(Tile); 
+				const position = entity.getComponent<ECS.Position>(ECS.Position); 
 
 				if (tile.color) {
 					this.context.fillStyle = tile.color;
@@ -336,10 +336,10 @@ export class SpriteSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const sprite = entity.getComponent(Sprite) as Sprite;
+		const sprite = entity.getComponent<Sprite>(Sprite); 
 		if (!sprite.visible) return;
 
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
 		const shaker = params.shaker as Shake;
 		const game = params.game as Game;
 
@@ -379,8 +379,8 @@ export class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
@@ -401,7 +401,7 @@ export class CollectibleSystem extends ECS.System {
 		/*
 		this.time += params.dt;
 
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
 		let s = Math.sin(this.time + entity.entityNumber);
 		const value = s * 0.2;
 		position.y += value;
@@ -416,20 +416,20 @@ export class CollisionSystem extends ECS.CollisionSystem {
 		target: ECS.Entity,
 		params: ECS.UpdateParams
 	): void {
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-		const health = entity.getComponent(Health) as Health;
-		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
+		const health = entity.getComponent<Health>(Health); 
+		const emitter = entity.getComponent<ParticleEmitter>(ParticleEmitter); 
 
 		// springs
 		if (velocity && velocity.y > 10 && Math.abs(collision.contact_normal.y) > 0 && target.getComponent(Bouncy)) {
 			velocity.y = -BOUNCE;
-			const sprite = target.getComponent(Sprite) as Sprite;
+			const sprite = target.getComponent<Sprite>(Sprite); 
 			sprite.animations.play("bounce");
 			(params.sound as Sound).play(100, 190, 0.5);
 			return;
 		}
 
-		const fragile = target.getComponent(FragilePlatform) as FragilePlatform;
+		const fragile = target.getComponent<FragilePlatform>(FragilePlatform); 
 		if (velocity && fragile) {
 			fragile.hit = true;
 			//velocity.y = -BOUNCE;
@@ -443,10 +443,10 @@ export class CollisionSystem extends ECS.CollisionSystem {
 			target.removeComponent(Spike);
 			entity.removeComponent(ECS.Velocity);
 
-			const sprite = entity.getComponent(Sprite) as Sprite;
+			const sprite = entity.getComponent<Sprite>(Sprite); 
 			if (sprite) sprite.visible = false;
 
-			const controller = entity.getComponent(Controller) as Controller;
+			const controller = entity.getComponent<Controller>(Controller); 
 			if (controller) controller.dashing = false;
 
 			if (emitter) {
@@ -473,8 +473,8 @@ export class CollisionSystem extends ECS.CollisionSystem {
 		target: ECS.Entity,
 		params: ECS.UpdateParams
 	): void {
-		const emitter = entity.getComponent(ParticleEmitter) as ParticleEmitter;
-		const collectible = target.getComponent(Collectible) as Collectible;
+		const emitter = entity.getComponent<ParticleEmitter>(ParticleEmitter); 
+		const collectible = target.getComponent<Collectible>(Collectible); 
 
 		if (collectible) {
 			if (emitter) {
@@ -484,7 +484,7 @@ export class CollisionSystem extends ECS.CollisionSystem {
 
 			switch (collectible.t) {
 				case CollectibleType.DASH: {
-					const controller = entity.getComponent(Controller) as Controller;
+					const controller = entity.getComponent<Controller>(Controller); 
 					controller.allowed_dashes++;
 					this.ecs.removeEntity(target);
 
@@ -505,10 +505,10 @@ export class SpawnSystem extends ECS.System {
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		if (waiting_for_respawn) return;
 
-		const health = entity.getComponent(Health) as Health;
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const health = entity.getComponent<Health>(Health); 
+		const sprite = entity.getComponent<Sprite>(Sprite); 
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
 
 		if (position.y > params.canvas.height) {
 			health.value = 0;
@@ -585,10 +585,10 @@ export class MovementSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const input = entity.getComponent(ECS.Input) as ECS.Input;
-		const controller = entity.getComponent(Controller) as Controller;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-		const collider = entity.getComponent(ECS.Collider) as ECS.Collider;
+		const input = entity.getComponent<ECS.Input>(ECS.Input); 
+		const controller = entity.getComponent<Controller>(Controller); 
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
+		const collider = entity.getComponent<ECS.Collider>(ECS.Collider); 
 
 		if (collider.south) {
 			controller.allowed_jumps = 1;

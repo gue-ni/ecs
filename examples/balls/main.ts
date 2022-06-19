@@ -60,8 +60,8 @@ class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(Position) as Position;
-		const velocity = entity.getComponent(Velocity) as Velocity;
+		const position = entity.getComponent<Position>(Position); 
+		const velocity = entity.getComponent<Velocity>(Velocity); 
 
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;
@@ -87,8 +87,8 @@ class SpriteSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: any): void {
-		const sprite = entity.getComponent(Sprite) as Sprite;
-		const coords = entity.getComponent(Position) as Position;
+		const sprite = entity.getComponent<Sprite>(Sprite); 
+		const coords = entity.getComponent<Position>(Position); 
 
 		params.context.drawImage(
 			sprite.image,
@@ -110,8 +110,8 @@ class BallSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: any): void {
-		const ball = entity.getComponent(Ball) as Ball;
-		const coords = entity.getComponent(Position) as Position;
+		const ball = entity.getComponent<Ball>(Ball); 
+		const coords = entity.getComponent<Position>(Position); 
 
 		params.context.beginPath();
 		params.context.arc(coords.x, coords.y, ball.radius, 0, Math.PI * 2);

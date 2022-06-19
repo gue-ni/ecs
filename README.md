@@ -41,8 +41,8 @@ class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: UpdateParams): void {
-		const position = entity.getComponent(Position) as Position;
-		const velocity = entity.getComponent(Velocity) as Velocity;
+		const position = entity.getComponent<Position>(Position); 
+		const velocity = entity.getComponent<Velocity>(Velocity); 
 
 		position.x = position.x + params.dt * velocity.x;
 		position.y = position.y + params.dt * velocity.y;

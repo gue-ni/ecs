@@ -41,9 +41,9 @@ class CollisionSystem extends System {
 		this.quadtree.clear();
 
 		for (const entity of entities) {
-			const position = entity.getComponent(Position) as Position;
-			const velocity = entity.getComponent(Velocity) as Velocity;
-			const collider = entity.getComponent(Collider) as Collider;
+			const position = entity.getComponent<Position>(Position); 
+			const velocity = entity.getComponent<Velocity>(Velocity); 
+			const collider = entity.getComponent<Collider>(Collider); 
 
 			collider.aabb.entity = entity;
 			collider.aabb.pos.set(position.x + collider.offset.x, position.y + collider.offset.y);
@@ -58,11 +58,11 @@ class CollisionSystem extends System {
 	}
 
 	updateEntity(entity: Entity, params: UpdateParams): void {
-		const velocity = entity.getComponent(Velocity) as Velocity;
+		const velocity = entity.getComponent<Velocity>(Velocity); 
 		if (!velocity) return;
 
 		const velocity_before_collision = new Vector(velocity.x, velocity.y);
-		const collider = entity.getComponent(Collider) as Collider;
+		const collider = entity.getComponent<Collider>(Collider); 
 
 		/*
 		TODO: fix bug

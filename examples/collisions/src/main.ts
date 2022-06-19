@@ -34,8 +34,8 @@ class SpriteSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const rect = entity.getComponent(Sprite) as Sprite;
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
+		const rect = entity.getComponent<Sprite>(Sprite); 
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
 		params.context.strokeStyle = rect.color;
 		params.context.strokeRect(position.x, position.y, rect.width, rect.height);
 	}
@@ -47,9 +47,9 @@ export class PhysicsSystem extends ECS.System {
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
-		const position = entity.getComponent(ECS.Position) as ECS.Position;
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
-		const sprite = entity.getComponent(Sprite) as Sprite;
+		const position = entity.getComponent<ECS.Position>(ECS.Position); 
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
+		const sprite = entity.getComponent<Sprite>(Sprite); 
 
 		position.x += velocity.x * params.dt;
 		position.y += velocity.y * params.dt;
@@ -68,10 +68,10 @@ class CollisionSystem extends ECS.CollisionSystem {
 		target: ECS.Entity,
 		params: ECS.UpdateParams
 	): void {
-		const sprite = entity.getComponent(Sprite) as Sprite;
+		const sprite = entity.getComponent<Sprite>(Sprite); 
 		sprite.color = "red";
 		/*
-		const velocity = entity.getComponent(ECS.Velocity) as ECS.Velocity;
+		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
 		velocity.x = -velocity.x
 		velocity.y = -velocity.y
 		*/
