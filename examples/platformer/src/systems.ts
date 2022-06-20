@@ -340,7 +340,6 @@ export class SpriteSystem extends ECS.System {
 		if (!sprite.visible) return;
 
 		const position = entity.getComponent<ECS.Position>(ECS.Position); 
-		const shaker = params.shaker as Shake;
 		const game = params.game as Game;
 
 		const pos = game.canvas_coordinates(position);
