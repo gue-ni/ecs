@@ -123,18 +123,17 @@ export class Sprite extends ECS.Component {
 	constructor(params: {
 		width: number;
 		height: number;
+		padding?: number;
 		color?: string;
 		offset?: ECS.Vector;
 		image?: HTMLImageElement;
 		animations?: Animations;
-		padding?: number;
 	}) {
-		//super({ ...params });
 		super();
 
+		this.image = params.image;
 		this.width = params.width;
 		this.height = params.height;
-		this.image = params.image;
 		this.offset = params.offset ?? new ECS.Vector();
 		this.padding = params.padding ?? 0;
 

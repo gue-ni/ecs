@@ -45,22 +45,16 @@ export class Factory {
 				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
 				new Animation({ name: "idle-left", y: 5, frames: 6, repeat: true }),
 
-				new Animation({ name: "jump-left-down", y: 1, repeat: true }),
-				new Animation({ name: "jump-left-up", y: 2, repeat: true }),
+				new Animation({ name: "jump-right-down", y: 3, x:0, repeat: true }),
+				new Animation({ name: "jump-right-float", y: 3, x: 1, repeat: true }),
+				new Animation({ name: "jump-right-up", y: 3, x: 2, repeat: true }),
 
-				new Animation({ name: "jump-right-down", y: 3, repeat: true }),
-				new Animation({ name: "jump-right-up", y: 4, repeat: true }),
-
-				new Animation({ name: "jump-right-float", y: 9, repeat: true }),
-				new Animation({ name: "jump-left-float", y: 10, repeat: true }),
+				new Animation({ name: "jump-left-down", y: 4, x:0, repeat: true }),
+				new Animation({ name: "jump-left-float", y: 4, x: 1, repeat: true }),
+				new Animation({ name: "jump-left-up", y: 4, x: 2, repeat: true }),
 
 				new Animation({ name: "dash-right", y: 0, frames: 4, framerate: 16, repeat: true }),
-				new Animation({ name: "dash-left", y: 0, x: 5, frames: 0, framerate: 16, repeat: true }),
-
-				/*
-				new Animation({ name: "jump-right", y: 3, repeat: true }),
-				new Animation({ name: "jump-left", y: 4, repeat: true }),
-				*/
+				new Animation({ name: "dash-left", y: 0, x: 4, frames: 4, framerate: 16, repeat: true }),
 
 				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
 				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
@@ -87,8 +81,6 @@ export class Factory {
 			new ECS.Collider({ width: 6, height: size.y, offset: new ECS.Vector(5, 0) })
 		);
 	}
-
-	
 
 	static createPlatform(pos: ECS.Vector) {
 		return new ECS.Entity().addComponents(
@@ -251,7 +243,7 @@ export class Factory {
 
 	static createTrampoline(pos: ECS.Vector): ECS.Entity {
 		return new ECS.Entity().addComponents(
-			new Bouncy(0,-1),
+			new Bouncy(0, -1),
 			new ECS.Position(pos.x, pos.y),
 			new Sprite({
 				width: TILESIZE,
