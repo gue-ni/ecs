@@ -111,6 +111,7 @@ export class Tile extends ECS.Component {
 export class Sprite extends ECS.Component {
 	width: number;
 	height: number;
+	padding: number;
 	image: HTMLImageElement;
 	offset: ECS.Vector;
 
@@ -126,6 +127,7 @@ export class Sprite extends ECS.Component {
 		offset?: ECS.Vector;
 		image?: HTMLImageElement;
 		animations?: Animations;
+		padding?: number;
 	}) {
 		//super({ ...params });
 		super();
@@ -134,6 +136,7 @@ export class Sprite extends ECS.Component {
 		this.height = params.height;
 		this.image = params.image;
 		this.offset = params.offset ?? new ECS.Vector();
+		this.padding = params.padding ?? 0;
 
 		this.color = params.color ?? "red";
 		this.animations = params.animations;

@@ -38,8 +38,9 @@ export class Factory {
 		let new_sprite = new Sprite({
 			width: size.x,
 			height: size.y,
+			padding: TILESIZE,
 			image: SPRITESHEET,
-			offset: new ECS.Vector(TILESIZE * 8, TILESIZE * 1),
+			offset: new ECS.Vector(TILESIZE * 47, TILESIZE * 0),
 			animations: new Animations([
 				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
 				new Animation({ name: "idle-left", y: 5, frames: 6, repeat: true }),
