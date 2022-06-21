@@ -29,10 +29,10 @@ export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#170e2e";
 export const TILESIZE = 8;
 
-let paused = true;
-export const SPRITESHEET = new Image();
-SPRITESHEET.src = "assets/spritesheet.png";
-SPRITESHEET.onload = () => (paused = false);
+let paused = false;
+export const SPRITESHEET = document.querySelector('#spritesheet') as HTMLImageElement;
+//SPRITESHEET.src = "assets/spritesheet.png";
+//SPRITESHEET.onload = () => (paused = false);
 
 const quadtree = new ECS.QuadTree(0, new ECS.Rectangle(0, 0, canvas.width, canvas.height), 2, 5);
 
@@ -230,6 +230,40 @@ export class Game extends ECS.ECS {
 				}
 
 
+				const parallax = new ParallaxSystem([
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(40 * TILESIZE, 0),
+						size: new ECS.Vector(320, 130),
+						depth: 0.95,
+					},
+
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(80 * TILESIZE, 0),
+						size: new ECS.Vector(320, 120),
+						depth: 0.8,
+					},
+
+
+					/*
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(40 * TILESIZE, 130),
+						size: new ECS.Vector(320, 180),
+						depth: 0.55,
+					},
+
+					{
+						image: SPRITESHEET,
+						origin: new ECS.Vector(120 * TILESIZE, 0),
+						size: new ECS.Vector(320, 120),
+						depth: 0.5,
+					},
+
+					*/
+				]);
+
 
 				this.addSystems([
 					ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas),
@@ -243,7 +277,7 @@ export class Game extends ECS.ECS {
 					new TileSystem(canvas),
 					new ParticleSystem(),
 					new SpriteSystem(),
-					//new LightSystem(canvas),
+					new LightSystem(canvas),
 				]);
 
 				/*

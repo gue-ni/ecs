@@ -69,7 +69,7 @@ export class ParallaxSystem extends ECS.System {
 
 		for (const layer of this.layers) {
 			//const x = -position.x * layer.depth + shaker.OFFSET_X;
-			const x = 0 + position.x * layer.depth;
+			const x = 0 + position.x * (1-layer.depth);
 			const y = params.canvas.height - layer.size.y + shaker.y;
 
 			const draw = (dx: number, dy: number) => {
@@ -589,6 +589,8 @@ export class MovementSystem extends ECS.System {
 		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity); 
 		const collider = entity.getComponent<ECS.Collider>(ECS.Collider); 
 
+		if (controller.disabled) return;
+
 		if (collider.south) {
 			controller.allowed_jumps = 1;
 			controller.allowed_dashes = 1;
@@ -627,7 +629,10 @@ export class MovementSystem extends ECS.System {
 			controller.dash_button_time += params.dt;
 			if (
 				controller.dash_button_time > DASH_DURATION / 1000 ||
-				!input.is_down(ON_MOBILE ? BUTTONS.JUMP : BUTTONS.DASH)
+				(!input.is_down(ON_MOBILE ? BUTTONS.JUMP : BUTTONS.DASH) &&
+				controller.dash_button_time > DASH_DURATION / 1000 * 0.5
+				)
+
 			) {
 				controller.dash_button_time = -1;
 				velocity.set(0, 0);
@@ -637,6 +642,22 @@ export class MovementSystem extends ECS.System {
 				entity.addComponent(new Gravity());
 			}
 		}
+
+
+		/*
+		const threshold = 10;
+		if ((collider.east || collider.west) && Math.abs(velocity.x) > threshold && input.is_key_pressed(BUTTONS.JUMP)){
+			console.log("wall jump")
+
+			velocity.y = -JUMP;
+			velocity.x = -Math.sign(velocity.x) * JUMP * .25;
+			controller.jumping = true;
+			controller.disabled = true;
+			setTimeout(() => (controller.disabled = false), 250)
+			setTimeout(() => (controller.jumping = false), 50);
+			return;
+		}
+		*/
 
 		// jump
 		if (

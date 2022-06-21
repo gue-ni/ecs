@@ -193,6 +193,7 @@ export class Fragile extends ECS.Component {
 export class Controller extends ECS.Component {
 	dashing: boolean = false;
 	jumping: boolean = false;
+	disabled: boolean = false;
 	jump_button_time: ECS.seconds = -1;
 	dash_button_time: ECS.seconds = -1;
 	last_dir: number = 1;
