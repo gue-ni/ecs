@@ -54,7 +54,7 @@ export class Factory {
 				new Animation({ name: "jump-left-up", y: 4, x: 2, repeat: true }),
 
 				new Animation({ name: "dash-right", y: 0, frames: 4, framerate: 16, repeat: true }),
-				new Animation({ name: "dash-left", y: 0, x: 4, frames: 4, framerate: 16, repeat: true }),
+				new Animation({ name: "dash-left", y: 1, frames: 4, framerate: 16, repeat: true }),
 
 				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
 				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
@@ -161,7 +161,6 @@ export class Factory {
 			}
 
 			case "middle": {
-				//offset.set(TILESIZE * ECS.randomInteger(1,2), TILESIZE * 1);
 				offset.set(TILESIZE * (Math.random() > 0.9 ? 2 : 1), TILESIZE * 1);
 				break;
 			}
