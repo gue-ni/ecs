@@ -511,7 +511,7 @@ export class SpawnSystem extends ECS.System {
 
 		if (position.y > params.canvas.height) {
 			health.value = 0;
-			return;
+			console.log("outside")
 		}
 
 		const game = params.game as Game;
