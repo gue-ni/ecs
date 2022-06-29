@@ -14,6 +14,7 @@ import {
 	ParallaxSystem,
 	FragilePlatformSystem,
 	CameraSystem,
+	TrailSystem,
 } from "./systems";
 import { loadLevelFromImage } from "./tiling";
 
@@ -276,6 +277,7 @@ export class Game extends ECS.ECS {
 					new CollectibleSystem(),
 					new TileSystem(canvas),
 					new ParticleSystem(),
+					new TrailSystem(),
 					new SpriteSystem(),
 					new LightSystem(canvas),
 				]);

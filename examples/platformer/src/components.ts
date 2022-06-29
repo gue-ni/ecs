@@ -1,5 +1,44 @@
 import * as ECS from "../../../src";
 
+export abstract class Graphic extends ECS.Component {
+	width: number;
+	height: number;
+	padding: number;
+	image: HTMLImageElement;
+	origin: ECS.Vector;
+	color: ECS.Color;
+
+	constructor(params: { color?: ECS.Color, width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement, padding?: number}) {
+		super();
+		this.color = params.color;
+		this.width = params.width;
+		this.height = params.height;
+		this.image = params.image;
+		this.padding = params.padding ?? 0;
+		this.origin = params.offset ?? new ECS.Vector();
+	}
+
+	drawImage(position: ECS.IVector, context: CanvasRenderingContext2D){
+		context.drawImage(
+			this.image,
+			this.origin.x,
+			this.origin.y,
+			this.width,
+			this.height,
+			Math.round(position.x),
+			Math.round(position.y),
+			this.width,
+			this.height
+		);
+	}
+}
+
+export class Trail extends Graphic {
+	positions: ECS.IVector[] = [];
+	length: number = 5;
+	time: number = 0;
+}
+
 export class Animation {
 	repeat: boolean;
 	frame: ECS.Vector = new ECS.Vector();
@@ -91,31 +130,9 @@ export class Animations {
 	}
 }
 
-export class Tile extends ECS.Component {
-	width: number;
-	height: number;
-	image: HTMLImageElement;
-	origin: ECS.Vector;
-	color: ECS.Color;
+export class Tile extends Graphic {}
 
-	constructor(params: { color?: ECS.Color, width: number; height: number; offset?: ECS.Vector; image?: HTMLImageElement }) {
-		super();
-		this.color = params.color;
-		this.width = params.width;
-		this.height = params.height;
-		this.image = params.image;
-		this.origin = params.offset ?? new ECS.Vector();
-	}
-}
-
-export class Sprite extends ECS.Component {
-	width: number;
-	height: number;
-	padding: number;
-	image: HTMLImageElement;
-	offset: ECS.Vector;
-
-	color: string;
+export class Sprite extends Graphic {
 	visible: boolean = true;
 	time: number = 0;
 	animations: Animations;
@@ -124,20 +141,20 @@ export class Sprite extends ECS.Component {
 		width: number;
 		height: number;
 		padding?: number;
-		color?: string;
+		color?: ECS.Color;
 		offset?: ECS.Vector;
 		image?: HTMLImageElement;
 		animations?: Animations;
 	}) {
-		super();
+		super(params);
 
 		this.image = params.image;
 		this.width = params.width;
 		this.height = params.height;
-		this.offset = params.offset ?? new ECS.Vector();
+		this.origin = params.offset ?? new ECS.Vector();
 		this.padding = params.padding ?? 0;
 
-		this.color = params.color ?? "red";
+		this.color = params.color ?? "#ff0000";
 		this.animations = params.animations;
 	}
 }

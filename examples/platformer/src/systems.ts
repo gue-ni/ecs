@@ -12,6 +12,7 @@ import {
 	Light,
 	Tile,
 	Fragile as FragilePlatform,
+	Trail,
 } from "./components";
 import { Game, Shake, Sound, TILESIZE, canvas, context } from "./main";
 import { loadLevelFromImage } from "./tiling";
@@ -40,6 +41,44 @@ const BUTTONS = {
 	JUMP: "KeyC",
 	DASH: "KeyX",
 };
+
+export class TrailSystem extends ECS.System {
+	constructor() {
+		super([Trail, ECS.Position, Controller]);
+	}
+
+	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
+		const trail = entity.getComponent<Trail>(Trail);
+		const controller = entity.getComponent<Controller>(Controller);
+		const position = entity.getComponent<ECS.Position>(ECS.Position);
+		const game = params.game as Game;
+
+		const frequency = 0.04;
+		if ((trail.time += params.dt) > frequency) {
+			trail.time = 0;
+			trail.positions.push(game.canvas_coordinates(position));
+		}
+
+		const max_length = 3;
+		if (trail.positions.length > max_length) trail.positions.shift();
+
+		if (controller.dashing) {
+			for (const pos of trail.positions) {
+				params.context.drawImage(
+					trail.image,
+					trail.origin.x,
+					trail.origin.y,
+					trail.width + 2 * trail.padding,
+					trail.height + 2 * trail.padding,
+					pos.x - trail.padding,
+					pos.y - trail.padding,
+					trail.width + 2 * trail.padding,
+					trail.height + 2 * trail.padding
+				);
+			}
+		}
+	}
+}
 
 interface ParallaxLayer {
 	image: HTMLImageElement;
@@ -341,7 +380,6 @@ export class SpriteSystem extends ECS.System {
 
 		const position = entity.getComponent<ECS.Position>(ECS.Position);
 		const game = params.game as Game;
-
 		const pos = game.canvas_coordinates(position);
 
 		if (sprite.image) {
@@ -356,8 +394,8 @@ export class SpriteSystem extends ECS.System {
 
 			params.context.drawImage(
 				sprite.image,
-				sprite.offset.x + frame_x * (sprite.width + 2 * sprite.padding),
-				sprite.offset.y + frame_y * (sprite.height + 2 * sprite.padding),
+				sprite.origin.x + frame_x * (sprite.width + 2 * sprite.padding),
+				sprite.origin.y + frame_y * (sprite.height + 2 * sprite.padding),
 				sprite.width + 2 * sprite.padding,
 				sprite.height + 2 * sprite.padding,
 				pos.x - sprite.padding,
@@ -511,7 +549,7 @@ export class SpawnSystem extends ECS.System {
 
 		if (position.y > params.canvas.height) {
 			health.value = 0;
-			console.log("outside")
+			console.log("outside");
 		}
 
 		const game = params.game as Game;
@@ -580,11 +618,12 @@ export class SpawnSystem extends ECS.System {
 
 export class MovementSystem extends ECS.System {
 	constructor() {
-		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller]);
+		super([ECS.Input, ECS.Velocity, ECS.Collider, Controller, Trail]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const input = entity.getComponent<ECS.Input>(ECS.Input);
+		const trail = entity.getComponent<Trail>(Trail);
 		const controller = entity.getComponent<Controller>(Controller);
 		const velocity = entity.getComponent<ECS.Velocity>(ECS.Velocity);
 		const collider = entity.getComponent<ECS.Collider>(ECS.Collider);
@@ -694,6 +733,8 @@ export class MovementSystem extends ECS.System {
 
 			input.disable_until_key_release(BUTTONS.DASH);
 			input.disable_until_key_release(BUTTONS.JUMP);
+
+			trail.positions = [];
 
 			(params.sound as Sound).play(150, 200, 0.5);
 			(params.shaker as Shake).shake(2);

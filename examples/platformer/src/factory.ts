@@ -13,6 +13,7 @@ import {
 	Animation,
 	Animations,
 	Fragile,
+	Trail,
 } from "./components";
 import { TILESIZE, SPRITESHEET } from "./main";
 
@@ -45,16 +46,16 @@ export class Factory {
 				new Animation({ name: "idle-right", y: 6, frames: 6, repeat: true }),
 				new Animation({ name: "idle-left", y: 5, frames: 6, repeat: true }),
 
-				new Animation({ name: "jump-right-down", y: 3, x:0, repeat: true }),
+				new Animation({ name: "jump-right-down", y: 3, x: 0, repeat: true }),
 				new Animation({ name: "jump-right-float", y: 3, x: 1, repeat: true }),
 				new Animation({ name: "jump-right-up", y: 3, x: 2, repeat: true }),
 
-				new Animation({ name: "jump-left-down", y: 4, x:0, repeat: true }),
+				new Animation({ name: "jump-left-down", y: 4, x: 0, repeat: true }),
 				new Animation({ name: "jump-left-float", y: 4, x: 1, repeat: true }),
 				new Animation({ name: "jump-left-up", y: 4, x: 2, repeat: true }),
 
-				new Animation({ name: "dash-right", y: 0, frames: 4, framerate: 16, repeat: true }),
-				new Animation({ name: "dash-left", y: 1, frames: 4, framerate: 16, repeat: true }),
+				new Animation({ name: "dash-right", y: 0, frames: 1, framerate: 16, repeat: true }),
+				new Animation({ name: "dash-left", y: 1, frames: 1, framerate: 16, repeat: true }),
 
 				new Animation({ name: "run-right", y: 7, frames: 6, repeat: true }),
 				new Animation({ name: "run-left", y: 8, frames: 6, repeat: true }),
@@ -66,6 +67,13 @@ export class Factory {
 			new Gravity(),
 			new ParticleEmitter(),
 			new Controller(),
+			new Trail({
+				width: size.x,
+				height: size.y,
+				padding: TILESIZE,
+				image: SPRITESHEET,
+				offset: new ECS.Vector(TILESIZE * 47, TILESIZE * 8),
+			}),
 			new Light({
 				image: SPRITESHEET,
 				width: 128,
