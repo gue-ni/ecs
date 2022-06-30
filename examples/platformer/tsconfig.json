@@ -3,7 +3,8 @@
 		"target": "esnext",
 		"module": "commonjs",
 		"sourceMap": false,
-		"strict": false
+		"strict": false,
+		"esModuleInterop": true
 	},
 	"exclude": ["resources/**/*", "assets/**/*", "node_modules"]
 }

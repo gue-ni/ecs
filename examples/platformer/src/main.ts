@@ -1,5 +1,6 @@
 import * as ECS from "../../../src";
 import { Factory } from "./factory";
+import { GifRecorder } from "./gif/recorder";
 import {
 	SpriteSystem,
 	PhysicsSystem,
@@ -29,6 +30,11 @@ if (ON_MOBILE && !window.location.href.includes("mobile.html")) {
 export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#170e2e";
 export const TILESIZE = 8;
+
+const gif = new GifRecorder({width: 320, height: 180})
+
+
+
 
 let paused = false;
 export const SPRITESHEET = document.querySelector('#spritesheet') as HTMLImageElement;
@@ -146,7 +152,7 @@ export class Game extends ECS.ECS {
 	});
 
 	recording: boolean = false;
-	private frame: number = 0;
+	frame: number = 0;
 	private frameTimer: number = 0;
 
 	createLevel(player_pos?: ECS.Vector, player_vel?: ECS.Vector) {
@@ -372,9 +378,13 @@ export class Game extends ECS.ECS {
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
 				if (this.frame == 0) console.log("[Capture] starting from zero");
+				gif.addFrame(context, {delay: this.frameTimer * 1000 })
+				this.frame++; // max frames to store
 				this.frameTimer = 0;
-				this.frame = (this.frame + 1) % 400; // max frames to store
+
+				/*
 				localStorage.setItem(this.frame.toString(), canvas.toDataURL("image/png"));
+				*/
 			}
 		}
 
@@ -416,10 +426,19 @@ document.addEventListener("keydown", (e) => {
 		}
 
 		case "KeyU": {
-			game.recording = !game.recording;
+			game.recording = true;
+			game.frame = 0;
 			console.log("recording", game.recording);
 			break;
 		}
+
+		case "KeyI": {
+			game.recording = false;
+			console.log("stop recording", game.recording);
+			gif.render()
+			break;
+		}
+
 
 		case "KeyM": {
 			game.level++;

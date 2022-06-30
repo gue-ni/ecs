@@ -9,9 +9,12 @@
   "author": "Jakob Maier",
   "license": "",
   "dependencies": {
+    "copy-webpack-plugin": "^10.2.4",
     "ts-loader": "^9.2.7",
     "webpack": "^5.69.1",
-    "webpack-cli": "^4.9.2",
-    "copy-webpack-plugin": "^10.2.4"
+    "webpack-cli": "^4.9.2"
+  },
+  "devDependencies": {
+    "@types/gif.js": "^0.2.2"
   }
 }
