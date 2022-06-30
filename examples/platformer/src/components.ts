@@ -1,4 +1,5 @@
 import * as ECS from "../../../src";
+import { GRAVITY } from "./systems";
 
 export abstract class Graphic extends ECS.Component {
 	width: number;
@@ -205,8 +206,27 @@ export class Light extends ECS.Component {
 }
 
 export class Fragile extends ECS.Component {
-	lifetime: ECS.seconds = ECS.randomFloat(0.25, 0.5);
+	lifetime: ECS.seconds = ECS.randomFloat(0.25, 0.35);
 	hit: boolean = false;
+	dust: ECS.ParticleSystem = new ECS.ParticleSystem({
+		minTTL: 0.1,
+		maxTTL: 0.8,
+		minSize: 1,
+		maxSize: 3,
+		maxCount: 10,
+		drag: 0.1,
+		color: "#5b537d",
+		speed: 4,
+		active: false,
+		gravity: GRAVITY,
+		offset: new ECS.Vector(0, 2),
+		emitterSize: new ECS.Vector(1, 8),
+		particlesPerSecond: 500,
+		finiteParticles: true,
+
+
+
+	});
 }
 
 export class Controller extends ECS.Component {

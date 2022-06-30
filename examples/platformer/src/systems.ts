@@ -23,7 +23,7 @@ const JUMP_HEIGHT = 40; // jump height
 const JUMP_DURATION = ON_MOBILE ? 0.4 : 0.33; // seconds, time to reach jump peak
 
 const JUMP = (2 * JUMP_HEIGHT) / JUMP_DURATION;
-const GRAVITY = (2 * JUMP_HEIGHT) / JUMP_DURATION ** 2;
+export const GRAVITY = (2 * JUMP_HEIGHT) / JUMP_DURATION ** 2;
 
 const DASH_DISTANCE: ECS.pixels = 60;
 const DASH_DURATION: ECS.milliseconds = 250; // milliseconds
@@ -170,22 +170,30 @@ export class CameraSystem extends ECS.System {
 
 export class FragilePlatformSystem extends ECS.System {
 	constructor() {
-		super([FragilePlatform]);
+		super([FragilePlatform, ECS.Position, Sprite]);
 	}
 
 	updateEntity(entity: ECS.Entity, params: ECS.UpdateParams): void {
 		const fragile = entity.getComponent<FragilePlatform>(FragilePlatform);
+		const position = entity.getComponent<ECS.Position>(ECS.Position);
+		const sprite = entity.getComponent<Sprite>(Sprite);
 
 		if (fragile.hit) {
 			if ((fragile.lifetime -= params.dt) < 0) {
 				if (!entity.getComponent(ECS.Velocity)) {
+					fragile.dust.start_emitting()
 					entity.addComponent(new Gravity());
 					entity.addComponent(new ECS.Velocity(0, 0));
 					entity.removeComponent(ECS.Collider);
-					setTimeout(() => params.ecs.removeEntity(entity), 500);
+					setTimeout(() => (sprite.visible = false), 200);
+					setTimeout(() => params.ecs.removeEntity(entity), 1000);
 				}
 			}
 		}
+
+
+		const game = params.game as Game;
+		fragile.dust.update(game.canvas_coordinates(position), params);
 	}
 }
 
