@@ -31,13 +31,10 @@ export const FOREGROUND_COLOR = "#ffffff";
 export const BACKGROUND_COLOR = "#170e2e";
 export const TILESIZE = 8;
 
-const gif = new GifRecorder({width: 320, height: 180})
-
-
-
+const gif = new GifRecorder({ width: 320, height: 180 });
 
 let paused = false;
-export const SPRITESHEET = document.querySelector('#spritesheet') as HTMLImageElement;
+export const SPRITESHEET = document.querySelector("#spritesheet") as HTMLImageElement;
 //SPRITESHEET.src = "assets/spritesheet.png";
 //SPRITESHEET.onload = () => (paused = false);
 
@@ -236,7 +233,6 @@ export class Game extends ECS.ECS {
 					}
 				}
 
-
 				const parallax = new ParallaxSystem([
 					{
 						image: SPRITESHEET,
@@ -251,7 +247,6 @@ export class Game extends ECS.ECS {
 						size: new ECS.Vector(320, 120),
 						depth: 0.8,
 					},
-
 
 					/*
 					{
@@ -270,7 +265,6 @@ export class Game extends ECS.ECS {
 
 					*/
 				]);
-
 
 				this.addSystems([
 					ON_MOBILE ? new ECS.MobileInputSystem() : new ECS.InputSystem(canvas),
@@ -378,7 +372,7 @@ export class Game extends ECS.ECS {
 			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
 				if (this.frame == 0) console.log("[Capture] starting from zero");
-				gif.addFrame(context, {delay: this.frameTimer * 1000 })
+				gif.addFrame(context, { delay: this.frameTimer * 1000 });
 				this.frame++; // max frames to store
 				this.frameTimer = 0;
 
@@ -425,20 +419,19 @@ document.addEventListener("keydown", (e) => {
 			break;
 		}
 
-		case "KeyU": {
+		case "KeyK": {
 			game.recording = true;
 			game.frame = 0;
 			console.log("recording", game.recording);
 			break;
 		}
 
-		case "KeyI": {
+		case "KeyL": {
 			game.recording = false;
 			console.log("stop recording", game.recording);
-			gif.render()
+			gif.render(2);
 			break;
 		}
-
 
 		case "KeyM": {
 			game.level++;

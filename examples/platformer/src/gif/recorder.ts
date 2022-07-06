@@ -39,38 +39,36 @@ export class GifRecorder {
 		this.frames.push(frame);
 	}
 
-	private resize(frame: Frame, factor: number = 2) : Uint8ClampedArray{
-		const w1 = frame.width;
-		const h1 = frame.height;
-		const w2 = frame.width * factor;
-		const h2 = frame.height * factor;
+	private nearest_neighbor_scaling(
+		frame: Uint8ClampedArray,
+		old_width: number,
+		old_height: number,
+		new_width: number,
+		new_height: number
+	): Uint8ClampedArray {
+		// https://tech-algorithm.com/articles/nearest-neighbor-image-scaling/
+		const x_ratio = old_width / new_width;
+		const y_ratio = old_height / new_height;
+		const data = new Uint8ClampedArray(new_width * new_height * 4);
 
-		let x_ratio = w1 / w2;
-		let y_ratio = h1 / h2;
-		let px, py;
+		for (let y = 0; y < new_height; y++) {
+			for (let x = 0; x < new_width; x++) {
+				let px = Math.floor(x * x_ratio);
+				let py = Math.floor(y * y_ratio);
+				let new_pixel_index = y * (new_width * 4) + x * 4;
+				let old_pixel_index = Math.floor(py * (old_width * 4) + px * 4);
 
-		const temp = new Uint8ClampedArray(w2 * h2 * 4);
-
-		for (let y = 0; y < h2; y++) {
-			for (let x = 0; x < w2; x++) {
-				px = Math.floor(x * x_ratio);
-				py = Math.floor(y * y_ratio);
-
-        let index1 = y * w2 + x
-        let index2 = Math.floor(py * w1 + px)
-				temp[index1 + 0] = frame.data[index2 + 0];
-				temp[index1 + 1] = frame.data[index2 + 1];
-				temp[index1 + 2] = frame.data[index2 + 2];
-				temp[index1 + 3] = frame.data[index2 + 3];
+				data[new_pixel_index + 0] = frame[old_pixel_index + 0];
+				data[new_pixel_index + 1] = frame[old_pixel_index + 1];
+				data[new_pixel_index + 2] = frame[old_pixel_index + 2];
+				data[new_pixel_index + 3] = frame[old_pixel_index + 3];
 			}
 		}
-		return temp;
-
-		// https://tech-algorithm.com/articles/nearest-neighbor-image-scaling/
+		return data;
 	}
 
-	render(factor: number = 2) {
-		const encoder = new GIFEncoder(this.width, this.height);
+	render(upscale_factor: number = 1) {
+		const encoder = new GIFEncoder(this.width * upscale_factor, this.height * upscale_factor);
 		encoder.setRepeat(0);
 		encoder.setQuality(1);
 		encoder.setGlobalPalette(true);
@@ -78,19 +76,17 @@ export class GifRecorder {
 		encoder.writeHeader();
 		for (const frame of this.frames) {
 			encoder.setDelay(frame.delay);
-			//encoder.addFrame(this.resize(frame, factor));
-			encoder.addFrame(frame.data);
+			encoder.addFrame(
+				this.nearest_neighbor_scaling(frame.data, frame.width, frame.height, encoder.width, encoder.height)
+			);
 		}
 		encoder.finish();
 
 		const buf = encoder.stream().getData();
-		const b64 = btoa(buf);
-		const url = `data:image/gif;base64,${b64}`;
+		const data_url = `data:image/gif;base64,${btoa(buf)}`;
 
-		fetch(url)
+		fetch(data_url)
 			.then((res) => res.blob())
-			.then((blob) => {
-				window.open(URL.createObjectURL(blob));
-			});
+			.then((blob) => window.open(URL.createObjectURL(blob)));
 	}
 }
