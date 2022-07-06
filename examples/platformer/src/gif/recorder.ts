@@ -32,7 +32,7 @@ export class GifRecorder {
 			width: imagedata.width,
 			height: imagedata.height,
 			index: this.index++,
-			delay: options.delay ?? 100,
+			delay: options.delay ?? 45,
 			dispose: options.dispose ?? -1,
 		};
 

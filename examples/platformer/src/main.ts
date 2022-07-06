@@ -369,16 +369,11 @@ export class Game extends ECS.ECS {
 			}
 			this.numbers.renderNumber(context, 36 * TILESIZE, 21 * TILESIZE, parseFloat(this.FPS));
 
-			// export to png
 			if (this.recording && (this.frameTimer += dt) >= 1 / 30) {
-				if (this.frame == 0) console.log("[Capture] starting from zero");
-				gif.addFrame(context, { delay: this.frameTimer * 1000 });
+				const delay = Math.round(this.frameTimer * 1000);
+				gif.addFrame(context, {});
 				this.frame++; // max frames to store
 				this.frameTimer = 0;
-
-				/*
-				localStorage.setItem(this.frame.toString(), canvas.toDataURL("image/png"));
-				*/
 			}
 		}
 
